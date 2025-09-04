@@ -44,7 +44,7 @@ class _OnboardingViewBody extends StatelessWidget {
                 // Main Content
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 0.0),
                     child: Column(
                       children: [
                         const Spacer(),
@@ -246,7 +246,7 @@ class _OnboardingViewBody extends StatelessWidget {
       borderRadius: BorderRadius.circular(16.0),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
         decoration: BoxDecoration(color: Colors.transparent),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -339,11 +339,11 @@ class _OnboardingViewBody extends StatelessWidget {
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
-                        vertical: 16,
+                        vertical: 12,
                         horizontal: 20,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFF8A65), // Light orange/peach
+                        color: const Color(0xFFF07A60), // Light orange/peach
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -363,7 +363,7 @@ class _OnboardingViewBody extends StatelessWidget {
                                 ? const Icon(
                                     Icons.check,
                                     size: 14,
-                                    color: Color(0xFFFF8A65),
+                                    color: Color(0xFFF07A60),
                                   )
                                 : null,
                           ),
@@ -405,18 +405,7 @@ class _OnboardingViewBody extends StatelessWidget {
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.all(24.0),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.95),
-            borderRadius: BorderRadius.circular(16.0),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                offset: const Offset(0, 4),
-                blurRadius: 24,
-                spreadRadius: 0,
-              ),
-            ],
-          ),
+          decoration: BoxDecoration(color: Colors.transparent),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -426,7 +415,7 @@ class _OnboardingViewBody extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade800,
+                  color: Colors.white,
                 ),
               ),
 
@@ -438,7 +427,7 @@ class _OnboardingViewBody extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade800,
+                  color: Colors.white,
                 ),
               ),
 
@@ -450,7 +439,7 @@ class _OnboardingViewBody extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade600,
+                  color: Colors.white,
                 ),
               ),
               const SizedBox(height: 8),
@@ -458,13 +447,13 @@ class _OnboardingViewBody extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade300),
+                  border: Border.all(color: Colors.white),
                 ),
                 child: TextFormField(
                   controller: viewModel.firstNameController,
                   decoration: InputDecoration(
                     hintText: 'Jane',
-                    hintStyle: TextStyle(color: Colors.grey.shade400),
+                    hintStyle: TextStyle(color: Colors.black),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 16,
@@ -482,7 +471,7 @@ class _OnboardingViewBody extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade600,
+                  color: Colors.white,
                 ),
               ),
               const SizedBox(height: 8),
@@ -490,13 +479,13 @@ class _OnboardingViewBody extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade300),
+                  border: Border.all(color: Colors.white),
                 ),
                 child: TextFormField(
                   controller: viewModel.lastNameController,
                   decoration: InputDecoration(
                     hintText: 'Doe',
-                    hintStyle: TextStyle(color: Colors.grey.shade400),
+                    hintStyle: TextStyle(color: Colors.black),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 16,
@@ -762,7 +751,7 @@ class _OnboardingViewBody extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: SizedBox(
             width: double.infinity,
-            height: 56,
+            height: 42,
             child: ElevatedButton(
               onPressed: viewModel.canProceedFromCurrentStep()
                   ? () {
@@ -774,7 +763,7 @@ class _OnboardingViewBody extends StatelessWidget {
                     }
                   : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF8A65), // Light orange/peach
+                backgroundColor: const Color(0xFFF07A60), // Light orange/peach
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
