@@ -269,15 +269,18 @@ class DevicesViewModel extends ChangeNotifier {
         return;
       }
 
-      // Start scanning for BLE devices
-      await FlutterBluePlus.startScan(
-        timeout: const Duration(seconds: 10),
-        withServices: [], // Scan for all services
-      );
+      // Clear previous results
+      _nearbyDevices.clear();
+      notifyListeners();
 
-      // Listen to scan results
+      // Set up scan results listener BEFORE starting scan
       FlutterBluePlus.scanResults.listen((results) {
         print('BLE scan results: ${results.length} devices found');
+        
+        // Debug: Print all devices found
+        for (var result in results) {
+          print('DEBUG: Device: ${result.device.platformName} - ${result.device.remoteId}');
+        }
         
         // Filter devices that contain "evolv28" in their name
         final evolv28Devices = results.where((result) {
@@ -315,6 +318,24 @@ class DevicesViewModel extends ChangeNotifier {
           Future.delayed(const Duration(seconds: 1), () {
             connectToDevice(_nearbyDevices.first['id']);
           });
+        }
+      });
+
+      // Start scanning for BLE devices
+      await FlutterBluePlus.startScan(
+        timeout: const Duration(seconds: 10),
+        withServices: [], // Scan for all services
+      );
+
+      print('BLE scan started successfully');
+
+      // Also listen to scan state changes
+      FlutterBluePlus.isScanning.listen((isScanning) {
+        print('Scan state changed: $isScanning');
+        if (!isScanning) {
+          _isScanning = false;
+          notifyListeners();
+          print('BLE scan completed');
         }
       });
 
