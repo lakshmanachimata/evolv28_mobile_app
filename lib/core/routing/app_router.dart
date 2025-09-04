@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'app_router_config.dart';
 import '../../shared/widgets/splash_screen.dart';
 import '../../features/auth/presentation/views/login_view.dart';
+import '../../features/auth/presentation/views/terms_view.dart';
 
 class AppRouter {
   static final GoRouter _router = GoRouter(
@@ -20,6 +21,12 @@ class AppRouter {
         path: AppRoutes.login,
         name: AppRouteNames.login,
         builder: (context, state) => const LoginView(),
+      ),
+      // Terms Route
+      GoRoute(
+        path: AppRoutes.terms,
+        name: AppRouteNames.terms,
+        builder: (context, state) => const TermsView(),
       ),
       // Home Route
       GoRoute(

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'package:go_router/go_router.dart';
 
 import '../../core/routing/app_router_config.dart';
@@ -48,10 +47,10 @@ class _SplashScreenState extends State<SplashScreen>
   void _startSplashSequence() async {
     _animationController.forward();
 
-    // Wait for 3 seconds then navigate to login screen
+    // Wait for 3 seconds then navigate to terms screen
     await Future.delayed(const Duration(seconds: 1));
 
-    // Navigate to login screen
+    // Navigate to terms screen
     if (mounted) {
       context.go(AppRoutes.login);
     }
@@ -69,12 +68,9 @@ class _SplashScreenState extends State<SplashScreen>
       body: Stack(
         children: [
           // Background SVG
-                      Positioned.fill(
-              child: Image.asset(
-                'assets/images/bg_one.png',
-                fit: BoxFit.cover,
-              ),
-            ),
+          Positioned.fill(
+            child: Image.asset('assets/images/bg_one.png', fit: BoxFit.cover),
+          ),
 
           // Main content - Evolv28 logo in the center
           Center(

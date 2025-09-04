@@ -683,8 +683,8 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
           ),
         );
 
-        // Navigate to home screen
-        context.go(AppRoutes.home);
+        // Navigate to terms screen
+        context.go(AppRoutes.terms);
       }
     });
   }
