@@ -40,7 +40,7 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
         children: [
           // Background PNG
           Image.asset(
-            'assets/images/bg_one.png',
+            'assets/images/login-background.png',
             fit: BoxFit.fill,
             width: double.infinity,
             height: double.infinity,

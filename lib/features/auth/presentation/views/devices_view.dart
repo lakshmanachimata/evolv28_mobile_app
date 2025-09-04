@@ -101,7 +101,7 @@ class _DevicesViewBodyState extends State<_DevicesViewBody> with WidgetsBindingO
     return Container(
       width: double.infinity,
       height: double.infinity,
-      child: Image.asset('assets/images/bg_three.png', fit: BoxFit.cover),
+      child: Image.asset('assets/images/term-background.png', fit: BoxFit.cover),
     );
   }
 

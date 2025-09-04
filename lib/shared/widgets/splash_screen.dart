@@ -52,7 +52,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     // Navigate to onboarding screen
     if (mounted) {
-      context.go(AppRoutes.devices);
+      context.go(AppRoutes.onboarding);
     }
   }
 
@@ -69,7 +69,10 @@ class _SplashScreenState extends State<SplashScreen>
         children: [
           // Background SVG
           Positioned.fill(
-            child: Image.asset('assets/images/bg_one.png', fit: BoxFit.cover),
+            child: Image.asset(
+              'assets/images/splash-background.png',
+              fit: BoxFit.cover,
+            ),
           ),
 
           // Main content - Evolv28 logo in the center
