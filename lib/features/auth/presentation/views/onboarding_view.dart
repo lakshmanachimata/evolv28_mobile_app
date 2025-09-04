@@ -632,129 +632,108 @@ class _OnboardingViewBody extends StatelessWidget {
   ) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16.0),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(24.0),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.95),
-            borderRadius: BorderRadius.circular(16.0),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                offset: const Offset(0, 4),
-                blurRadius: 24,
-                spreadRadius: 0,
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Instruction Text
-              Text(
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 48.0, vertical: 12.0),
+        decoration: BoxDecoration(color: Colors.transparent),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Instruction Text
+            Center(
+              child: Text(
                 'Enter the 10 Digits code sent on your registered Email / Mobile number',
                 style: TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade800,
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // OTP Input Field
-              Container(
-                decoration: BoxDecoration(
+                  fontWeight: FontWeight.bold,
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                child: TextFormField(
-                  controller: viewModel.otpController,
-                  decoration: InputDecoration(
-                    hintText: '9876543210',
-                    hintStyle: TextStyle(color: Colors.grey.shade400),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 16,
-                    ),
-                    border: InputBorder.none,
-                  ),
                 ),
               ),
+            ),
 
-              const SizedBox(height: 16),
+            const SizedBox(height: 24),
 
-              // Resend OTP Link
-              GestureDetector(
-                onTap: viewModel.handleResendOtp,
+            // OTP Input Field
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 12.0,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.transparent),
+              ),
+              child: TextFormField(
+                controller: viewModel.otpController,
+                decoration: InputDecoration(
+                  hintStyle: TextStyle(color: Colors.black),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 0.0,
+                  ),
+                  border: InputBorder.none,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            // Resend OTP Link
+            GestureDetector(
+              onTap: viewModel.handleResendOtp,
+              child: Text(
+                'Resend OTP',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 72),
+
+            // Connect Button
+            SizedBox(
+              width: double.infinity,
+              height: 42,
+              child: ElevatedButton(
+                onPressed: viewModel.nextStep,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF17961),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
                 child: Text(
-                  'Resend OTP',
+                  'Connect Evolv28 First Time',
                   style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.blue.shade700,
-                    decoration: TextDecoration.underline,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
                   ),
                 ),
               ),
+            ),
 
-              const SizedBox(height: 24),
+            const SizedBox(height: 32),
 
-              // Connect Button
-              SizedBox(
+            // Contact Support
+            GestureDetector(
+              onTap: viewModel.handleContactSupport,
+              child: SizedBox(
                 width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: viewModel.nextStep,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF8A65),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    'Connect Evolv28 First Time',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
+                height: 24,
+                child: SvgPicture.asset(
+                  'assets/images/support_text.svg',
+                  fit: BoxFit.fitHeight,
                 ),
               ),
-
-              const SizedBox(height: 16),
-
-              // Contact Support
-              GestureDetector(
-                onTap: viewModel.handleContactSupport,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.headset_mic,
-                      size: 16,
-                      color: Colors.grey.shade600,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Contact Support Team',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade600,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

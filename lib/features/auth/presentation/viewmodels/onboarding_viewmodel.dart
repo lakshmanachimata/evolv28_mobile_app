@@ -27,7 +27,7 @@ class OnboardingViewModel extends ChangeNotifier {
   void _initializeControllers() {
     _firstNameController.text = '';
     _lastNameController.text = '';
-    _otpController.text = '9876543210';
+    _otpController.text = '';
   }
 
   void togglePrivacyPolicyAgreement() {
