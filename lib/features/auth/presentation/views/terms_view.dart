@@ -17,9 +17,9 @@ class _TermsViewState extends State<TermsView> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background SVG
-          SvgPicture.asset(
-            'assets/images/bg_user.svg',
+          // Background PNG
+          Image.asset(
+            'assets/images/bg_user.png',
             fit: BoxFit.cover,
             width: double.infinity,
             height: double.infinity,
