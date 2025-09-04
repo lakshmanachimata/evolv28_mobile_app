@@ -65,16 +65,13 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
 
                   // Conditional Card (Login or OTP)
                   Expanded(
-                    child: _showOtpCard 
-                      ? Center(
-                          child: _buildOtpCard(),
-                        )
-                      : Column(
-                          children: [
-                            const Spacer(),
-                            _buildLoginCard(),
-                          ],
-                        ),
+                    child: _showOtpCard
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [_buildOtpCard()],
+                          )
+                        : Column(children: [const Spacer(), _buildLoginCard()]),
                   ),
                   const SizedBox(height: 24),
                 ],
@@ -564,15 +561,15 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
             children: [
               // Title
               Text(
-                'Enter the OTP sent to\nyour mobile number',
+                'Enter the OTP sent to your mobile\nnumber',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
                   fontStyle: FontStyle.normal,
                   color: const Color(0xFF212121),
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
 
               // OTP Input Fields
               Row(
@@ -583,7 +580,7 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
                       _buildOtpField(index, _otpControllers, _focusNodes),
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
 
               // Continue Button
               SizedBox(
