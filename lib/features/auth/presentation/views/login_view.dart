@@ -38,9 +38,9 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background SVG
-          SvgPicture.asset(
-            'assets/images/bg_one.svg',
+          // Background PNG
+          Image.asset(
+            'assets/images/bg_one.png',
             fit: BoxFit.fill,
             width: double.infinity,
             height: double.infinity,
@@ -619,16 +619,13 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
       height: 45,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            offset: const Offset(0, 2),
-            blurRadius: 4,
-            spreadRadius: 0,
-          ),
-        ],
+        borderRadius: BorderRadius.circular(
+          8,
+        ), // Subtle rounded corners as in image
+        border: Border.all(
+          color: Color(0xFFE8E8E8),
+          width: 1,
+        ), // Thin border as shown
       ),
       child: TextField(
         controller: controllers[index],
@@ -637,7 +634,7 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
         keyboardType: TextInputType.number,
         maxLength: 1,
         style: const TextStyle(
-          fontSize: 20,
+          fontSize: 18,
           fontWeight: FontWeight.bold,
           color: Color(0xFF212121),
         ),

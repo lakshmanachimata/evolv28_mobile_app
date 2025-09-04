@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+
 import 'package:go_router/go_router.dart';
 
 import '../../core/routing/app_router_config.dart';
@@ -69,12 +69,12 @@ class _SplashScreenState extends State<SplashScreen>
       body: Stack(
         children: [
           // Background SVG
-          Positioned.fill(
-            child: SvgPicture.asset(
-              'assets/images/bg_one.svg',
-              fit: BoxFit.cover,
+                      Positioned.fill(
+              child: Image.asset(
+                'assets/images/bg_one.png',
+                fit: BoxFit.cover,
+              ),
             ),
-          ),
 
           // Main content - Evolv28 logo in the center
           Center(
