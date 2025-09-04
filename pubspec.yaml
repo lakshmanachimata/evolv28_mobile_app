@@ -63,6 +63,10 @@ dependencies:
   
   # Form validation
   form_validator: ^2.1.1
+  
+  # Bluetooth and permissions
+  flutter_blue_plus: ^1.32.8
+  permission_handler: ^11.3.1
 
 dev_dependencies:
   flutter_test:

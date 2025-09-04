@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:io';
 
 import '../viewmodels/devices_viewmodel.dart';
 
@@ -9,14 +10,50 @@ class DevicesView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => DevicesViewModel()..initialize(),
+      create: (context) {
+        final viewModel = DevicesViewModel();
+        viewModel.initialize(); // Don't await here, let it run asynchronously
+        return viewModel;
+      },
       child: const _DevicesViewBody(),
     );
   }
 }
 
-class _DevicesViewBody extends StatelessWidget {
+class _DevicesViewBody extends StatefulWidget {
   const _DevicesViewBody();
+
+  @override
+  State<_DevicesViewBody> createState() => _DevicesViewBodyState();
+}
+
+class _DevicesViewBodyState extends State<_DevicesViewBody> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    
+    // Check if we should show permission dialog on screen load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final viewModel = Provider.of<DevicesViewModel>(context, listen: false);
+      viewModel.checkPermissionOnLoad();
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Recheck Bluetooth status when app resumes
+      final viewModel = Provider.of<DevicesViewModel>(context, listen: false);
+      viewModel.onAppResumed();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,11 +69,11 @@ class _DevicesViewBody extends StatelessWidget {
               _buildMainContent(context, viewModel),
 
               // Dialogs
-              if (viewModel.showBluetoothPermissionDialog)
-                _buildBluetoothPermissionDialog(context, viewModel),
+              if (viewModel.showBluetoothEnableDialog)
+                _buildBluetoothEnableDialog(context, viewModel),
 
-              if (viewModel.showLocationPermissionDialog)
-                _buildLocationPermissionDialog(context, viewModel),
+              if (viewModel.showBluetoothScanPermissionDialog)
+                _buildBluetoothScanPermissionDialog(context, viewModel),
 
               if (viewModel.showDeviceActivatedDialog)
                 _buildDeviceActivatedDialog(context, viewModel),
@@ -69,14 +106,14 @@ class _DevicesViewBody extends StatelessWidget {
             const SizedBox(height: 200),
 
             // Content based on state
-            if (!viewModel.isBluetoothEnabled)
-              _buildInitialState(context, viewModel)
-            else if (viewModel.isScanning)
+            if (viewModel.isScanning)
               _buildScanningState()
-            else if (viewModel.nearbyDevices.isEmpty)
+            else if (viewModel.nearbyDevices.isEmpty && viewModel.isBluetoothEnabled)
               _buildNoDevicesState(context, viewModel)
+            else if (viewModel.nearbyDevices.isNotEmpty)
+              _buildDevicesList(context, viewModel)
             else
-              _buildDevicesList(context, viewModel),
+              _buildInitialState(context, viewModel),
 
             const Spacer(),
 
@@ -115,6 +152,11 @@ class _DevicesViewBody extends StatelessWidget {
   }
 
   Widget _buildInitialState(BuildContext context, DevicesViewModel viewModel) {
+    // Auto-start scanning when screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      viewModel.startDeviceConnection();
+    });
+    
     return Column(
       children: [
         const SizedBox(height: 20),
@@ -127,21 +169,7 @@ class _DevicesViewBody extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
-        ElevatedButton(
-          onPressed: () => viewModel.showBluetoothPermission(),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFF07A60),
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          child: const Text(
-            'Start Scanning',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
-        ),
+        _buildScanningAnimation(),
       ],
     );
   }
@@ -150,13 +178,28 @@ class _DevicesViewBody extends StatelessWidget {
     return Column(
       children: [
         const SizedBox(height: 20),
-        Text(
-          'Scanning for devices...',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.black87,
-          ),
+        _buildScanningAnimation(),
+      ],
+    );
+  }
+
+  Widget _buildScanningAnimation() {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildAnimatedDots(),
+            const SizedBox(width: 8),
+            Text(
+              'Scanning for devices',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 20),
         const CircularProgressIndicator(
@@ -164,6 +207,10 @@ class _DevicesViewBody extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Widget _buildAnimatedDots() {
+    return _AnimatedDots();
   }
 
   Widget _buildNoDevicesState(
@@ -277,20 +324,24 @@ class _DevicesViewBody extends StatelessWidget {
           else if (isConnected)
             Icon(Icons.check_circle, color: const Color(0xFFF07A60), size: 24)
           else
-            ElevatedButton(
-              onPressed: () => viewModel.connectToDevice(device['id']),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFF07A60),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
+            SizedBox(
+              width: 80,
+              height: 32,
+              child: ElevatedButton(
+                onPressed: () => viewModel.connectToDevice(device['id']),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF07A60),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                child: const Text('Connect', style: TextStyle(fontSize: 12)),
               ),
-              child: const Text('Connect', style: TextStyle(fontSize: 12)),
             ),
         ],
       ),
@@ -344,7 +395,7 @@ class _DevicesViewBody extends StatelessWidget {
     );
   }
 
-  Widget _buildBluetoothPermissionDialog(
+  Widget _buildBluetoothEnableDialog(
     BuildContext context,
     DevicesViewModel viewModel,
   ) {
@@ -364,7 +415,7 @@ class _DevicesViewBody extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Allow Bluetooth',
+                  'Enable Bluetooth',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -373,7 +424,7 @@ class _DevicesViewBody extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Please allow bluetooth for establishing the connection with Evolv28',
+                  _getBluetoothEnableMessage(),
                   style: TextStyle(fontSize: 14, color: Colors.black87),
                   textAlign: TextAlign.center,
                 ),
@@ -381,7 +432,80 @@ class _DevicesViewBody extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: viewModel.allowBluetoothPermission,
+                    onPressed: viewModel.handleBluetoothEnableOk,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF07A60),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'OK',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getBluetoothEnableMessage() {
+    if (Platform.isAndroid) {
+      return 'Please enable Bluetooth in your device settings to connect with Evolv28. Tap OK to open Bluetooth settings.';
+    } else if (Platform.isIOS) {
+      return 'Please enable Bluetooth in Settings > Bluetooth to connect with Evolv28. Tap OK to open Settings.';
+    } else {
+      return 'Please enable Bluetooth on your device to connect with Evolv28';
+    }
+  }
+
+  Widget _buildBluetoothScanPermissionDialog(
+    BuildContext context,
+    DevicesViewModel viewModel,
+  ) {
+    return Container(
+      color: Colors.black.withOpacity(0.5),
+      child: Center(
+        child: Container(
+          width: 300,
+          margin: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Bluetooth Permission',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Allow Evolv28 to discover nearby Bluetooth devices',
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: viewModel.allowBluetoothScanPermission,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFF07A60),
                       foregroundColor: Colors.white,
@@ -398,98 +522,6 @@ class _DevicesViewBody extends StatelessWidget {
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLocationPermissionDialog(
-    BuildContext context,
-    DevicesViewModel viewModel,
-  ) {
-    return Container(
-      color: Colors.black.withOpacity(0.5),
-      child: Center(
-        child: Container(
-          width: 300,
-          margin: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Location Permission',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: viewModel.cancelLocationPermission,
-                      child: Icon(
-                        Icons.close,
-                        color: const Color(0xFFF07A60),
-                        size: 20,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'To find nearby devices, Evolv28 app needs Precised Location Permission',
-                  style: TextStyle(fontSize: 14, color: Colors.black87),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: viewModel.cancelLocationPermission,
-                        child: Text(
-                          'Cancel',
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: viewModel.allowLocationPermission,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFF07A60),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          'Allow',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
                 ),
               ],
             ),
@@ -571,6 +603,63 @@ class _DevicesViewBody extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _AnimatedDots extends StatefulWidget {
+  @override
+  _AnimatedDotsState createState() => _AnimatedDotsState();
+}
+
+class _AnimatedDotsState extends State<_AnimatedDots>
+    with TickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(3, (index) {
+            final delay = index * 0.2;
+            final animationValue = (_controller.value - delay).clamp(0.0, 1.0);
+            final opacity = (animationValue * 2 - 1).abs();
+            
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 2),
+              child: Opacity(
+                opacity: opacity,
+                child: Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF07A60),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            );
+          }),
+        );
+      },
     );
   }
 }
