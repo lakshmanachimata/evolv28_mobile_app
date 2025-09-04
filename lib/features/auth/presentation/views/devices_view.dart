@@ -243,22 +243,32 @@ class _DevicesViewBodyState extends State<_DevicesViewBody> with WidgetsBindingO
   }
 
   Widget _buildDevicesList(BuildContext context, DevicesViewModel viewModel) {
-    return Column(
-      children: [
-        const SizedBox(height: 20),
-        Text(
-          'Nearby devices',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.black87,
-          ),
+    return RefreshIndicator(
+      onRefresh: () async {
+        await viewModel.refreshScan();
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          children: [
+            const SizedBox(height: 20),
+            Text(
+              'Nearby devices',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 20),
+            ...viewModel.nearbyDevices.map(
+              (device) => _buildDeviceItem(context, viewModel, device),
+            ),
+            // Add extra space to ensure pull-to-refresh works
+            const SizedBox(height: 100),
+          ],
         ),
-        const SizedBox(height: 20),
-        ...viewModel.nearbyDevices.map(
-          (device) => _buildDeviceItem(context, viewModel, device),
-        ),
-      ],
+      ),
     );
   }
 

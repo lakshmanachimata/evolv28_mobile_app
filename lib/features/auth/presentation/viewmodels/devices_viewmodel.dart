@@ -273,61 +273,21 @@ class DevicesViewModel extends ChangeNotifier {
       _nearbyDevices.clear();
       notifyListeners();
 
-      // Set up scan results listener BEFORE starting scan
-      FlutterBluePlus.scanResults.listen((results) {
-        print('BLE scan results: ${results.length} devices found');
-        
-        // Debug: Print all devices found
-        for (var result in results) {
-          print('DEBUG: Device: ${result.device.platformName} - ${result.device.remoteId}');
-        }
-        
-        // Filter devices that contain "evolv28" in their name
-        final evolv28Devices = results.where((result) {
-          final device = result.device;
-          final deviceName = device.platformName.isNotEmpty 
-              ? device.platformName 
-              : device.remoteId.toString();
-          
-          print('Found device: $deviceName');
-          
-          return deviceName.toLowerCase().contains('evolv28');
-        }).toList();
-
-        // Convert to our device format
-        _nearbyDevices = evolv28Devices.map((result) {
-          final device = result.device;
-          final deviceName = device.platformName.isNotEmpty 
-              ? device.platformName 
-              : device.remoteId.toString();
-          
-          return {
-            'id': device.remoteId.toString(),
-            'name': deviceName,
-            'isConnected': false,
-            'signalStrength': result.rssi != null ? (100 + result.rssi!).clamp(0, 100) : 0,
-            'device': device, // Store the actual device object for connection
-          };
-        }).toList();
-
-        print('Evolv28 devices found: ${_nearbyDevices.length}');
-        notifyListeners();
-
-        // If only one device found, connect automatically
-        if (_nearbyDevices.length == 1) {
-          Future.delayed(const Duration(seconds: 1), () {
-            connectToDevice(_nearbyDevices.first['id']);
-          });
-        }
-      });
-
-      // Start scanning for BLE devices
+      // Start scanning for BLE devices with proper parameters
       await FlutterBluePlus.startScan(
         timeout: const Duration(seconds: 10),
-        withServices: [], // Scan for all services
+        androidUsesFineLocation: true, // This is important for Android
       );
 
       print('BLE scan started successfully');
+
+      // Set up scan results listener AFTER starting scan
+      FlutterBluePlus.scanResults.listen((results) {
+        print('BLE scan results: ${results.length} devices found');
+        
+        // Process all scan results and filter for Evolv28 devices
+        _processScanResults(results);
+      });
 
       // Also listen to scan state changes
       FlutterBluePlus.isScanning.listen((isScanning) {
@@ -351,6 +311,57 @@ class DevicesViewModel extends ChangeNotifier {
       print('Error during BLE scan: $e');
       _isScanning = false;
       notifyListeners();
+    }
+  }
+
+  // Process scan results and filter for Evolv28 devices
+  void _processScanResults(List<ScanResult> results) {
+    for (final result in results) {
+      final device = result.device;
+      final deviceName = device.platformName.isNotEmpty 
+          ? device.platformName 
+          : device.remoteId.toString();
+      
+      print('Found device: $deviceName');
+      
+      // Check if device contains "evolv28" in name
+      if (deviceName.toLowerCase().contains('evolv28')) {
+        // Check if device already exists
+        final existingIndex = _nearbyDevices.indexWhere((d) => d['id'] == device.remoteId.toString());
+        
+        if (existingIndex >= 0) {
+          // Update existing device with new scan result
+          _nearbyDevices[existingIndex] = {
+            'id': device.remoteId.toString(),
+            'name': deviceName,
+            'isConnected': false,
+            'signalStrength': result.rssi != null ? (100 + result.rssi!).clamp(0, 100) : 0,
+            'device': device,
+          };
+        } else {
+          // Add new device
+          _nearbyDevices.add({
+            'id': device.remoteId.toString(),
+            'name': deviceName,
+            'isConnected': false,
+            'signalStrength': result.rssi != null ? (100 + result.rssi!).clamp(0, 100) : 0,
+            'device': device,
+          });
+        }
+      }
+    }
+
+    // Sort devices by signal strength (strongest first)
+    _nearbyDevices.sort((a, b) => (b['signalStrength'] as int).compareTo(a['signalStrength'] as int));
+
+    print('Evolv28 devices found: ${_nearbyDevices.length}');
+    notifyListeners();
+
+    // If only one device found, connect automatically
+    if (_nearbyDevices.length == 1) {
+      Future.delayed(const Duration(seconds: 1), () {
+        connectToDevice(_nearbyDevices.first['id']);
+      });
     }
   }
 
@@ -401,6 +412,24 @@ class DevicesViewModel extends ChangeNotifier {
   // Try again button
   void tryAgain() {
     print('Try again - restarting BLE scan');
+    _startScanning();
+  }
+
+  // Refresh scan - clear devices and start fresh scan
+  Future<void> refreshScan() async {
+    print('Refreshing BLE scan...');
+    
+    // Stop any ongoing scan first
+    if (_isScanning) {
+      FlutterBluePlus.stopScan();
+      _isScanning = false;
+    }
+    
+    // Clear all existing devices for a fresh start
+    _nearbyDevices.clear();
+    notifyListeners();
+    
+    // Start a fresh scan
     _startScanning();
   }
 
