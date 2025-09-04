@@ -35,8 +35,17 @@ class DevicesViewModel extends ChangeNotifier {
   bool _showBluetoothScanPermissionDialog = false;
   bool get showBluetoothScanPermissionDialog => _showBluetoothScanPermissionDialog;
 
+  // Location permission dialog
+  bool _showLocationPermissionDialog = false;
+  bool get showLocationPermissionDialog => _showLocationPermissionDialog;
+
+  // Location permission error dialog
+  bool _showLocationPermissionErrorDialog = false;
+  bool get showLocationPermissionErrorDialog => _showLocationPermissionErrorDialog;
+
   // Device activated dialog
   bool _showDeviceActivatedDialog = false;
+  bool _deviceActivatedDialogShown = false; // Flag to prevent multiple dialogs
   bool get showDeviceActivatedDialog => _showDeviceActivatedDialog;
 
   // Initialize the screen
@@ -53,12 +62,9 @@ class DevicesViewModel extends ChangeNotifier {
   }
 
   // Check if we should show permission dialog on screen load
-  void checkPermissionOnLoad() {
-    if (_isBluetoothEnabled && !_isBluetoothScanPermissionGranted && !_showBluetoothScanPermissionDialog) {
-      print('Bluetooth enabled but no scan permission, showing permission dialog');
-      _showBluetoothScanPermissionDialog = true;
-      notifyListeners();
-    }
+  void checkPermissionOnLoad() async {
+    // This method is no longer needed as startDeviceConnection() handles all permission checking
+    // Keeping it empty to avoid breaking the view
   }
 
   // Listen to Bluetooth state changes
@@ -70,19 +76,10 @@ class DevicesViewModel extends ChangeNotifier {
           _isBluetoothEnabled = true;
           _bluetoothDialogShown = false; // Reset dialog flag when Bluetooth is enabled
           
-          // If Bluetooth was just enabled, proceed to permission check
-          if (!_isBluetoothScanPermissionGranted) {
-            print('Bluetooth enabled, proceeding to permission check');
-            Future.delayed(const Duration(milliseconds: 500), () {
-              _showBluetoothScanPermissionDialog = true;
-              notifyListeners();
-            });
-          } else {
-            // If permission is already granted, start scanning
-            Future.delayed(const Duration(milliseconds: 500), () {
-              _startScanning();
-            });
-          }
+          // If Bluetooth was just enabled, check permissions and proceed accordingly
+          Future.delayed(const Duration(milliseconds: 500), () {
+            startDeviceConnection(); // Use the main permission checking logic
+          });
           
           notifyListeners();
         } else if (state == BluetoothAdapterState.off) {
@@ -126,7 +123,7 @@ class DevicesViewModel extends ChangeNotifier {
   }
 
   // Start the device connection flow
-  void startDeviceConnection() {
+  void startDeviceConnection() async {
     print('startDeviceConnection called: isBluetoothEnabled=$_isBluetoothEnabled, dialogShown=$_bluetoothDialogShown, scanPermissionGranted=$_isBluetoothScanPermissionGranted, statusChecked=$_bluetoothStatusChecked');
     
     // Only show Bluetooth enable dialog if we've checked the status and confirmed it's disabled
@@ -134,12 +131,23 @@ class DevicesViewModel extends ChangeNotifier {
       print('Showing Bluetooth enable dialog');
       _showBluetoothEnableDialog = true;
       _bluetoothDialogShown = true; // Prevent multiple dialogs
-    } else if (_isBluetoothEnabled && !_isBluetoothScanPermissionGranted) {
-      print('Showing Bluetooth scan permission dialog');
-      _showBluetoothScanPermissionDialog = true;
-    } else if (_isBluetoothEnabled && _isBluetoothScanPermissionGranted) {
-      print('Starting scanning');
-      _startScanning();
+    } else if (_isBluetoothEnabled) {
+      // Check if location permission is already granted first
+      bool hasLocationPermission = await _checkLocationPermission();
+      if (!hasLocationPermission) {
+        print('Showing location permission dialog first');
+        _showLocationPermissionDialog = true;
+      } else {
+        // Location permission granted, check BLE scan permission
+        bool hasBluetoothPermission = await _checkBluetoothScanPermission();
+        if (!hasBluetoothPermission) {
+          print('Location permission granted, showing Bluetooth scan permission dialog');
+          _showBluetoothScanPermissionDialog = true;
+        } else {
+          print('All permissions granted, starting scanning');
+          _startScanning();
+        }
+      }
     } else if (!_bluetoothStatusChecked) {
       print('Bluetooth status not yet checked, waiting...');
       // If we haven't checked Bluetooth status yet, wait a bit more and try again
@@ -241,9 +249,94 @@ class DevicesViewModel extends ChangeNotifier {
     }
     
     if (_isBluetoothScanPermissionGranted) {
+      print('BLE permission granted, starting scanning');
       _startScanning();
+    } else {
+      print('BLE permission denied');
     }
     notifyListeners();
+  }
+
+  // Handle location permission allow
+  Future<void> allowLocationPermission() async {
+    _showLocationPermissionDialog = false;
+    
+    // Check if location permission is already granted
+    final currentStatus = await Permission.location.status;
+    if (currentStatus.isGranted) {
+      print('Location permission already granted');
+      // Location permission granted, now check BLE scan permission
+      bool hasBluetoothPermission = await _checkBluetoothScanPermission();
+      if (!hasBluetoothPermission) {
+        print('Location permission granted, showing Bluetooth scan permission dialog');
+        _showBluetoothScanPermissionDialog = true;
+      } else {
+        print('All permissions granted, starting scanning');
+        _startScanning();
+      }
+    } else {
+      // Request location permission
+      final status = await Permission.location.request();
+      if (status.isGranted) {
+        print('Location permission granted');
+        // Location permission granted, now check BLE scan permission
+        bool hasBluetoothPermission = await _checkBluetoothScanPermission();
+        if (!hasBluetoothPermission) {
+          print('Location permission granted, showing Bluetooth scan permission dialog');
+          _showBluetoothScanPermissionDialog = true;
+        } else {
+          print('All permissions granted, starting scanning');
+          _startScanning();
+        }
+      } else {
+        print('Location permission denied, showing error dialog');
+        _showLocationPermissionErrorDialog = true;
+      }
+    }
+    notifyListeners();
+  }
+
+  // Handle location permission error dialog OK
+  void handleLocationPermissionErrorOk() {
+    _showLocationPermissionErrorDialog = false;
+    notifyListeners();
+  }
+
+  // Check if Bluetooth scan permission is already granted
+  Future<bool> _checkBluetoothScanPermission() async {
+    try {
+      if (Platform.isAndroid) {
+        final status = await Permission.bluetoothScan.status;
+        _isBluetoothScanPermissionGranted = status.isGranted;
+        return status.isGranted;
+      } else if (Platform.isIOS) {
+        final status = await Permission.bluetooth.status;
+        _isBluetoothScanPermissionGranted = status.isGranted;
+        return status.isGranted;
+      } else {
+        _isBluetoothScanPermissionGranted = true; // Other platforms
+        return true;
+      }
+    } catch (e) {
+      print('Error checking Bluetooth scan permission: $e');
+      return false;
+    }
+  }
+
+  // Check if location permission is already granted
+  Future<bool> _checkLocationPermission() async {
+    try {
+      // Use a more conservative approach to check permission status
+      // without triggering the system permission dialog
+      final status = await Permission.location.status;
+      print('Location permission status: $status');
+      return status.isGranted;
+    } catch (e) {
+      print('Error checking location permission: $e');
+      // If we can't check the status, assume permission is not granted
+      // and show our custom dialog
+      return false;
+    }
   }
 
   // Start scanning for devices
@@ -367,6 +460,12 @@ class DevicesViewModel extends ChangeNotifier {
 
   // Connect to a specific device
   void connectToDevice(String deviceId) async {
+    // Prevent multiple connection attempts
+    if (_isConnecting || _deviceActivatedDialogShown) {
+      print('Connection already in progress or device already activated');
+      return;
+    }
+
     _isConnecting = true;
     _selectedDeviceId = deviceId;
     notifyListeners();
@@ -393,7 +492,12 @@ class DevicesViewModel extends ChangeNotifier {
 
       _isConnecting = false;
       _isDeviceConnected = true;
-      _showDeviceActivatedDialog = true;
+      
+      // Only show dialog if it hasn't been shown before
+      if (!_deviceActivatedDialogShown) {
+        _showDeviceActivatedDialog = true;
+        _deviceActivatedDialogShown = true;
+      }
       notifyListeners();
 
     } catch (e) {
@@ -407,6 +511,10 @@ class DevicesViewModel extends ChangeNotifier {
   void handleDeviceActivatedOk() {
     _showDeviceActivatedDialog = false;
     notifyListeners();
+    
+    // Navigate to home screen
+    // Note: We'll need to pass the context from the view to navigate
+    // For now, we'll just close the dialog and let the view handle navigation
   }
 
   // Try again button

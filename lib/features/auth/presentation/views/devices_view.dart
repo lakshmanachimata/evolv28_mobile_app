@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import 'dart:io';
 
 import '../viewmodels/devices_viewmodel.dart';
+import '../../../../core/routing/app_router_config.dart';
 
 class DevicesView extends StatelessWidget {
   const DevicesView({super.key});
@@ -80,8 +82,14 @@ class _DevicesViewBodyState extends State<_DevicesViewBody> with WidgetsBindingO
               if (viewModel.showBluetoothScanPermissionDialog)
                 _buildBluetoothScanPermissionDialog(context, viewModel),
 
-              if (viewModel.showDeviceActivatedDialog)
-                _buildDeviceActivatedDialog(context, viewModel),
+                      if (viewModel.showLocationPermissionDialog)
+          _buildLocationPermissionDialog(context, viewModel),
+
+        if (viewModel.showLocationPermissionErrorDialog)
+          _buildLocationPermissionErrorDialog(context, viewModel),
+
+        if (viewModel.showDeviceActivatedDialog)
+          _buildDeviceActivatedDialog(context, viewModel),
             ],
           ),
         );
@@ -546,6 +554,69 @@ class _DevicesViewBodyState extends State<_DevicesViewBody> with WidgetsBindingO
     );
   }
 
+  Widget _buildLocationPermissionDialog(
+    BuildContext context,
+    DevicesViewModel viewModel,
+  ) {
+    return Container(
+      color: Colors.black.withOpacity(0.5),
+      child: Center(
+        child: Container(
+          width: 300,
+          margin: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Location Permission',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Location access is required for Bluetooth device scanning. This helps us find nearby Evolv28 devices.',
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: viewModel.allowLocationPermission,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF07A60),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Allow Location',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildDeviceActivatedDialog(
     BuildContext context,
     DevicesViewModel viewModel,
@@ -595,7 +666,95 @@ class _DevicesViewBodyState extends State<_DevicesViewBody> with WidgetsBindingO
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: viewModel.handleDeviceActivatedOk,
+                    onPressed: () {
+                      viewModel.handleDeviceActivatedOk();
+                      // Navigate to home screen using go_router
+                      context.go(AppRoutes.home);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF07A60),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'OK',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocationPermissionErrorDialog(
+    BuildContext context,
+    DevicesViewModel viewModel,
+  ) {
+    return Container(
+      color: Colors.black.withOpacity(0.5),
+      child: Center(
+        child: Container(
+          width: 300,
+          margin: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Error Icon
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.error, color: Colors.white, size: 30),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Error Title
+                const Text(
+                  'Location Permission Required',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+                const SizedBox(height: 16),
+
+                // Error Message
+                const Text(
+                  'Bluetooth device scanning requires location permission. Please enable location access in your device settings to continue.',
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                  textAlign: TextAlign.center,
+                ),
+
+                const SizedBox(height: 24),
+
+                // OK Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: viewModel.handleLocationPermissionErrorOk,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFF07A60),
                       foregroundColor: Colors.white,
