@@ -303,6 +303,7 @@ class _DevicesViewBody extends StatelessWidget {
       children: [
         SizedBox(
           width: 150,
+          height: 40,
           child: SizedBox(
             child: TextButton(
               onPressed: viewModel.cantFindDevice,
@@ -322,6 +323,7 @@ class _DevicesViewBody extends StatelessWidget {
         const SizedBox(width: 16),
         SizedBox(
           width: 100,
+          height: 40,
           child: ElevatedButton(
             onPressed: viewModel.tryAgain,
             style: ElevatedButton.styleFrom(
