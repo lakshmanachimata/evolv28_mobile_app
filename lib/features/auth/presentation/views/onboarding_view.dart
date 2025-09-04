@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../../../core/routing/app_router_config.dart';
 import '../viewmodels/onboarding_viewmodel.dart';
 
 class OnboardingView extends StatelessWidget {
@@ -699,7 +700,9 @@ class _OnboardingViewBody extends StatelessWidget {
               width: double.infinity,
               height: 42,
               child: ElevatedButton(
-                onPressed: viewModel.nextStep,
+                                 onPressed: () {
+                   context.go(AppRoutes.devices);
+                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFF17961),
                   foregroundColor: Colors.white,
@@ -773,6 +776,92 @@ class _OnboardingViewBody extends StatelessWidget {
                   color: Colors.white,
                 ),
               ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showDeviceActivatedDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            width: 280,
+            height: 200,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  offset: const Offset(0, 4),
+                  blurRadius: 20,
+                  spreadRadius: 0,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Success Icon
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF07A60),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.check, color: Colors.white, size: 30),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Success Message
+                const Text(
+                  'Device Successfully Activated',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+                const SizedBox(height: 24),
+
+                // OK Button
+                SizedBox(
+                  width: 120,
+                  height: 40,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      // Navigate to home or next screen
+                      context.go(AppRoutes.home);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF07A60),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'OK',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         );
