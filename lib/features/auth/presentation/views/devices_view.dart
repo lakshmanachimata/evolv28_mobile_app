@@ -1,7 +1,4 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 import '../viewmodels/devices_viewmodel.dart';
@@ -30,17 +27,17 @@ class _DevicesViewBody extends StatelessWidget {
             children: [
               // Background
               _buildBackground(),
-              
+
               // Main content
               _buildMainContent(context, viewModel),
-              
+
               // Dialogs
               if (viewModel.showBluetoothPermissionDialog)
                 _buildBluetoothPermissionDialog(context, viewModel),
-              
+
               if (viewModel.showLocationPermissionDialog)
                 _buildLocationPermissionDialog(context, viewModel),
-              
+
               if (viewModel.showDeviceActivatedDialog)
                 _buildDeviceActivatedDialog(context, viewModel),
             ],
@@ -54,10 +51,7 @@ class _DevicesViewBody extends StatelessWidget {
     return Container(
       width: double.infinity,
       height: double.infinity,
-      child: Image.asset(
-        'assets/images/bg_three.png',
-        fit: BoxFit.cover,
-      ),
+      child: Image.asset('assets/images/bg_three.png', fit: BoxFit.cover),
     );
   }
 
@@ -68,12 +62,12 @@ class _DevicesViewBody extends StatelessWidget {
         child: Column(
           children: [
             // Header
-            const SizedBox(height: 40),
+            const SizedBox(height: 36),
 
-            _buildHeader(viewModel),
-            
-            const SizedBox(height: 40),
-          
+            _buildHeader(context, viewModel),
+
+            const SizedBox(height: 200),
+
             // Content based on state
             if (!viewModel.isBluetoothEnabled)
               _buildInitialState(context, viewModel)
@@ -83,9 +77,9 @@ class _DevicesViewBody extends StatelessWidget {
               _buildNoDevicesState(context, viewModel)
             else
               _buildDevicesList(context, viewModel),
-            
+
             const Spacer(),
-            
+
             // Bottom buttons
             _buildBottomButtons(context, viewModel),
           ],
@@ -94,23 +88,23 @@ class _DevicesViewBody extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(DevicesViewModel viewModel) {
+  Widget _buildHeader(BuildContext context, DevicesViewModel viewModel) {
     return Column(
       children: [
         // Evolv28 Logo
         Image.asset(
           'assets/images/evolv_text.png',
-          height: 40,
+          width: MediaQuery.of(context).size.width * 0.25,
           fit: BoxFit.contain,
         ),
-        
-        const SizedBox(height: 20),
-        
+
+        const SizedBox(height: 36),
+
         // Welcome message
         Text(
           'Welcome ${viewModel.userName},\nselect your device',
           style: TextStyle(
-            fontSize: 20,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
@@ -119,8 +113,6 @@ class _DevicesViewBody extends StatelessWidget {
       ],
     );
   }
-
-
 
   Widget _buildInitialState(BuildContext context, DevicesViewModel viewModel) {
     return Column(
@@ -147,10 +139,7 @@ class _DevicesViewBody extends StatelessWidget {
           ),
           child: const Text(
             'Start Scanning',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
         ),
       ],
@@ -177,7 +166,10 @@ class _DevicesViewBody extends StatelessWidget {
     );
   }
 
-  Widget _buildNoDevicesState(BuildContext context, DevicesViewModel viewModel) {
+  Widget _buildNoDevicesState(
+    BuildContext context,
+    DevicesViewModel viewModel,
+  ) {
     return Column(
       children: [
         const SizedBox(height: 20),
@@ -192,10 +184,7 @@ class _DevicesViewBody extends StatelessWidget {
         const SizedBox(height: 10),
         Text(
           'No devices available',
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey.shade600,
-          ),
+          style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
         ),
       ],
     );
@@ -214,22 +203,31 @@ class _DevicesViewBody extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
-        ...viewModel.nearbyDevices.map((device) => _buildDeviceItem(context, viewModel, device)),
+        ...viewModel.nearbyDevices.map(
+          (device) => _buildDeviceItem(context, viewModel, device),
+        ),
       ],
     );
   }
 
-  Widget _buildDeviceItem(BuildContext context, DevicesViewModel viewModel, Map<String, dynamic> device) {
+  Widget _buildDeviceItem(
+    BuildContext context,
+    DevicesViewModel viewModel,
+    Map<String, dynamic> device,
+  ) {
     final isConnected = device['isConnected'] as bool;
-    final isConnecting = viewModel.isConnecting && viewModel.selectedDeviceId == device['id'];
-    
+    final isConnecting =
+        viewModel.isConnecting && viewModel.selectedDeviceId == device['id'];
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: isConnected ? Border.all(color: const Color(0xFFF07A60), width: 2) : null,
+        border: isConnected
+            ? Border.all(color: const Color(0xFFF07A60), width: 2)
+            : null,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
@@ -255,15 +253,14 @@ class _DevicesViewBody extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: isConnected ? const Color(0xFFF07A60) : Colors.black87,
+                    color: isConnected
+                        ? const Color(0xFFF07A60)
+                        : Colors.black87,
                   ),
                 ),
                 Text(
                   'Signal: ${device['signalStrength']}%',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
               ],
             ),
@@ -278,26 +275,22 @@ class _DevicesViewBody extends StatelessWidget {
               ),
             )
           else if (isConnected)
-            Icon(
-              Icons.check_circle,
-              color: const Color(0xFFF07A60),
-              size: 24,
-            )
+            Icon(Icons.check_circle, color: const Color(0xFFF07A60), size: 24)
           else
             ElevatedButton(
               onPressed: () => viewModel.connectToDevice(device['id']),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFF07A60),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Text(
-                'Connect',
-                style: TextStyle(fontSize: 12),
-              ),
+              child: const Text('Connect', style: TextStyle(fontSize: 12)),
             ),
         ],
       ),
@@ -306,37 +299,42 @@ class _DevicesViewBody extends StatelessWidget {
 
   Widget _buildBottomButtons(BuildContext context, DevicesViewModel viewModel) {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Expanded(
-          child: TextButton(
-            onPressed: viewModel.cantFindDevice,
-            child: Text(
-              "Can't find your device?",
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 14,
+        SizedBox(
+          width: 150,
+          child: SizedBox(
+            child: TextButton(
+              onPressed: viewModel.cantFindDevice,
+              style: TextButton.styleFrom(
+                side: BorderSide(color: Color(0xFF547D81), width: 1),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ),
+              child: Text(
+                "Can't find your device?",
+                style: TextStyle(color: Color(0xFF547D81), fontSize: 14),
               ),
             ),
           ),
         ),
         const SizedBox(width: 16),
-        Expanded(
+        SizedBox(
+          width: 100,
           child: ElevatedButton(
             onPressed: viewModel.tryAgain,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFF07A60),
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.all(4),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
             child: const Text(
               'Try again',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
         ),
@@ -344,7 +342,10 @@ class _DevicesViewBody extends StatelessWidget {
     );
   }
 
-  Widget _buildBluetoothPermissionDialog(BuildContext context, DevicesViewModel viewModel) {
+  Widget _buildBluetoothPermissionDialog(
+    BuildContext context,
+    DevicesViewModel viewModel,
+  ) {
     return Container(
       color: Colors.black.withOpacity(0.5),
       child: Center(
@@ -371,10 +372,7 @@ class _DevicesViewBody extends StatelessWidget {
                 const SizedBox(height: 16),
                 Text(
                   'Please allow bluetooth for establishing the connection with Evolv28',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.black87,
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
@@ -407,7 +405,10 @@ class _DevicesViewBody extends StatelessWidget {
     );
   }
 
-  Widget _buildLocationPermissionDialog(BuildContext context, DevicesViewModel viewModel) {
+  Widget _buildLocationPermissionDialog(
+    BuildContext context,
+    DevicesViewModel viewModel,
+  ) {
     return Container(
       color: Colors.black.withOpacity(0.5),
       child: Center(
@@ -447,10 +448,7 @@ class _DevicesViewBody extends StatelessWidget {
                 const SizedBox(height: 16),
                 Text(
                   'To find nearby devices, Evolv28 app needs Precised Location Permission',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.black87,
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
@@ -499,7 +497,10 @@ class _DevicesViewBody extends StatelessWidget {
     );
   }
 
-  Widget _buildDeviceActivatedDialog(BuildContext context, DevicesViewModel viewModel) {
+  Widget _buildDeviceActivatedDialog(
+    BuildContext context,
+    DevicesViewModel viewModel,
+  ) {
     return Container(
       color: Colors.black.withOpacity(0.5),
       child: Center(
@@ -523,15 +524,11 @@ class _DevicesViewBody extends StatelessWidget {
                     color: const Color(0xFFF07A60),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.check,
-                    color: Colors.white,
-                    size: 30,
-                  ),
+                  child: const Icon(Icons.check, color: Colors.white, size: 30),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Success Message
                 const Text(
                   'The device is connected successfully',
@@ -542,9 +539,9 @@ class _DevicesViewBody extends StatelessWidget {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // OK Button
                 SizedBox(
                   width: double.infinity,
