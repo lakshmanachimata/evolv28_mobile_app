@@ -249,74 +249,126 @@ class DevicesViewModel extends ChangeNotifier {
   // Start scanning for devices
   void _startScanning() {
     _isScanning = true;
+    _nearbyDevices.clear(); // Clear previous results
     notifyListeners();
 
-    // Simulate scanning delay
-    Future.delayed(const Duration(seconds: 3), () {
-      _isScanning = false;
-      _scanForEvolv28Devices();
-      notifyListeners();
-    });
+    // Start real BLE scanning
+    _scanForRealEvolv28Devices();
   }
 
-  // Scan for devices with "evolv28" in name
-  void _scanForEvolv28Devices() {
-    // Simulate finding devices
-    final allDevices = [
-      {
-        'id': 'device_001',
-        'name': 'iPhone 12',
-        'isConnected': false,
-        'signalStrength': 75,
-      },
-      {
-        'id': 'evolv28_001',
-        'name': 'Evolv28 Device Pro',
-        'isConnected': false,
-        'signalStrength': 88,
-      },
-      {
-        'id': 'device_002',
-        'name': 'Samsung Galaxy',
-        'isConnected': false,
-        'signalStrength': 65,
-      },
-      {
-        'id': 'evolv28_002',
-        'name': 'Evolv28 Smart Device',
-        'isConnected': true, // Previously activated
-        'signalStrength': 92,
-      },
-    ];
+  // Scan for real BLE devices with "evolv28" in name
+  void _scanForRealEvolv28Devices() async {
+    try {
+      print('Starting real BLE scan for Evolv28 devices...');
+      
+      // Check if Bluetooth is still enabled before scanning
+      if (!await FlutterBluePlus.isOn) {
+        print('Bluetooth is not enabled, cannot scan');
+        _isScanning = false;
+        notifyListeners();
+        return;
+      }
 
-    // Filter devices that contain "evolv28" in name
-    _nearbyDevices = allDevices.where((device) {
-      return device['name'].toString().toLowerCase().contains('evolv28');
-    }).toList();
+      // Start scanning for BLE devices
+      await FlutterBluePlus.startScan(
+        timeout: const Duration(seconds: 10),
+        withServices: [], // Scan for all services
+      );
 
-    notifyListeners();
+      // Listen to scan results
+      FlutterBluePlus.scanResults.listen((results) {
+        print('BLE scan results: ${results.length} devices found');
+        
+        // Filter devices that contain "evolv28" in their name
+        final evolv28Devices = results.where((result) {
+          final device = result.device;
+          final deviceName = device.platformName.isNotEmpty 
+              ? device.platformName 
+              : device.remoteId.toString();
+          
+          print('Found device: $deviceName');
+          
+          return deviceName.toLowerCase().contains('evolv28');
+        }).toList();
 
-    // If only one device found, connect automatically
-    if (_nearbyDevices.length == 1) {
-      Future.delayed(const Duration(seconds: 1), () {
-        connectToDevice(_nearbyDevices.first['id']);
+        // Convert to our device format
+        _nearbyDevices = evolv28Devices.map((result) {
+          final device = result.device;
+          final deviceName = device.platformName.isNotEmpty 
+              ? device.platformName 
+              : device.remoteId.toString();
+          
+          return {
+            'id': device.remoteId.toString(),
+            'name': deviceName,
+            'isConnected': false,
+            'signalStrength': result.rssi != null ? (100 + result.rssi!).clamp(0, 100) : 0,
+            'device': device, // Store the actual device object for connection
+          };
+        }).toList();
+
+        print('Evolv28 devices found: ${_nearbyDevices.length}');
+        notifyListeners();
+
+        // If only one device found, connect automatically
+        if (_nearbyDevices.length == 1) {
+          Future.delayed(const Duration(seconds: 1), () {
+            connectToDevice(_nearbyDevices.first['id']);
+          });
+        }
       });
+
+      // Stop scanning after timeout
+      Future.delayed(const Duration(seconds: 10), () {
+        FlutterBluePlus.stopScan();
+        _isScanning = false;
+        notifyListeners();
+        print('BLE scan completed');
+      });
+
+    } catch (e) {
+      print('Error during BLE scan: $e');
+      _isScanning = false;
+      notifyListeners();
     }
   }
 
   // Connect to a specific device
-  void connectToDevice(String deviceId) {
+  void connectToDevice(String deviceId) async {
     _isConnecting = true;
     _selectedDeviceId = deviceId;
     notifyListeners();
 
-    // Simulate connection delay
-    Future.delayed(const Duration(seconds: 3), () {
+    try {
+      // Find the device in our nearby devices list
+      final deviceData = _nearbyDevices.firstWhere(
+        (device) => device['id'] == deviceId,
+        orElse: () => throw Exception('Device not found'),
+      );
+
+      final device = deviceData['device'] as BluetoothDevice;
+      print('Connecting to device: ${device.platformName}');
+
+      // Connect to the device
+      await device.connect();
+      print('Connected to device: ${device.platformName}');
+
+      // Update device status
+      final deviceIndex = _nearbyDevices.indexWhere((d) => d['id'] == deviceId);
+      if (deviceIndex != -1) {
+        _nearbyDevices[deviceIndex]['isConnected'] = true;
+      }
+
       _isConnecting = false;
       _isDeviceConnected = true;
       _showDeviceActivatedDialog = true;
       notifyListeners();
-    });
+
+    } catch (e) {
+      print('Error connecting to device: $e');
+      _isConnecting = false;
+      notifyListeners();
+    }
   }
 
   // Handle device activated dialog OK
@@ -327,6 +379,7 @@ class DevicesViewModel extends ChangeNotifier {
 
   // Try again button
   void tryAgain() {
+    print('Try again - restarting BLE scan');
     _startScanning();
   }
 
@@ -347,5 +400,40 @@ class DevicesViewModel extends ChangeNotifier {
   Future<void> checkBluetoothStatusManually() async {
     print('Manual Bluetooth status check requested');
     await _checkBluetoothStatus();
+  }
+
+  // Disconnect from a device
+  Future<void> disconnectDevice(String deviceId) async {
+    try {
+      final deviceData = _nearbyDevices.firstWhere(
+        (device) => device['id'] == deviceId,
+        orElse: () => throw Exception('Device not found'),
+      );
+
+      final device = deviceData['device'] as BluetoothDevice;
+      await device.disconnect();
+      
+      // Update device status
+      final deviceIndex = _nearbyDevices.indexWhere((d) => d['id'] == deviceId);
+      if (deviceIndex != -1) {
+        _nearbyDevices[deviceIndex]['isConnected'] = false;
+      }
+      
+      _isDeviceConnected = false;
+      notifyListeners();
+      print('Disconnected from device: ${device.platformName}');
+    } catch (e) {
+      print('Error disconnecting from device: $e');
+    }
+  }
+
+  // Stop scanning and cleanup
+  void dispose() {
+    try {
+      FlutterBluePlus.stopScan();
+      print('BLE scanning stopped');
+    } catch (e) {
+      print('Error stopping BLE scan: $e');
+    }
   }
 }

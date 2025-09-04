@@ -43,6 +43,11 @@ class _DevicesViewBodyState extends State<_DevicesViewBody> with WidgetsBindingO
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    
+    // Stop BLE scanning when screen is disposed
+    final viewModel = Provider.of<DevicesViewModel>(context, listen: false);
+    viewModel.dispose();
+    
     super.dispose();
   }
 
