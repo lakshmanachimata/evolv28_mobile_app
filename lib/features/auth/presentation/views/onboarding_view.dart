@@ -57,11 +57,6 @@ class _OnboardingViewBody extends StatelessWidget {
                           // Step content based on current step
                           _buildCurrentStepContent(context),
 
-                          const SizedBox(height: 24),
-
-                          // Next Button
-                          _buildNextButton(context),
-
                           const Spacer(),
                         ],
                       ),
@@ -234,7 +229,13 @@ class _OnboardingViewBody extends StatelessWidget {
           case 1:
             return _buildProfileSetupCard(context, viewModel);
           case 2:
-            return _buildConnectDeviceCard(context, viewModel);
+            return Column(
+              children: [
+                _buildConnectDeviceCard(context, viewModel),
+                const SizedBox(height: 32), // Fixed spacing instead of Spacer
+                _buildConnectBottom(context, viewModel),
+              ],
+            );
           case 3:
             return _buildOtpVerificationCard(context, viewModel);
           default:
@@ -395,6 +396,9 @@ class _OnboardingViewBody extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(height: 24),
+            // Next Button
+            _buildNextButton(context),
           ],
         ),
       ),
@@ -501,9 +505,74 @@ class _OnboardingViewBody extends StatelessWidget {
                   ),
                 ),
               ),
+              const SizedBox(height: 24),
+              // Next Button
+              _buildNextButton(context),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildConnectBottom(
+    BuildContext context,
+    OnboardingViewModel viewModel,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 0.0),
+      child: Column(
+        children: [
+          // Connect Button
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: viewModel.nextStep,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFF17961),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+              child: Text(
+                'Connect Evolv28',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 32),
+          // Buy Now Button
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: viewModel.handleBuyNow,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF547D81), // Teal/green
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+              child: Text(
+                'Buy now',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -514,104 +583,44 @@ class _OnboardingViewBody extends StatelessWidget {
   ) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16.0),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(24.0),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.95),
-            borderRadius: BorderRadius.circular(16.0),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                offset: const Offset(0, 4),
-                blurRadius: 24,
-                spreadRadius: 0,
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Title
-              Text(
-                'Connect Device',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade800,
-                ),
-              ),
-
-              const SizedBox(height: 32),
-
-              // Device Image
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFF8A65),
-                  borderRadius: BorderRadius.circular(60),
-                ),
-                child: const Icon(Icons.person, size: 60, color: Colors.white),
-              ),
-
-              const SizedBox(height: 32),
-
-              // Connect Button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: viewModel.nextStep,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF8A65),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    'Connect Evolv28',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24.0),
+        decoration: BoxDecoration(color: Colors.transparent),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const SizedBox(height: 120),
+            // Top content
+            Column(
+              children: [
+                // Title
+                Text(
+                  'Connect Device',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
                 ),
-              ),
 
-              const SizedBox(height: 16),
+                const SizedBox(height: 32),
 
-              // Buy Now Button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: viewModel.handleBuyNow,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF20B2AA), // Teal/green
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    'Buy now',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
+                // Device Image
+                Container(
+                  width: 200,
+                  height: 200,
+                  decoration: BoxDecoration(color: Colors.transparent),
+                  child: Image.asset(
+                    'assets/images/user_neck_device.png',
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.contain,
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ),
       ),
     );
