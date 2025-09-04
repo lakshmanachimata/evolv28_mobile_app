@@ -47,12 +47,12 @@ class _SplashScreenState extends State<SplashScreen>
   void _startSplashSequence() async {
     _animationController.forward();
 
-    // Wait for 3 seconds then navigate to terms screen
+    // Wait for 3 seconds then navigate to onboarding screen
     await Future.delayed(const Duration(seconds: 1));
 
-    // Navigate to terms screen
+    // Navigate to onboarding screen
     if (mounted) {
-      context.go(AppRoutes.login);
+      context.go(AppRoutes.onboarding);
     }
   }
 

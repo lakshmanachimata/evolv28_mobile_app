@@ -3,47 +3,24 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
-class OnboardingView extends StatefulWidget {
+import '../viewmodels/onboarding_viewmodel.dart';
+
+class OnboardingView extends StatelessWidget {
   const OnboardingView({super.key});
 
   @override
-  State<OnboardingView> createState() => _OnboardingViewState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (context) => OnboardingViewModel(),
+      child: const _OnboardingViewBody(),
+    );
+  }
 }
 
-class _OnboardingViewState extends State<OnboardingView> {
-  int _currentStep = 0;
-  bool _agreedToPrivacyPolicy = false;
-  final TextEditingController _firstNameController = TextEditingController();
-  final TextEditingController _lastNameController = TextEditingController();
-  final TextEditingController _otpController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _firstNameController.text = 'Jane';
-    _lastNameController.text = 'Doe';
-    _otpController.text = '9876543210';
-  }
-
-  @override
-  void dispose() {
-    _firstNameController.dispose();
-    _lastNameController.dispose();
-    _otpController.dispose();
-    super.dispose();
-  }
-
-  void _nextStep() {
-    if (_currentStep < 3) {
-      setState(() {
-        _currentStep++;
-      });
-    } else {
-      // Navigate to home on final step
-      context.go('/home');
-    }
-  }
+class _OnboardingViewBody extends StatelessWidget {
+  const _OnboardingViewBody();
 
   @override
   Widget build(BuildContext context) {
@@ -63,24 +40,23 @@ class _OnboardingViewState extends State<OnboardingView> {
             child: Column(
               children: [
                 // Header Section with evolv28 logo
-                _buildHeader(),
-                
+
                 // Main Content
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0),
                     child: Column(
                       children: [
                         const Spacer(),
-                        
+
                         // Step content based on current step
-                        _buildCurrentStepContent(),
-                        
+                        _buildCurrentStepContent(context),
+
                         const SizedBox(height: 24),
-                        
+
                         // Next Button
-                        _buildNextButton(),
-                        
+                        _buildNextButton(context),
+
                         const Spacer(),
                       ],
                     ),
@@ -195,7 +171,7 @@ class _OnboardingViewState extends State<OnboardingView> {
               ],
             ),
           ),
-          
+
           // Abstract graphic elements (birds and cloud shapes)
           Row(
             children: [
@@ -243,177 +219,185 @@ class _OnboardingViewState extends State<OnboardingView> {
     );
   }
 
-  Widget _buildCurrentStepContent() {
-    switch (_currentStep) {
-      case 0:
-        return _buildPrivacyPolicyCard();
-      case 1:
-        return _buildProfileSetupCard();
-      case 2:
-        return _buildConnectDeviceCard();
-      case 3:
-        return _buildOtpVerificationCard();
-      default:
-        return _buildPrivacyPolicyCard();
-    }
+  Widget _buildCurrentStepContent(BuildContext context) {
+    return Consumer<OnboardingViewModel>(
+      builder: (context, viewModel, child) {
+        switch (viewModel.currentStep) {
+          case 0:
+            return _buildPrivacyPolicyCard(context, viewModel);
+          case 1:
+            return _buildProfileSetupCard(context, viewModel);
+          case 2:
+            return _buildConnectDeviceCard(context, viewModel);
+          case 3:
+            return _buildOtpVerificationCard(context, viewModel);
+          default:
+            return _buildPrivacyPolicyCard(context, viewModel);
+        }
+      },
+    );
   }
 
-  Widget _buildPrivacyPolicyCard() {
+  Widget _buildPrivacyPolicyCard(
+    BuildContext context,
+    OnboardingViewModel viewModel,
+  ) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16.0),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(24.0),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.95),
-            borderRadius: BorderRadius.circular(16.0),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                offset: const Offset(0, 4),
-                blurRadius: 24,
-                spreadRadius: 0,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24.0),
+        decoration: BoxDecoration(color: Colors.transparent),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 48),
+            // Shield icon with checkmark
+            Center(
+              child: SizedBox(
+                width: 64,
+                height: 64,
+                child: SvgPicture.asset(
+                  'assets/images/terms_icon.svg',
+                  width: 40,
+                  height: 40,
+                ),
               ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Shield icon with checkmark
-              Center(
-                child: Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFF8A65),
-                    borderRadius: BorderRadius.circular(32),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Main title
+            Text(
+              'Lorem ipsum dolor sit amet',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+              textAlign: TextAlign.center,
+            ),
+
+            const SizedBox(height: 24),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12.0,
+                vertical: 24.0,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16.0),
+              ),
+
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Card content section
+                  Text(
+                    'Lorem ipsum dolor sit amet',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade800,
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.shield_check,
-                    size: 32,
-                    color: Colors.white,
+
+                  const SizedBox(height: 12),
+
+                  // Body text
+                  Text(
+                    'Lorem ipsum dolor sit amet consectetur. Ornare ullamcorper non orci cursus massa ante adipiscing.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                      height: 1.4,
+                    ),
                   ),
-                ),
-              ),
-              
-              const SizedBox(height: 24),
-              
-              // Main title
-              Text(
-                'Lorem ipsum dolor sit amet',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade800,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              
-              const SizedBox(height: 24),
-              
-              // Card content section
-              Text(
-                'Lorem ipsum dolor sit amet',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade800,
-                ),
-              ),
-              
-              const SizedBox(height: 12),
-              
-              // Body text
-              Text(
-                'Lorem ipsum dolor sit amet consectetur. Ornare ullamcorper non orci cursus massa ante adipiscing.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                  height: 1.4,
-                ),
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Privacy Policy link
-              GestureDetector(
-                onTap: () {
-                  // Handle privacy policy link tap
-                },
-                child: Text(
-                  'Read our Privacy Policy',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.blue.shade700,
-                    decoration: TextDecoration.underline,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              
-              const SizedBox(height: 24),
-              
-              // Agree checkbox
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _agreedToPrivacyPolicy = !_agreedToPrivacyPolicy;
-                  });
-                },
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFF8A65), // Light orange/peach
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      // Checkbox
-                      Container(
-                        width: 20,
-                        height: 20,
-                        decoration: BoxDecoration(
-                          color: _agreedToPrivacyPolicy ? Colors.white : Colors.transparent,
-                          border: Border.all(color: Colors.white, width: 2),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: _agreedToPrivacyPolicy
-                            ? const Icon(
-                                Icons.check,
-                                size: 14,
-                                color: Color(0xFFFF8A65),
-                              )
-                            : null,
+
+                  const SizedBox(height: 16),
+
+                  // Privacy Policy link
+                  GestureDetector(
+                    onTap: viewModel.handlePrivacyPolicyLinkTap,
+                    child: Text(
+                      'Read our Privacy Policy',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.blue.shade700,
+                        decoration: TextDecoration.underline,
+                        fontWeight: FontWeight.w500,
                       ),
-                      
-                      const SizedBox(width: 12),
-                      
-                      // Text
-                      Expanded(
-                        child: Text(
-                          'Agree to our Privacy Policy',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white,
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Agree checkbox
+                  GestureDetector(
+                    onTap: viewModel.togglePrivacyPolicyAgreement,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 16,
+                        horizontal: 20,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF8A65), // Light orange/peach
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          // Checkbox
+                          Container(
+                            width: 20,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              color: viewModel.agreedToPrivacyPolicy
+                                  ? Colors.white
+                                  : Colors.transparent,
+                              border: Border.all(color: Colors.white, width: 2),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: viewModel.agreedToPrivacyPolicy
+                                ? const Icon(
+                                    Icons.check,
+                                    size: 14,
+                                    color: Color(0xFFFF8A65),
+                                  )
+                                : null,
                           ),
-                        ),
+
+                          const SizedBox(width: 12),
+
+                          // Text
+                          Expanded(
+                            child: Text(
+                              'Agree to our Privacy Policy',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildProfileSetupCard() {
+  Widget _buildProfileSetupCard(
+    BuildContext context,
+    OnboardingViewModel viewModel,
+  ) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16.0),
       child: BackdropFilter(
@@ -445,9 +429,9 @@ class _OnboardingViewState extends State<OnboardingView> {
                   color: Colors.grey.shade800,
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Subtitle
               Text(
                 'What should we call you?',
@@ -457,9 +441,9 @@ class _OnboardingViewState extends State<OnboardingView> {
                   color: Colors.grey.shade800,
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // First Name Field
               Text(
                 'FIRST NAME',
@@ -477,7 +461,7 @@ class _OnboardingViewState extends State<OnboardingView> {
                   border: Border.all(color: Colors.grey.shade300),
                 ),
                 child: TextFormField(
-                  controller: _firstNameController,
+                  controller: viewModel.firstNameController,
                   decoration: InputDecoration(
                     hintText: 'Jane',
                     hintStyle: TextStyle(color: Colors.grey.shade400),
@@ -489,9 +473,9 @@ class _OnboardingViewState extends State<OnboardingView> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Last Name Field
               Text(
                 'LAST NAME',
@@ -509,7 +493,7 @@ class _OnboardingViewState extends State<OnboardingView> {
                   border: Border.all(color: Colors.grey.shade300),
                 ),
                 child: TextFormField(
-                  controller: _lastNameController,
+                  controller: viewModel.lastNameController,
                   decoration: InputDecoration(
                     hintText: 'Doe',
                     hintStyle: TextStyle(color: Colors.grey.shade400),
@@ -528,7 +512,10 @@ class _OnboardingViewState extends State<OnboardingView> {
     );
   }
 
-  Widget _buildConnectDeviceCard() {
+  Widget _buildConnectDeviceCard(
+    BuildContext context,
+    OnboardingViewModel viewModel,
+  ) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16.0),
       child: BackdropFilter(
@@ -560,9 +547,9 @@ class _OnboardingViewState extends State<OnboardingView> {
                   color: Colors.grey.shade800,
                 ),
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               // Device Image
               Container(
                 width: 120,
@@ -571,21 +558,17 @@ class _OnboardingViewState extends State<OnboardingView> {
                   color: const Color(0xFFFF8A65),
                   borderRadius: BorderRadius.circular(60),
                 ),
-                child: const Icon(
-                  Icons.person,
-                  size: 60,
-                  color: Colors.white,
-                ),
+                child: const Icon(Icons.person, size: 60, color: Colors.white),
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               // Connect Button
               SizedBox(
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: _nextStep,
+                  onPressed: viewModel.nextStep,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF8A65),
                     foregroundColor: Colors.white,
@@ -604,17 +587,15 @@ class _OnboardingViewState extends State<OnboardingView> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Buy Now Button
               SizedBox(
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // Handle buy now
-                  },
+                  onPressed: viewModel.handleBuyNow,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF20B2AA), // Teal/green
                     foregroundColor: Colors.white,
@@ -640,7 +621,10 @@ class _OnboardingViewState extends State<OnboardingView> {
     );
   }
 
-  Widget _buildOtpVerificationCard() {
+  Widget _buildOtpVerificationCard(
+    BuildContext context,
+    OnboardingViewModel viewModel,
+  ) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16.0),
       child: BackdropFilter(
@@ -672,9 +656,9 @@ class _OnboardingViewState extends State<OnboardingView> {
                   color: Colors.grey.shade800,
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // OTP Input Field
               Container(
                 decoration: BoxDecoration(
@@ -683,7 +667,7 @@ class _OnboardingViewState extends State<OnboardingView> {
                   border: Border.all(color: Colors.grey.shade300),
                 ),
                 child: TextFormField(
-                  controller: _otpController,
+                  controller: viewModel.otpController,
                   decoration: InputDecoration(
                     hintText: '9876543210',
                     hintStyle: TextStyle(color: Colors.grey.shade400),
@@ -695,14 +679,12 @@ class _OnboardingViewState extends State<OnboardingView> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Resend OTP Link
               GestureDetector(
-                onTap: () {
-                  // Handle resend OTP
-                },
+                onTap: viewModel.handleResendOtp,
                 child: Text(
                   'Resend OTP',
                   style: TextStyle(
@@ -713,15 +695,15 @@ class _OnboardingViewState extends State<OnboardingView> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Connect Button
               SizedBox(
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: _nextStep,
+                  onPressed: viewModel.nextStep,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF8A65),
                     foregroundColor: Colors.white,
@@ -740,14 +722,12 @@ class _OnboardingViewState extends State<OnboardingView> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Contact Support
               GestureDetector(
-                onTap: () {
-                  // Handle contact support
-                },
+                onTap: viewModel.handleContactSupport,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -775,32 +755,44 @@ class _OnboardingViewState extends State<OnboardingView> {
     );
   }
 
-  Widget _buildNextButton() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-      child: SizedBox(
-        width: double.infinity,
-        height: 56,
-        child: ElevatedButton(
-          onPressed: _currentStep == 0 ? (_agreedToPrivacyPolicy ? _nextStep : null) : _nextStep,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFFF8A65), // Light orange/peach
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+  Widget _buildNextButton(BuildContext context) {
+    return Consumer<OnboardingViewModel>(
+      builder: (context, viewModel, child) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: viewModel.canProceedFromCurrentStep()
+                  ? () {
+                      if (viewModel.isLastStep) {
+                        context.go('/home');
+                      } else {
+                        viewModel.nextStep();
+                      }
+                    }
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF8A65), // Light orange/peach
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+              child: Text(
+                viewModel.nextButtonText,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
             ),
-            elevation: 0,
           ),
-          child: Text(
-            _currentStep == 3 ? 'Finish' : 'Next',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
