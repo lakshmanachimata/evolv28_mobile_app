@@ -671,7 +671,7 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
     );
 
     // Simulate OTP verification process
-    Future.delayed(const Duration(seconds: 2), () {
+    Future.delayed(const Duration(seconds: 1), () {
       if (context.mounted) {
         Navigator.of(context).pop(); // Close loading dialog
 

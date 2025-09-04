@@ -25,47 +25,53 @@ class _OnboardingViewBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          // Background PNG
-          Image.asset(
-            'assets/images/bg_user.png',
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
-          ),
+      body: GestureDetector(
+        onTap: () {
+          // Hide keyboard when tapping outside input fields
+          FocusScope.of(context).unfocus();
+        },
+        child: Stack(
+          children: [
+            // Background PNG
+            Image.asset(
+              'assets/images/bg_user.png',
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+            ),
 
-          // Content
-          SafeArea(
-            child: Column(
-              children: [
-                // Header Section with evolv28 logo
+            // Content
+            SafeArea(
+              child: Column(
+                children: [
+                  // Header Section with evolv28 logo
 
-                // Main Content
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 0.0),
-                    child: Column(
-                      children: [
-                        const Spacer(),
+                  // Main Content
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 0.0),
+                      child: Column(
+                        children: [
+                          const Spacer(),
 
-                        // Step content based on current step
-                        _buildCurrentStepContent(context),
+                          // Step content based on current step
+                          _buildCurrentStepContent(context),
 
-                        const SizedBox(height: 24),
+                          const SizedBox(height: 24),
 
-                        // Next Button
-                        _buildNextButton(context),
+                          // Next Button
+                          _buildNextButton(context),
 
-                        const Spacer(),
-                      ],
+                          const Spacer(),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -362,7 +368,7 @@ class _OnboardingViewBody extends StatelessWidget {
                             child: viewModel.agreedToPrivacyPolicy
                                 ? const Icon(
                                     Icons.check,
-                                    size: 14,
+                                    size: 16,
                                     color: Color(0xFFF07A60),
                                   )
                                 : null,
@@ -375,8 +381,9 @@ class _OnboardingViewBody extends StatelessWidget {
                             child: Text(
                               'Agree to our Privacy Policy',
                               style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                fontStyle: FontStyle.normal,
                                 color: Colors.white,
                               ),
                             ),
@@ -438,7 +445,7 @@ class _OnboardingViewBody extends StatelessWidget {
                 'FIRST NAME',
                 style: TextStyle(
                   fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
               ),
@@ -452,7 +459,7 @@ class _OnboardingViewBody extends StatelessWidget {
                 child: TextFormField(
                   controller: viewModel.firstNameController,
                   decoration: InputDecoration(
-                    hintText: 'Jane',
+                    hintText: '',
                     hintStyle: TextStyle(color: Colors.black),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -470,7 +477,7 @@ class _OnboardingViewBody extends StatelessWidget {
                 'LAST NAME',
                 style: TextStyle(
                   fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
               ),
@@ -484,7 +491,7 @@ class _OnboardingViewBody extends StatelessWidget {
                 child: TextFormField(
                   controller: viewModel.lastNameController,
                   decoration: InputDecoration(
-                    hintText: 'Doe',
+                    hintText: '',
                     hintStyle: TextStyle(color: Colors.black),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -774,7 +781,7 @@ class _OnboardingViewBody extends StatelessWidget {
                 viewModel.nextButtonText,
                 style: TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
               ),

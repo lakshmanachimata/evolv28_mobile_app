@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class OnboardingViewModel extends ChangeNotifier {
   int _currentStep = 0;
@@ -24,8 +25,8 @@ class OnboardingViewModel extends ChangeNotifier {
   }
 
   void _initializeControllers() {
-    _firstNameController.text = 'Jane';
-    _lastNameController.text = 'Doe';
+    _firstNameController.text = '';
+    _lastNameController.text = '';
     _otpController.text = '9876543210';
   }
 
@@ -36,6 +37,8 @@ class OnboardingViewModel extends ChangeNotifier {
 
   void nextStep() {
     if (_currentStep < 3) {
+      // Hide keyboard when navigating to next step
+      SystemChannels.textInput.invokeMethod('TextInput.hide');
       _currentStep++;
       notifyListeners();
     }
@@ -43,6 +46,8 @@ class OnboardingViewModel extends ChangeNotifier {
 
   void previousStep() {
     if (_currentStep > 0) {
+      // Hide keyboard when navigating to previous step
+      SystemChannels.textInput.invokeMethod('TextInput.hide');
       _currentStep--;
       notifyListeners();
     }
@@ -50,6 +55,8 @@ class OnboardingViewModel extends ChangeNotifier {
 
   void goToStep(int step) {
     if (step >= 0 && step <= 3) {
+      // Hide keyboard when navigating to any step
+      SystemChannels.textInput.invokeMethod('TextInput.hide');
       _currentStep = step;
       notifyListeners();
     }
@@ -60,7 +67,8 @@ class OnboardingViewModel extends ChangeNotifier {
       case 0:
         return _agreedToPrivacyPolicy;
       case 1:
-        return _firstNameController.text.isNotEmpty && _lastNameController.text.isNotEmpty;
+        return _firstNameController.text.isNotEmpty &&
+            _lastNameController.text.isNotEmpty;
       case 2:
         return true; // Connect device step - always proceed
       case 3:
@@ -88,6 +96,10 @@ class OnboardingViewModel extends ChangeNotifier {
   void handleContactSupport() {
     // TODO: Implement contact support functionality
     debugPrint('Contact support tapped');
+  }
+
+  void hideKeyboard() {
+    SystemChannels.textInput.invokeMethod('TextInput.hide');
   }
 
   @override
