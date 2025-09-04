@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
 import 'dart:io';
 
-import '../viewmodels/devices_viewmodel.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+
 import '../../../../core/routing/app_router_config.dart';
+import '../viewmodels/devices_viewmodel.dart';
 
 class DevicesView extends StatelessWidget {
   const DevicesView({super.key});
@@ -29,12 +30,13 @@ class _DevicesViewBody extends StatefulWidget {
   State<_DevicesViewBody> createState() => _DevicesViewBodyState();
 }
 
-class _DevicesViewBodyState extends State<_DevicesViewBody> with WidgetsBindingObserver {
+class _DevicesViewBodyState extends State<_DevicesViewBody>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    
+
     // Check if we should show permission dialog on screen load
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final viewModel = Provider.of<DevicesViewModel>(context, listen: false);
@@ -45,11 +47,11 @@ class _DevicesViewBodyState extends State<_DevicesViewBody> with WidgetsBindingO
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    
+
     // Stop BLE scanning when screen is disposed
     final viewModel = Provider.of<DevicesViewModel>(context, listen: false);
     viewModel.dispose();
-    
+
     super.dispose();
   }
 
@@ -82,14 +84,14 @@ class _DevicesViewBodyState extends State<_DevicesViewBody> with WidgetsBindingO
               if (viewModel.showBluetoothScanPermissionDialog)
                 _buildBluetoothScanPermissionDialog(context, viewModel),
 
-                      if (viewModel.showLocationPermissionDialog)
-          _buildLocationPermissionDialog(context, viewModel),
+              if (viewModel.showLocationPermissionDialog)
+                _buildLocationPermissionDialog(context, viewModel),
 
-        if (viewModel.showLocationPermissionErrorDialog)
-          _buildLocationPermissionErrorDialog(context, viewModel),
+              if (viewModel.showLocationPermissionErrorDialog)
+                _buildLocationPermissionErrorDialog(context, viewModel),
 
-        if (viewModel.showDeviceActivatedDialog)
-          _buildDeviceActivatedDialog(context, viewModel),
+              if (viewModel.showDeviceActivatedDialog)
+                _buildDeviceActivatedDialog(context, viewModel),
             ],
           ),
         );
@@ -101,7 +103,10 @@ class _DevicesViewBodyState extends State<_DevicesViewBody> with WidgetsBindingO
     return Container(
       width: double.infinity,
       height: double.infinity,
-      child: Image.asset('assets/images/term-background.png', fit: BoxFit.cover),
+      child: Image.asset(
+        'assets/images/term-background.png',
+        fit: BoxFit.cover,
+      ),
     );
   }
 
@@ -116,12 +121,13 @@ class _DevicesViewBodyState extends State<_DevicesViewBody> with WidgetsBindingO
 
             _buildHeader(context, viewModel),
 
-            const SizedBox(height: 200),
+            const SizedBox(height: 36),
 
             // Content based on state
             if (viewModel.isScanning)
               _buildScanningState()
-            else if (viewModel.nearbyDevices.isEmpty && viewModel.isBluetoothEnabled)
+            else if (viewModel.nearbyDevices.isEmpty &&
+                viewModel.isBluetoothEnabled)
               _buildNoDevicesState(context, viewModel)
             else if (viewModel.nearbyDevices.isNotEmpty)
               _buildDevicesList(context, viewModel)
@@ -132,6 +138,7 @@ class _DevicesViewBodyState extends State<_DevicesViewBody> with WidgetsBindingO
 
             // Bottom buttons
             _buildBottomButtons(context, viewModel),
+            const SizedBox(height: 36),
           ],
         ),
       ),
@@ -147,9 +154,7 @@ class _DevicesViewBodyState extends State<_DevicesViewBody> with WidgetsBindingO
           width: MediaQuery.of(context).size.width * 0.25,
           fit: BoxFit.contain,
         ),
-
         const SizedBox(height: 36),
-
         // Welcome message
         Text(
           'Welcome ${viewModel.userName},\nselect your device',
@@ -160,6 +165,12 @@ class _DevicesViewBodyState extends State<_DevicesViewBody> with WidgetsBindingO
           ),
           textAlign: TextAlign.center,
         ),
+        const SizedBox(height: 36),
+        Image.asset(
+          'assets/images/user_neck_device.png',
+          width: MediaQuery.of(context).size.width * 0.4,
+          fit: BoxFit.contain,
+        ),
       ],
     );
   }
@@ -169,7 +180,7 @@ class _DevicesViewBodyState extends State<_DevicesViewBody> with WidgetsBindingO
     WidgetsBinding.instance.addPostFrameCallback((_) {
       viewModel.startDeviceConnection();
     });
-    
+
     return Column(
       children: [
         const SizedBox(height: 20),
@@ -189,10 +200,7 @@ class _DevicesViewBodyState extends State<_DevicesViewBody> with WidgetsBindingO
 
   Widget _buildScanningState() {
     return Column(
-      children: [
-        const SizedBox(height: 20),
-        _buildScanningAnimation(),
-      ],
+      children: [const SizedBox(height: 20), _buildScanningAnimation()],
     );
   }
 
@@ -668,8 +676,8 @@ class _DevicesViewBodyState extends State<_DevicesViewBody> with WidgetsBindingO
                   child: ElevatedButton(
                     onPressed: () {
                       viewModel.handleDeviceActivatedOk();
-                      // Navigate to home screen using go_router
-                      context.go(AppRoutes.home);
+                      // Navigate to dashboard screen using go_router
+                      context.go(AppRoutes.dashboard);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFF07A60),
@@ -816,7 +824,7 @@ class _AnimatedDotsState extends State<_AnimatedDots>
             final delay = index * 0.2;
             final animationValue = (_controller.value - delay).clamp(0.0, 1.0);
             final opacity = (animationValue * 2 - 1).abs();
-            
+
             return Container(
               margin: const EdgeInsets.symmetric(horizontal: 2),
               child: Opacity(

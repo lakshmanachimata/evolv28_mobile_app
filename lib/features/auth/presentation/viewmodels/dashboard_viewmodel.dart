@@ -1,0 +1,67 @@
+import 'package:flutter/material.dart';
+
+class DashboardViewModel extends ChangeNotifier {
+  // State variables
+  bool _isLoading = false;
+  String _userName = 'Jane Doe'; // Default name, can be passed from previous screen
+  int _selectedTabIndex = 0;
+
+  // Getters
+  bool get isLoading => _isLoading;
+  String get userName => _userName;
+  int get selectedTabIndex => _selectedTabIndex;
+
+  // Initialize the dashboard
+  Future<void> initialize() async {
+    _isLoading = true;
+    notifyListeners();
+
+    // Simulate loading time
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  // Set user name
+  void setUserName(String name) {
+    _userName = name;
+    notifyListeners();
+  }
+
+  // Handle tab selection
+  void onTabSelected(int index) {
+    _selectedTabIndex = index;
+    notifyListeners();
+  }
+
+  // Handle logout
+  void logout() {
+    // Implement logout logic here
+    print('Logout requested');
+  }
+
+  // Handle profile settings
+  void openProfileSettings() {
+    // Implement profile settings logic here
+    print('Profile settings requested');
+  }
+
+  // Handle notifications
+  void openNotifications() {
+    // Implement notifications logic here
+    print('Notifications requested');
+  }
+
+  // Handle device management
+  void openDeviceManagement() {
+    // Implement device management logic here
+    print('Device management requested');
+  }
+
+  // Handle help and support
+  void openHelpSupport() {
+    // Implement help and support logic here
+    print('Help and support requested');
+  }
+}
