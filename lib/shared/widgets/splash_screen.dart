@@ -52,7 +52,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     // Navigate to onboarding screen
     if (mounted) {
-      context.go(AppRoutes.dashboard);
+      context.go(AppRoutes.programs);
     }
   }
 

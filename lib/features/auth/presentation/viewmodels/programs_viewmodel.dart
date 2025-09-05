@@ -16,7 +16,7 @@ class ProgramsViewModel extends ChangeNotifier {
       recommendedTime: '3 hrs',
       iconPath: 'assets/images/sleep_better.svg',
       isLocked: false,
-      isFavorite: false,
+      isFavorite: true,
     ),
     ProgramData(
       id: 'improve_mood',
@@ -84,7 +84,7 @@ class ProgramsViewModel extends ChangeNotifier {
   void onTabSelected(int index, BuildContext context) {
     _selectedTabIndex = index;
     notifyListeners();
-    
+
     // Handle navigation based on tab selection
     switch (index) {
       case 0: // Home
