@@ -7,6 +7,12 @@ class ProgramsViewModel extends ChangeNotifier {
   String? _selectedProgramId;
   int _selectedTabIndex = 1; // Programs tab is selected by default
   Map<String, bool> _favorites = {};
+  
+  // Player state
+  bool _isPlaying = false;
+  String? _currentPlayingProgramId;
+  Duration _currentPosition = Duration.zero;
+  Duration _totalDuration = const Duration(minutes: 3);
 
   // Programs data matching the image flow
   final List<ProgramData> programs = [
@@ -63,6 +69,13 @@ class ProgramsViewModel extends ChangeNotifier {
   String? get selectedProgramId => _selectedProgramId;
   int get selectedTabIndex => _selectedTabIndex;
   Map<String, bool> get favorites => _favorites;
+  
+  // Player getters
+  bool get isPlaying => _isPlaying;
+  String? get currentPlayingProgramId => _currentPlayingProgramId;
+  Duration get currentPosition => _currentPosition;
+  Duration get totalDuration => _totalDuration;
+  bool get isInPlayerMode => _currentPlayingProgramId != null;
 
   void selectProgram(String programId) {
     _selectedProgramId = programId;
@@ -75,10 +88,32 @@ class ProgramsViewModel extends ChangeNotifier {
   }
 
   void playProgram(String programId) {
-    // Navigate to program player screen
-    // For now, just print the program being played
-    print('Playing program: $programId');
-    // TODO: Implement navigation to program player
+    _currentPlayingProgramId = programId;
+    _isPlaying = true;
+    _currentPosition = Duration.zero;
+    notifyListeners();
+  }
+
+  void togglePlayPause() {
+    _isPlaying = !_isPlaying;
+    notifyListeners();
+  }
+
+  void stopProgram() {
+    _currentPlayingProgramId = null;
+    _isPlaying = false;
+    _currentPosition = Duration.zero;
+    notifyListeners();
+  }
+
+  void updatePosition(Duration position) {
+    _currentPosition = position;
+    notifyListeners();
+  }
+
+  void finishProgram(BuildContext context) {
+    // Navigate to feedback screen
+    context.go(AppRoutes.dashboard); // For now, go back to dashboard since feedback route doesn't exist
   }
 
   void onTabSelected(int index, BuildContext context) {
