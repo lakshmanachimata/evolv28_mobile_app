@@ -6,6 +6,7 @@ import '../../features/auth/presentation/views/login_view.dart';
 import '../../features/auth/presentation/views/onboarding_view.dart';
 import '../../features/auth/presentation/views/devices_view.dart';
 import '../../features/auth/presentation/views/dashboard_view.dart';
+import '../../features/auth/presentation/views/get_started_view.dart';
 
 class AppRouter {
   static final GoRouter _router = GoRouter(
@@ -47,6 +48,12 @@ class AppRouter {
         path: AppRoutes.dashboard,
         name: AppRouteNames.dashboard,
         builder: (context, state) => const DashboardView(),
+      ),
+      // Get Started Route
+      GoRoute(
+        path: AppRoutes.getStarted,
+        name: AppRouteNames.getStarted,
+        builder: (context, state) => const GetStartedView(),
       ),
     ],
     errorBuilder: (context, state) => const NotFoundPage(),

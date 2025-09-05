@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../core/routing/app_router_config.dart';
 import '../viewmodels/dashboard_viewmodel.dart';
 
 class DashboardView extends StatelessWidget {
@@ -132,8 +134,8 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
           Center(
             child: GestureDetector(
               onTap: () {
-                // Handle get started action
-                print('Get Started tapped');
+                // Navigate to Get Started screen
+                context.go(AppRoutes.getStarted);
               },
               child: SvgPicture.asset(
                 'assets/images/get_started_circle.svg',
