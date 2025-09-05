@@ -177,12 +177,12 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildFeatureIcon('Sleep Better', 'assets/images/sleep_better.svg'),
-            _buildFeatureIcon('Focus Better', 'assets/images/focus_better.svg'),
-            _buildFeatureIcon('Improve Mood', 'assets/images/improve_mood.svg'),
+            _buildFeatureIcon('Sleep\nBetter', 'assets/images/sleep_better.svg'),
+            _buildFeatureIcon('Focus\nBetter', 'assets/images/focus_better.svg'),
+            _buildFeatureIcon('Improve\nMood', 'assets/images/improve_mood.svg'),
             _buildFeatureIcon(
-              'Reduce Anxiety',
-              'assets/images/reduce_anxiety.svg',
+              'Reduce\nAnxiety',
+              'assets/images/reduced_anxiety.png',
             ),
           ],
         ),
@@ -205,7 +205,9 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
             ),
           ),
           child: Center(
-            child: SvgPicture.asset(iconPath, width: 40, height: 40),
+            child: iconPath.contains('reduced_anxiety')
+                ? Image.asset(iconPath, width: 40, height: 40)
+                : SvgPicture.asset(iconPath, width: 40, height: 40),
           ),
         ),
         const SizedBox(height: 8),
@@ -357,8 +359,8 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
             ),
             _buildBottomNavItem(
               'Device',
-              'assets/images/bottom_menu_device.svg',
-              'assets/images/bottom_menu_device_selected.svg',
+              'assets/images/bottom_menu_device.png',
+              'assets/images/bottom_menu_device_selected.png',
               2,
               viewModel,
               hasNotification: true,
@@ -395,28 +397,17 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
           children: [
             Stack(
               children: [
-                SvgPicture.asset(
-                  isSelected ? selectedIconPath : iconPath,
-                  width: 30,
-                  height: 30,
-                  colorFilter: ColorFilter.mode(
-                    isSelected ? const Color(0xFFF07A60) : Colors.grey.shade600,
-                    BlendMode.srcIn,
-                  ),
-                ),
-                if (hasNotification)
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Colors.green,
-                        shape: BoxShape.circle,
+                (iconPath.contains('bottom_menu_device') || selectedIconPath.contains('bottom_menu_device'))
+                    ? Image.asset(
+                        isSelected ? selectedIconPath : iconPath,
+                        width: 40,
+                        height: 40,
+                      )
+                    : SvgPicture.asset(
+                        isSelected ? selectedIconPath : iconPath,
+                        width: 30,
+                        height: 30,
                       ),
-                    ),
-                  ),
               ],
             ),
             // const SizedBox(height: 4),
