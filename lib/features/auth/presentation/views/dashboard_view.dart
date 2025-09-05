@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
 
 import '../viewmodels/dashboard_viewmodel.dart';
-import '../../../../core/routing/app_router_config.dart';
 
 class DashboardView extends StatelessWidget {
   const DashboardView({super.key});
@@ -42,7 +41,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
         children: [
           // Background Image
           _buildBackground(),
-          
+
           // Main Content
           _buildMainContent(context),
         ],
@@ -75,14 +74,12 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
         return SafeArea(
           child: Column(
             children: [
-              // Header
+              // Header with Logo
               _buildHeader(context, viewModel),
-              
+
               // Main Content Area
-              Expanded(
-                child: _buildContentArea(context, viewModel),
-              ),
-              
+              Expanded(child: _buildContentArea(context, viewModel)),
+
               // Bottom Navigation
               _buildBottomNavigation(context, viewModel),
             ],
@@ -94,58 +91,31 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
 
   Widget _buildHeader(BuildContext context, DashboardViewModel viewModel) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-      child: Row(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+      child: Column(
         children: [
-          // Welcome Text
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Welcome back,',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white.withOpacity(0.8),
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  viewModel.userName,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
+          // Logo
+          Center(
+            child: Image.asset(
+              'assets/images/evolv_text.png',
+              width: MediaQuery.of(context).size.width * 0.3,
+              fit: BoxFit.contain,
             ),
           ),
-          
-          // Profile and Settings Icons
-          Row(
-            children: [
-              // Notifications Icon
-              IconButton(
-                onPressed: viewModel.openNotifications,
-                icon: Icon(
-                  Icons.notifications_outlined,
-                  color: Colors.white,
-                  size: 24,
-                ),
+
+          const SizedBox(height: 20),
+
+          // Greeting
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Good Morning, \n${viewModel.userName}',
+              style: const TextStyle(
+                fontSize: 24,
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
               ),
-              
-              // Profile Icon
-              IconButton(
-                onPressed: viewModel.openProfileSettings,
-                icon: Icon(
-                  Icons.person_outline,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),
@@ -153,53 +123,210 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
   }
 
   Widget _buildContentArea(BuildContext context, DashboardViewModel viewModel) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24.0),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Quick Stats Cards
-          _buildQuickStatsCards(context),
-          
-          const SizedBox(height: 24),
-          
-          // Main Content based on selected tab
-          Expanded(
-            child: _buildTabContent(context, viewModel),
+          // Get Started Button
+          Center(
+            child: GestureDetector(
+              onTap: () {
+                // Handle get started action
+                print('Get Started tapped');
+              },
+              child: SvgPicture.asset(
+                'assets/images/get_started_circle.svg',
+                width: 120,
+                height: 120,
+              ),
+            ),
           ),
+
+          const SizedBox(height: 40),
+
+          // Top picks for you section
+          _buildTopPicksSection(context),
+
+          const SizedBox(height: 32),
+
+          // Talk to an Expert section
+          _buildTalkToExpertSection(context),
+
+          const SizedBox(height: 20),
         ],
       ),
     );
   }
 
-  Widget _buildQuickStatsCards(BuildContext context) {
-    return Row(
+  Widget _buildTopPicksSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: _buildStatCard(
-            'Device Status',
-            'Connected',
-            Icons.bluetooth_connected,
-            const Color(0xFF4CAF50),
+        // Section title with flame icon
+        Row(
+          children: [
+            const SizedBox(width: 8),
+            Image.asset('assets/images/fire_items.png', width: 180, height: 36),
+          ],
+        ),
+
+        const SizedBox(height: 20),
+
+        // Feature icons
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildFeatureIcon('Sleep Better', 'assets/images/sleep_better.svg'),
+            _buildFeatureIcon('Focus Better', 'assets/images/focus_better.svg'),
+            _buildFeatureIcon('Improve Mood', 'assets/images/improve_mood.svg'),
+            _buildFeatureIcon(
+              'Reduce Anxiety',
+              'assets/images/reduce_anxiety.svg',
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFeatureIcon(String title, String iconPath) {
+    return Column(
+      children: [
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: const Color(0xFFFFB74D), // Light orange border
+              width: 2,
+            ),
+          ),
+          child: Center(
+            child: SvgPicture.asset(iconPath, width: 40, height: 40),
           ),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            'Battery',
-            '85%',
-            Icons.battery_charging_full,
-            const Color(0xFFF07A60),
+        const SizedBox(height: 8),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTalkToExpertSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Talk to an Expert',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Expert card
+        Container(
+          padding: const EdgeInsets.all(20.0),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE3F2FD), // Light blue background
+            borderRadius: BorderRadius.circular(16.0),
+          ),
+          child: Row(
+            children: [
+              // Illustration
+              Expanded(
+                flex: 2,
+                child: Image.asset(
+                  'assets/images/assesment_img.png',
+                  width: 85,
+                  height: 120,
+                ),
+              ),
+
+              const SizedBox(width: 16),
+
+              // Text content
+              Expanded(
+                flex: 3,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Express your feelings',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Navigate difficult emotions, manage stressors, and establish Mindfulness.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.black87,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Take Assessment button
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: GestureDetector(
+                        onTap: () {
+                          print('Take Assessment tapped');
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text(
+                            'Take Assessment',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ],
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildBottomNavigation(
+    BuildContext context,
+    DashboardViewModel viewModel,
+  ) {
     return Container(
-      padding: const EdgeInsets.all(16.0),
+      margin: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12.0),
         boxShadow: [
           BoxShadow(
@@ -209,342 +336,110 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: color, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 18,
-              color: color,
-              fontWeight: FontWeight.bold,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildBottomNavItem(
+              'Home',
+              'assets/images/bottom_menu_home.svg',
+              'assets/images/bottom_menu_home_selected.svg',
+              0,
+              viewModel,
             ),
-          ),
-        ],
+            _buildBottomNavItem(
+              'Programs',
+              'assets/images/bottom_menu_programs.svg',
+              'assets/images/bottom_menu_programs_selected.svg',
+              1,
+              viewModel,
+            ),
+            _buildBottomNavItem(
+              'Device',
+              'assets/images/bottom_menu_device.svg',
+              'assets/images/bottom_menu_device_selected.svg',
+              2,
+              viewModel,
+              hasNotification: true,
+            ),
+            _buildBottomNavItem(
+              'Profile',
+              'assets/images/bottom_menu_user.svg',
+              'assets/images/bottom_menu_user_selected.svg',
+              3,
+              viewModel,
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildTabContent(BuildContext context, DashboardViewModel viewModel) {
-    switch (viewModel.selectedTabIndex) {
-      case 0:
-        return _buildHomeTab(context);
-      case 1:
-        return _buildDevicesTab(context);
-      case 2:
-        return _buildSettingsTab(context);
-      default:
-        return _buildHomeTab(context);
-    }
-  }
+  Widget _buildBottomNavItem(
+    String label,
+    String iconPath,
+    String selectedIconPath,
+    int index,
+    DashboardViewModel viewModel, {
+    bool hasNotification = false,
+  }) {
+    final isSelected = viewModel.selectedTabIndex == index;
 
-  Widget _buildHomeTab(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(12.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            offset: const Offset(0, 2),
-            blurRadius: 8,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Recent Activity',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade800,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: ListView(
+    return GestureDetector(
+      onTap: () => viewModel.onTabSelected(index),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
               children: [
-                _buildActivityItem(
-                  'Device Connected',
-                  'Your Evolv28 device is now connected',
-                  Icons.bluetooth_connected,
-                  const Color(0xFF4CAF50),
-                ),
-                _buildActivityItem(
-                  'Battery Level',
-                  'Battery is at 85% - Good condition',
-                  Icons.battery_charging_full,
-                  const Color(0xFFF07A60),
-                ),
-                _buildActivityItem(
-                  'Last Sync',
-                  'Data synced 2 minutes ago',
-                  Icons.sync,
-                  const Color(0xFF2196F3),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDevicesTab(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(12.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            offset: const Offset(0, 2),
-            blurRadius: 8,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Connected Devices',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade800,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.bluetooth_connected,
-                    size: 64,
-                    color: const Color(0xFF4CAF50),
+                SvgPicture.asset(
+                  isSelected ? selectedIconPath : iconPath,
+                  width: 30,
+                  height: 30,
+                  colorFilter: ColorFilter.mode(
+                    isSelected ? const Color(0xFFF07A60) : Colors.grey.shade600,
+                    BlendMode.srcIn,
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Evolv28 Device',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade800,
+                ),
+                if (hasNotification)
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Colors.green,
+                        shape: BoxShape.circle,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Connected and working properly',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSettingsTab(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(12.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            offset: const Offset(0, 2),
-            blurRadius: 8,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Settings',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade800,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: ListView(
-              children: [
-                _buildSettingsItem(
-                  'Profile Settings',
-                  Icons.person_outline,
-                  () => context.go(AppRoutes.profile),
-                ),
-                _buildSettingsItem(
-                  'Device Management',
-                  Icons.bluetooth,
-                  () {},
-                ),
-                _buildSettingsItem(
-                  'Notifications',
-                  Icons.notifications_outlined,
-                  () {},
-                ),
-                _buildSettingsItem(
-                  'Help & Support',
-                  Icons.help_outline,
-                  () {},
-                ),
-                _buildSettingsItem(
-                  'About',
-                  Icons.info_outline,
-                  () {},
-                ),
-                _buildSettingsItem(
-                  'Logout',
-                  Icons.logout,
-                  () => context.go(AppRoutes.login),
-                  isDestructive: true,
-                ),
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActivityItem(String title, String subtitle, IconData icon, Color color) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12.0),
-      padding: const EdgeInsets.all(12.0),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(8.0),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade800,
-                  ),
-                ),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSettingsItem(String title, IconData icon, VoidCallback onTap, {bool isDestructive = false}) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8.0),
-      child: ListTile(
-        leading: Icon(
-          icon,
-          color: isDestructive ? Colors.red : const Color(0xFFF07A60),
+            // const SizedBox(height: 4),
+            // Text(
+            //   label,
+            //   style: TextStyle(
+            //     fontSize: 10,
+            //     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+            //     color: isSelected ? const Color(0xFFF07A60) : Colors.grey.shade600,
+            //   ),
+            // ),
+            // if (isSelected)
+            //   Container(
+            //     margin: const EdgeInsets.only(top: 2),
+            //     height: 2,
+            //     width: 20,
+            //     decoration: const BoxDecoration(
+            //       color: Color(0xFFF07A60),
+            //       borderRadius: BorderRadius.all(Radius.circular(1)),
+            //     ),
+            //   ),
+          ],
         ),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: isDestructive ? Colors.red : Colors.grey.shade800,
-          ),
-        ),
-        trailing: Icon(
-          Icons.arrow_forward_ios,
-          size: 16,
-          color: Colors.grey.shade400,
-        ),
-        onTap: onTap,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8.0),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBottomNavigation(BuildContext context, DashboardViewModel viewModel) {
-    return Container(
-      margin: const EdgeInsets.all(24.0),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(12.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            offset: const Offset(0, 2),
-            blurRadius: 8,
-          ),
-        ],
-      ),
-      child: BottomNavigationBar(
-        currentIndex: viewModel.selectedTabIndex,
-        onTap: viewModel.onTabSelected,
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        selectedItemColor: const Color(0xFFF07A60),
-        unselectedItemColor: Colors.grey.shade600,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bluetooth_outlined),
-            activeIcon: Icon(Icons.bluetooth),
-            label: 'Devices',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings_outlined),
-            activeIcon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
       ),
     );
   }
