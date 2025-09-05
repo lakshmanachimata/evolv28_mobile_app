@@ -97,15 +97,16 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
       child: Column(
         children: [
           // Logo
+          SizedBox(height: 30),
           Center(
             child: Image.asset(
               'assets/images/evolv_text.png',
-              width: MediaQuery.of(context).size.width * 0.3,
+              width: MediaQuery.of(context).size.width * 0.25,
               fit: BoxFit.contain,
             ),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
           // Greeting
           Align(
@@ -113,7 +114,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
             child: Text(
               'Good Morning, \n${viewModel.userName}',
               style: const TextStyle(
-                fontSize: 24,
+                fontSize: 20,
                 color: Colors.black,
                 fontWeight: FontWeight.bold,
               ),
@@ -139,23 +140,23 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
               },
               child: SvgPicture.asset(
                 'assets/images/get_started_circle.svg',
-                width: 120,
-                height: 120,
+                width: 110,
+                height: 110,
               ),
             ),
           ),
 
-          const SizedBox(height: 40),
+          const SizedBox(height: 20),
 
           // Top picks for you section
           _buildTopPicksSection(context),
 
-          const SizedBox(height: 32),
+          const SizedBox(height: 20),
 
           // Talk to an Expert section
           _buildTalkToExpertSection(context),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 10),
         ],
       ),
     );
@@ -173,7 +174,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
           ],
         ),
 
-        const SizedBox(height: 20),
+        const SizedBox(height: 10),
 
         // Feature icons
         Row(
@@ -205,8 +206,8 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
     return Column(
       children: [
         Container(
-          width: 60,
-          height: 60,
+          width: 50,
+          height: 50,
           decoration: BoxDecoration(
             color: Colors.white,
             shape: BoxShape.circle,
@@ -217,8 +218,8 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
           ),
           child: Center(
             child: iconPath.contains('reduced_anxiety')
-                ? Image.asset(iconPath, width: 40, height: 40)
-                : SvgPicture.asset(iconPath, width: 40, height: 40),
+                ? Image.asset(iconPath, width: 30, height: 30)
+                : SvgPicture.asset(iconPath, width: 36, height: 36),
           ),
         ),
         const SizedBox(height: 8),
@@ -252,7 +253,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
 
         // Expert card
         Container(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
           decoration: BoxDecoration(
             color: const Color(0xFFE3F2FD), // Light blue background
             borderRadius: BorderRadius.circular(16.0),
