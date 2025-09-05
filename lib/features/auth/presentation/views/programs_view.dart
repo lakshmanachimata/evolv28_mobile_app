@@ -696,7 +696,7 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
             1,
             viewModel,
           ),
-          _buildNavItem('assets/images/bottom_menu_device.svg', 2, viewModel),
+          _buildNavItem('assets/images/bottom_menu_device.png', 2, viewModel),
           _buildNavItem('assets/images/bottom_menu_user.svg', 3, viewModel),
         ],
       ),
@@ -715,7 +715,9 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SvgPicture.asset(iconPath, width: 24, height: 24),
+          iconPath.contains('bottom_menu_device')
+              ? Image.asset(iconPath, width: 50, height: 50)
+              : SvgPicture.asset(iconPath, width: 30, height: 30),
           const SizedBox(height: 4),
           if (isSelected)
             Container(

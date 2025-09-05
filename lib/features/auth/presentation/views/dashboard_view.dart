@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import '../../../../core/routing/app_router_config.dart';
 import '../viewmodels/dashboard_viewmodel.dart';
@@ -179,9 +179,18 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildFeatureIcon('Sleep\nBetter', 'assets/images/sleep_better.svg'),
-            _buildFeatureIcon('Focus\nBetter', 'assets/images/focus_better.svg'),
-            _buildFeatureIcon('Improve\nMood', 'assets/images/improve_mood.svg'),
+            _buildFeatureIcon(
+              'Sleep\nBetter',
+              'assets/images/sleep_better.svg',
+            ),
+            _buildFeatureIcon(
+              'Focus\nBetter',
+              'assets/images/focus_better.svg',
+            ),
+            _buildFeatureIcon(
+              'Improve\nMood',
+              'assets/images/improve_mood.svg',
+            ),
             _buildFeatureIcon(
               'Reduce\nAnxiety',
               'assets/images/reduced_anxiety.png',
@@ -399,11 +408,12 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
           children: [
             Stack(
               children: [
-                (iconPath.contains('bottom_menu_device') || selectedIconPath.contains('bottom_menu_device'))
+                (iconPath.contains('bottom_menu_device') ||
+                        selectedIconPath.contains('bottom_menu_device'))
                     ? Image.asset(
                         isSelected ? selectedIconPath : iconPath,
-                        width: 40,
-                        height: 40,
+                        width: 50,
+                        height: 50,
                       )
                     : SvgPicture.asset(
                         isSelected ? selectedIconPath : iconPath,

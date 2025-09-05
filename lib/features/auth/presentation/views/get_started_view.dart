@@ -240,9 +240,10 @@ class _GetStartedViewBodyState extends State<_GetStartedViewBody> {
     GetStartedViewModel viewModel,
   ) {
     // Check if the last question was just answered
-    final isLastQuestionAnswered = viewModel.currentQuestionIndex == viewModel.questions.length - 1 &&
+    final isLastQuestionAnswered =
+        viewModel.currentQuestionIndex == viewModel.questions.length - 1 &&
         viewModel.selectedAnswers.containsKey(viewModel.questions.length - 1);
-    
+
     // Scroll to bottom when last question is answered
     if (isLastQuestionAnswered) {
       _scrollToBottom();
@@ -276,9 +277,13 @@ class _GetStartedViewBodyState extends State<_GetStartedViewBody> {
     );
   }
 
-  Widget _buildQuestionBubble(String question, int questionIndex, GetStartedViewModel viewModel) {
+  Widget _buildQuestionBubble(
+    String question,
+    int questionIndex,
+    GetStartedViewModel viewModel,
+  ) {
     final isAnswered = viewModel.selectedAnswers.containsKey(questionIndex);
-    
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -301,9 +306,13 @@ class _GetStartedViewBodyState extends State<_GetStartedViewBody> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: isAnswered ? Colors.transparent : const Color(0xFFF17961), // Orange color or transparent
+              color: isAnswered
+                  ? Colors.transparent
+                  : const Color(0xFFF17961), // Orange color or transparent
               borderRadius: BorderRadius.circular(20),
-              border: isAnswered ? Border.all(color: Colors.black, width: 1) : null,
+              border: isAnswered
+                  ? Border.all(color: Colors.black, width: 1)
+                  : null,
             ),
             child: Text(
               question,
@@ -513,8 +522,8 @@ class _GetStartedViewBodyState extends State<_GetStartedViewBody> {
                         selectedIconPath.contains('bottom_menu_device'))
                     ? Image.asset(
                         isSelected ? selectedIconPath : iconPath,
-                        width: 40,
-                        height: 40,
+                        width: 50,
+                        height: 50,
                       )
                     : SvgPicture.asset(
                         isSelected ? selectedIconPath : iconPath,
