@@ -54,16 +54,13 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
     } else {
       backgroundImage = 'assets/images/goals-background.png';
     }
-    
+
     return SizedBox(
       width: double.infinity,
       height: double.infinity,
       child: Stack(
         children: [
-          Image.asset(
-            backgroundImage,
-            fit: BoxFit.cover,
-          ),
+          Image.asset(backgroundImage, fit: BoxFit.cover),
           if (viewModel.isInFeedbackMode)
             Container(
               width: double.infinity,
@@ -84,15 +81,15 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
               // Header
               _buildHeader(context),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
               // Content - Programs List, Player, or Feedback
               Expanded(
                 child: viewModel.isInFeedbackMode
                     ? _buildFeedbackInterface(context, viewModel)
                     : viewModel.isInPlayerMode
-                        ? _buildPlayerInterface(context, viewModel)
-                        : _buildProgramsList(context, viewModel),
+                    ? _buildPlayerInterface(context, viewModel)
+                    : _buildProgramsList(context, viewModel),
               ),
 
               // Bottom Navigation
@@ -112,8 +109,8 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
           child: viewModel.isInFeedbackMode
               ? _buildFeedbackHeader(context, viewModel)
               : viewModel.isInPlayerMode
-                  ? _buildPlayerHeader(context, viewModel)
-                  : _buildProgramsHeader(context),
+              ? _buildPlayerHeader(context, viewModel)
+              : _buildProgramsHeader(context),
         );
       },
     );
@@ -156,13 +153,19 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
     );
   }
 
-  Widget _buildFeedbackHeader(BuildContext context, ProgramsViewModel viewModel) {
-    return Center(
-      child: Image.asset(
-        'assets/images/evolv_text.png',
-        width: MediaQuery.of(context).size.width * 0.3,
-        fit: BoxFit.contain,
-      ),
+  Widget _buildFeedbackHeader(
+    BuildContext context,
+    ProgramsViewModel viewModel,
+  ) {
+    return Column(
+      children: [
+        SizedBox(height: 36),
+        Image.asset(
+          'assets/images/evolv_text.png',
+          width: MediaQuery.of(context).size.width * 0.25,
+          fit: BoxFit.contain,
+        ),
+      ],
     );
   }
 
@@ -484,31 +487,19 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
     return '$minutes:$seconds';
   }
 
-  Widget _buildFeedbackInterface(BuildContext context, ProgramsViewModel viewModel) {
+  Widget _buildFeedbackInterface(
+    BuildContext context,
+    ProgramsViewModel viewModel,
+  ) {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(height: 40),
-          
           // Completion Icon
           _buildCompletionIcon(),
 
-          const SizedBox(height: 24),
-
-          // Completion Message
-          const Text(
-            'Nicely done!',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-            textAlign: TextAlign.center,
-          ),
-
-          const SizedBox(height: 32),
+          const SizedBox(height: 40),
 
           // Feedback Question
           const Text(
@@ -525,10 +516,7 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
 
           const Text(
             'Take a moment to check-in with yourself.',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey),
             textAlign: TextAlign.center,
           ),
 
@@ -537,11 +525,11 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
           // Feedback Options
           _buildFeedbackOptions(viewModel),
 
-          const SizedBox(height: 40),
+          const SizedBox(height: 60),
 
           // Action Buttons
           _buildFeedbackActionButtons(context, viewModel),
-          
+
           const SizedBox(height: 40),
         ],
       ),
@@ -549,30 +537,7 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
   }
 
   Widget _buildCompletionIcon() {
-    return Container(
-      width: 80,
-      height: 80,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: const Color(0xFFF17961),
-          width: 3,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: const Icon(
-        Icons.check,
-        color: Color(0xFFF17961),
-        size: 40,
-      ),
-    );
+    return Image.asset('assets/images/nicely_done.png', width: 80, height: 105);
   }
 
   Widget _buildFeedbackOptions(ProgramsViewModel viewModel) {
@@ -608,27 +573,26 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
     ProgramsViewModel viewModel,
   ) {
     final isSelected = viewModel.selectedFeedback == type;
-    
+
     return GestureDetector(
       onTap: () => viewModel.selectFeedback(type),
       child: Column(
         children: [
           Container(
-            width: 60,
-            height: 60,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(30),
+              borderRadius: BorderRadius.circular(36),
               border: Border.all(
-                color: isSelected ? const Color(0xFFF17961) : Colors.grey.shade300,
+                color: isSelected
+                    ? const Color(0xFFF17961)
+                    : Colors.grey.shade300,
                 width: isSelected ? 3 : 1,
               ),
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(30),
-              child: Image.asset(
-                imagePath,
-                fit: BoxFit.cover,
-              ),
+              borderRadius: BorderRadius.circular(36),
+              child: Image.asset(imagePath, fit: BoxFit.cover),
             ),
           ),
           const SizedBox(height: 8),
@@ -637,7 +601,9 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: isSelected ? const Color(0xFFF17961) : Colors.grey.shade600,
+              color: isSelected
+                  ? const Color(0xFFF17961)
+                  : Colors.grey.shade600,
             ),
           ),
         ],
@@ -645,20 +611,23 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
     );
   }
 
-  Widget _buildFeedbackActionButtons(BuildContext context, ProgramsViewModel viewModel) {
+  Widget _buildFeedbackActionButtons(
+    BuildContext context,
+    ProgramsViewModel viewModel,
+  ) {
     return Column(
       children: [
         // Repeat Button
         SizedBox(
           width: double.infinity,
-          height: 56,
+          height: 40,
           child: ElevatedButton(
             onPressed: () => viewModel.repeatProgram(context),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFF17961),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(6),
               ),
               elevation: 0,
             ),
@@ -678,17 +647,14 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
         // Close Button
         SizedBox(
           width: double.infinity,
-          height: 56,
+          height: 40,
           child: OutlinedButton(
             onPressed: () => viewModel.closeFeedback(context),
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFFF17961),
-              side: const BorderSide(
-                color: Color(0xFFF17961),
-                width: 2,
-              ),
+              side: const BorderSide(color: Color(0xFFF17961), width: 1.5),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(6),
               ),
             ),
             child: const Text(
