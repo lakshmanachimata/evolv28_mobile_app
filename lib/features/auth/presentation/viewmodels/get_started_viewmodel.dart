@@ -54,7 +54,7 @@ class GetStartedViewModel extends ChangeNotifier {
         // Already on home/get started screen
         break;
       case 1: // Programs
-        // Navigate to programs screen (implement when available)
+        // Navigate to programs screen - context will be passed from the view
         break;
       case 2: // Device
         // Navigate to device screen
@@ -66,9 +66,8 @@ class GetStartedViewModel extends ChangeNotifier {
   }
 
   void handleContinue(BuildContext context) {
-    // All questions answered, navigate to next screen
-    // For now, go back to dashboard
-    context.go(AppRoutes.dashboard);
+    // All questions answered, navigate to programs screen
+    context.go(AppRoutes.programs);
   }
 
   bool get isAllQuestionsAnswered {

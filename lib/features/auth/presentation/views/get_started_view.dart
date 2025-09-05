@@ -494,7 +494,14 @@ class _GetStartedViewBodyState extends State<_GetStartedViewBody> {
     final isSelected = viewModel.selectedTabIndex == index;
 
     return GestureDetector(
-      onTap: () => viewModel.onTabSelected(index),
+      onTap: () {
+        if (index == 1) {
+          // Navigate to programs screen
+          context.go(AppRoutes.programs);
+        } else {
+          viewModel.onTabSelected(index);
+        }
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
         child: Column(

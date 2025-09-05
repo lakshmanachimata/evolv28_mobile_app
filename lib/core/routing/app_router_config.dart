@@ -9,6 +9,7 @@ class AppRoutes {
   static const String home = '/home';
   static const String dashboard = '/dashboard';
   static const String getStarted = '/get-started';
+  static const String programs = '/programs';
   static const String profile = '/profile';
 }
 
@@ -23,5 +24,6 @@ class AppRouteNames {
   static const String home = 'home';
   static const String dashboard = 'dashboard';
   static const String getStarted = 'getStarted';
+  static const String programs = 'programs';
   static const String profile = 'profile';
 }
