@@ -148,7 +148,9 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
                 child: Row(
                   children: [
                     // Program Icon
-                    SvgPicture.asset(program.iconPath, width: 48, height: 48),
+                    program.iconPath.endsWith('.png')
+                        ? Image.asset(program.iconPath, width: 48, height: 48)
+                        : SvgPicture.asset(program.iconPath, width: 48, height: 48),
                     const SizedBox(width: 16),
 
                     // Program Details
