@@ -125,7 +125,7 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
   Widget _buildPlayerHeader(BuildContext context, ProgramsViewModel viewModel) {
     return Column(
       children: [
-        SizedBox(height: 20),
+        SizedBox(height: 36),
         Image.asset(
           'assets/images/evolv_text.png',
           width: MediaQuery.of(context).size.width * 0.25,
@@ -289,15 +289,12 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
     );
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      padding: const EdgeInsets.symmetric(horizontal: 36.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(height: 12),
-
           // Program Icon with Sleep Z's
           _buildPlayerIcon(currentProgram),
-
           const SizedBox(height: 12),
 
           // Program Title
@@ -390,9 +387,9 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
     return SliderTheme(
       data: SliderTheme.of(context).copyWith(
         activeTrackColor: const Color(0xFFF17961),
-        inactiveTrackColor: Colors.grey.shade300,
+        inactiveTrackColor: Color(0xFFBDBDBD),
         thumbColor: const Color(0xFFF17961),
-        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+        thumbShape: const _CustomSliderThumbShape(),
         trackHeight: 4,
       ),
       child: Slider(
@@ -426,7 +423,7 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
   Widget _buildImDoneButton(ProgramsViewModel viewModel) {
     return SizedBox(
       width: double.infinity,
-      height: 56,
+      height: 40,
       child: ElevatedButton(
         onPressed: () => viewModel.finishProgram(context),
         style: ElevatedButton.styleFrom(
@@ -514,5 +511,55 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
         ],
       ),
     );
+  }
+}
+
+class _CustomSliderThumbShape extends SliderComponentShape {
+  const _CustomSliderThumbShape();
+
+  @override
+  Size getPreferredSize(bool isEnabled, bool isDiscrete) {
+    return const Size(16, 16);
+  }
+
+  @override
+  void paint(
+    PaintingContext context,
+    Offset center, {
+    required Animation<double> activationAnimation,
+    required Animation<double> enableAnimation,
+    required bool isDiscrete,
+    required TextPainter labelPainter,
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required TextDirection textDirection,
+    required double value,
+    required double textScaleFactor,
+    required Size sizeWithOverflow,
+  }) {
+    // Create a custom painter that matches the progress_marker.svg design
+    final Canvas canvas = context.canvas;
+
+    // Draw drop shadow (simplified version of the SVG filter)
+    final Paint shadowPaint = Paint()
+      ..color = Colors.black.withOpacity(0.25)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1);
+
+    canvas.drawCircle(center, 6, shadowPaint);
+
+    // Draw white circle (main body)
+    final Paint whitePaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+
+    canvas.drawCircle(center, 6, whitePaint);
+
+    // Draw orange border
+    final Paint borderPaint = Paint()
+      ..color = const Color(0xFFF17961)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+
+    canvas.drawCircle(center, 5.5, borderPaint);
   }
 }
