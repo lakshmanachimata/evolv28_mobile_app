@@ -46,14 +46,31 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
   }
 
   Widget _buildBackground(ProgramsViewModel viewModel) {
+    String backgroundImage;
+    if (viewModel.isInFeedbackMode) {
+      backgroundImage = 'assets/images/shapes-background.png';
+    } else if (viewModel.isInPlayerMode) {
+      backgroundImage = 'assets/images/player-background.png';
+    } else {
+      backgroundImage = 'assets/images/goals-background.png';
+    }
+    
     return SizedBox(
       width: double.infinity,
       height: double.infinity,
-      child: Image.asset(
-        viewModel.isInPlayerMode
-            ? 'assets/images/player-background.png'
-            : 'assets/images/goals-background.png',
-        fit: BoxFit.cover,
+      child: Stack(
+        children: [
+          Image.asset(
+            backgroundImage,
+            fit: BoxFit.cover,
+          ),
+          if (viewModel.isInFeedbackMode)
+            Container(
+              width: double.infinity,
+              height: double.infinity,
+              color: Colors.white.withOpacity(0.9),
+            ),
+        ],
       ),
     );
   }
@@ -69,11 +86,13 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
 
               const SizedBox(height: 24),
 
-              // Content - either Programs List or Player
+              // Content - Programs List, Player, or Feedback
               Expanded(
-                child: viewModel.isInPlayerMode
-                    ? _buildPlayerInterface(context, viewModel)
-                    : _buildProgramsList(context, viewModel),
+                child: viewModel.isInFeedbackMode
+                    ? _buildFeedbackInterface(context, viewModel)
+                    : viewModel.isInPlayerMode
+                        ? _buildPlayerInterface(context, viewModel)
+                        : _buildProgramsList(context, viewModel),
               ),
 
               // Bottom Navigation
@@ -90,9 +109,11 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
       builder: (context, viewModel, child) {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-          child: viewModel.isInPlayerMode
-              ? _buildPlayerHeader(context, viewModel)
-              : _buildProgramsHeader(context),
+          child: viewModel.isInFeedbackMode
+              ? _buildFeedbackHeader(context, viewModel)
+              : viewModel.isInPlayerMode
+                  ? _buildPlayerHeader(context, viewModel)
+                  : _buildProgramsHeader(context),
         );
       },
     );
@@ -132,6 +153,16 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
           fit: BoxFit.contain,
         ),
       ],
+    );
+  }
+
+  Widget _buildFeedbackHeader(BuildContext context, ProgramsViewModel viewModel) {
+    return Center(
+      child: Image.asset(
+        'assets/images/evolv_text.png',
+        width: MediaQuery.of(context).size.width * 0.3,
+        fit: BoxFit.contain,
+      ),
     );
   }
 
@@ -451,6 +482,227 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
     final minutes = twoDigits(duration.inMinutes.remainder(60));
     final seconds = twoDigits(duration.inSeconds.remainder(60));
     return '$minutes:$seconds';
+  }
+
+  Widget _buildFeedbackInterface(BuildContext context, ProgramsViewModel viewModel) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(height: 40),
+          
+          // Completion Icon
+          _buildCompletionIcon(),
+
+          const SizedBox(height: 24),
+
+          // Completion Message
+          const Text(
+            'Nicely done!',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+            textAlign: TextAlign.center,
+          ),
+
+          const SizedBox(height: 32),
+
+          // Feedback Question
+          const Text(
+            'Slept Better?',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: Colors.black,
+            ),
+            textAlign: TextAlign.center,
+          ),
+
+          const SizedBox(height: 8),
+
+          const Text(
+            'Take a moment to check-in with yourself.',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey,
+            ),
+            textAlign: TextAlign.center,
+          ),
+
+          const SizedBox(height: 32),
+
+          // Feedback Options
+          _buildFeedbackOptions(viewModel),
+
+          const SizedBox(height: 40),
+
+          // Action Buttons
+          _buildFeedbackActionButtons(context, viewModel),
+          
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompletionIcon() {
+    return Container(
+      width: 80,
+      height: 80,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: const Color(0xFFF17961),
+          width: 3,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: const Icon(
+        Icons.check,
+        color: Color(0xFFF17961),
+        size: 40,
+      ),
+    );
+  }
+
+  Widget _buildFeedbackOptions(ProgramsViewModel viewModel) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _buildFeedbackOption(
+          'Amazing',
+          'assets/images/feedback_amaging.png',
+          FeedbackType.amazing,
+          viewModel,
+        ),
+        _buildFeedbackOption(
+          'Good',
+          'assets/images/feedback_good.png',
+          FeedbackType.good,
+          viewModel,
+        ),
+        _buildFeedbackOption(
+          'Okay',
+          'assets/images/feedback_okay.png',
+          FeedbackType.okay,
+          viewModel,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFeedbackOption(
+    String label,
+    String imagePath,
+    FeedbackType type,
+    ProgramsViewModel viewModel,
+  ) {
+    final isSelected = viewModel.selectedFeedback == type;
+    
+    return GestureDetector(
+      onTap: () => viewModel.selectFeedback(type),
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(
+                color: isSelected ? const Color(0xFFF17961) : Colors.grey.shade300,
+                width: isSelected ? 3 : 1,
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(30),
+              child: Image.asset(
+                imagePath,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              color: isSelected ? const Color(0xFFF17961) : Colors.grey.shade600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeedbackActionButtons(BuildContext context, ProgramsViewModel viewModel) {
+    return Column(
+      children: [
+        // Repeat Button
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: ElevatedButton(
+            onPressed: () => viewModel.repeatProgram(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF17961),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
+            child: const Text(
+              'Repeat',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Close Button
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: OutlinedButton(
+            onPressed: () => viewModel.closeFeedback(context),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFFF17961),
+              side: const BorderSide(
+                color: Color(0xFFF17961),
+                width: 2,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              'Close',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFFF17961),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildBottomNavigation(

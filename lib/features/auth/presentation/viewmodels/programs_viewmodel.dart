@@ -13,6 +13,10 @@ class ProgramsViewModel extends ChangeNotifier {
   String? _currentPlayingProgramId;
   Duration _currentPosition = Duration.zero;
   Duration _totalDuration = const Duration(minutes: 3);
+  
+  // Feedback state
+  bool _isInFeedbackMode = false;
+  FeedbackType? _selectedFeedback;
 
   // Programs data matching the image flow
   final List<ProgramData> programs = [
@@ -76,6 +80,10 @@ class ProgramsViewModel extends ChangeNotifier {
   Duration get currentPosition => _currentPosition;
   Duration get totalDuration => _totalDuration;
   bool get isInPlayerMode => _currentPlayingProgramId != null;
+  
+  // Feedback getters
+  bool get isInFeedbackMode => _isInFeedbackMode;
+  FeedbackType? get selectedFeedback => _selectedFeedback;
 
   void selectProgram(String programId) {
     _selectedProgramId = programId;
@@ -112,8 +120,33 @@ class ProgramsViewModel extends ChangeNotifier {
   }
 
   void finishProgram(BuildContext context) {
-    // Navigate to feedback screen
-    context.go(AppRoutes.dashboard); // For now, go back to dashboard since feedback route doesn't exist
+    // Show feedback screen
+    _isInFeedbackMode = true;
+    _isPlaying = false;
+    notifyListeners();
+  }
+
+  void selectFeedback(FeedbackType feedbackType) {
+    _selectedFeedback = feedbackType;
+    notifyListeners();
+  }
+
+  void repeatProgram(BuildContext context) {
+    // Go back to player mode
+    _isInFeedbackMode = false;
+    _isPlaying = true;
+    _currentPosition = Duration.zero;
+    notifyListeners();
+  }
+
+  void closeFeedback(BuildContext context) {
+    // Go to dashboard
+    _isInFeedbackMode = false;
+    _currentPlayingProgramId = null;
+    _isPlaying = false;
+    _currentPosition = Duration.zero;
+    notifyListeners();
+    context.go(AppRoutes.dashboard);
   }
 
   void onTabSelected(int index, BuildContext context) {
@@ -158,4 +191,10 @@ class ProgramData {
     required this.isLocked,
     required this.isFavorite,
   });
+}
+
+enum FeedbackType {
+  amazing,
+  good,
+  okay,
 }
