@@ -420,7 +420,7 @@ class _DeviceConnectedViewBody extends StatelessWidget {
             // Already on device screen
             break;
           case 3: // Profile
-            // TODO: Navigate to profile screen (implement when available)
+            context.go(AppRoutes.profile);
             break;
         }
       },

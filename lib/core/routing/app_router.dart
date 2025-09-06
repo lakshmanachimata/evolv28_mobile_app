@@ -9,6 +9,7 @@ import '../../features/auth/presentation/views/device_connected_view.dart';
 import '../../features/auth/presentation/views/dashboard_view.dart';
 import '../../features/auth/presentation/views/get_started_view.dart';
 import '../../features/auth/presentation/views/programs_view.dart';
+import '../../features/auth/presentation/views/profile_view.dart';
 
 class AppRouter {
   static final GoRouter _router = GoRouter(
@@ -68,6 +69,12 @@ class AppRouter {
         path: AppRoutes.programs,
         name: AppRouteNames.programs,
         builder: (context, state) => const ProgramsView(),
+      ),
+      // Profile Route
+      GoRoute(
+        path: AppRoutes.profile,
+        name: AppRouteNames.profile,
+        builder: (context, state) => const ProfileView(),
       ),
     ],
     errorBuilder: (context, state) => const NotFoundPage(),

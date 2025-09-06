@@ -49,7 +49,7 @@ class DashboardViewModel extends ChangeNotifier {
         context.go(AppRoutes.deviceConnected);
         break;
       case 3: // Profile
-        // TODO: Implement profile screen navigation
+        context.go(AppRoutes.profile);
         break;
     }
   }
