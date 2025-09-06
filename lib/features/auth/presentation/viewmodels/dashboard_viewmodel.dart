@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../../core/routing/app_router_config.dart';
 
 class DashboardViewModel extends ChangeNotifier {
   // State variables
@@ -30,9 +33,25 @@ class DashboardViewModel extends ChangeNotifier {
   }
 
   // Handle tab selection
-  void onTabSelected(int index) {
+  void onTabSelected(int index, BuildContext context) {
     _selectedTabIndex = index;
     notifyListeners();
+
+    // Handle navigation based on tab selection
+    switch (index) {
+      case 0: // Home
+        // Already on dashboard screen
+        break;
+      case 1: // Programs
+        context.go(AppRoutes.programs);
+        break;
+      case 2: // Device
+        context.go(AppRoutes.deviceConnected);
+        break;
+      case 3: // Profile
+        // TODO: Implement profile screen navigation
+        break;
+    }
   }
 
   // Handle logout

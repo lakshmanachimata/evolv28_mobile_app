@@ -5,6 +5,7 @@ import '../../shared/widgets/splash_screen.dart';
 import '../../features/auth/presentation/views/login_view.dart';
 import '../../features/auth/presentation/views/onboarding_view.dart';
 import '../../features/auth/presentation/views/devices_view.dart';
+import '../../features/auth/presentation/views/device_connected_view.dart';
 import '../../features/auth/presentation/views/dashboard_view.dart';
 import '../../features/auth/presentation/views/get_started_view.dart';
 import '../../features/auth/presentation/views/programs_view.dart';
@@ -37,6 +38,12 @@ class AppRouter {
         path: AppRoutes.devices,
         name: AppRouteNames.devices,
         builder: (context, state) => const DevicesView(),
+      ),
+      // Device Connected Route
+      GoRoute(
+        path: AppRoutes.deviceConnected,
+        name: AppRouteNames.deviceConnected,
+        builder: (context, state) => const DeviceConnectedView(),
       ),
       // Home Route
       GoRoute(

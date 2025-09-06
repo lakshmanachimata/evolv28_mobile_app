@@ -676,8 +676,8 @@ class _DevicesViewBodyState extends State<_DevicesViewBody>
                   child: ElevatedButton(
                     onPressed: () {
                       viewModel.handleDeviceActivatedOk();
-                      // Navigate to dashboard screen using go_router
-                      context.go(AppRoutes.dashboard);
+                      // Navigate to device connected screen using go_router
+                      context.go(AppRoutes.deviceConnected);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFF07A60),

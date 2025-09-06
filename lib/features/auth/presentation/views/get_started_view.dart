@@ -508,7 +508,7 @@ class _GetStartedViewBodyState extends State<_GetStartedViewBody> {
           // Navigate to programs screen
           context.go(AppRoutes.programs);
         } else {
-          viewModel.onTabSelected(index);
+          viewModel.onTabSelected(index, context);
         }
       },
       child: Container(

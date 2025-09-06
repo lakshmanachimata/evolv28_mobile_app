@@ -401,7 +401,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
     final isSelected = viewModel.selectedTabIndex == index;
 
     return GestureDetector(
-      onTap: () => viewModel.onTabSelected(index),
+      onTap: () => viewModel.onTabSelected(index, context),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
         child: Column(

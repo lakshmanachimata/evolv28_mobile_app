@@ -44,7 +44,7 @@ class GetStartedViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void onTabSelected(int index) {
+  void onTabSelected(int index, BuildContext context) {
     _selectedTabIndex = index;
     notifyListeners();
     
@@ -54,13 +54,13 @@ class GetStartedViewModel extends ChangeNotifier {
         // Already on home/get started screen
         break;
       case 1: // Programs
-        // Navigate to programs screen - context will be passed from the view
+        context.go(AppRoutes.programs);
         break;
       case 2: // Device
-        // Navigate to device screen
+        context.go(AppRoutes.deviceConnected);
         break;
       case 3: // Profile
-        // Navigate to profile screen (implement when available)
+        // TODO: Navigate to profile screen (implement when available)
         break;
     }
   }

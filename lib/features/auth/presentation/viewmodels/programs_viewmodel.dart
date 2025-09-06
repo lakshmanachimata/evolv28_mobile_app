@@ -162,7 +162,7 @@ class ProgramsViewModel extends ChangeNotifier {
         // Already on programs screen
         break;
       case 2: // Device
-        context.go(AppRoutes.devices);
+        context.go(AppRoutes.deviceConnected);
         break;
       case 3: // Profile
         // TODO: Implement profile screen navigation
