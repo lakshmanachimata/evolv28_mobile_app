@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../viewmodels/device_connected_viewmodel.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+
 import '../../../../core/routing/app_router_config.dart';
+import '../viewmodels/device_connected_viewmodel.dart';
 
 class DeviceConnectedView extends StatelessWidget {
   const DeviceConnectedView({super.key});
@@ -33,10 +34,10 @@ class _DeviceConnectedViewBody extends StatelessWidget {
             children: [
               // Background
               _buildBackground(),
-              
+
               // Main content
               _buildMainContent(context, viewModel),
-              
+
               // Update success dialog
               if (viewModel.showUpdateSuccessDialog)
                 _buildUpdateSuccessDialog(context, viewModel),
@@ -58,7 +59,10 @@ class _DeviceConnectedViewBody extends StatelessWidget {
     );
   }
 
-  Widget _buildMainContent(BuildContext context, DeviceConnectedViewModel viewModel) {
+  Widget _buildMainContent(
+    BuildContext context,
+    DeviceConnectedViewModel viewModel,
+  ) {
     return SafeArea(
       child: Column(
         children: [
@@ -69,43 +73,43 @@ class _DeviceConnectedViewBody extends StatelessWidget {
               child: Column(
                 children: [
                   const SizedBox(height: 36),
-                  
+
                   // Header with evolv28 logo
                   _buildHeader(context),
-                  
+
                   const SizedBox(height: 40),
-                  
+
                   // Device image
                   _buildDeviceImage(context),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Device information
                   _buildDeviceInfo(context, viewModel),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // Version information (only show if update is available)
                   if (viewModel.updateAvailable)
                     _buildVersionInfo(context, viewModel),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // Action button
                   _buildActionButton(context, viewModel),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Help text
                   _buildHelpText(context, viewModel),
-                  
+
                   // Add extra space at bottom to ensure content doesn't get cut off
                   const SizedBox(height: 100),
                 ],
               ),
             ),
           ),
-          
+
           // Bottom Navigation (dashboard style)
           _buildBottomNavigation(context),
         ],
@@ -129,7 +133,10 @@ class _DeviceConnectedViewBody extends StatelessWidget {
     );
   }
 
-  Widget _buildDeviceInfo(BuildContext context, DeviceConnectedViewModel viewModel) {
+  Widget _buildDeviceInfo(
+    BuildContext context,
+    DeviceConnectedViewModel viewModel,
+  ) {
     return Column(
       children: [
         // Device name
@@ -141,9 +148,9 @@ class _DeviceConnectedViewBody extends StatelessWidget {
             color: Colors.black87,
           ),
         ),
-        
+
         const SizedBox(height: 8),
-        
+
         // Battery level
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -164,9 +171,9 @@ class _DeviceConnectedViewBody extends StatelessWidget {
             ),
           ],
         ),
-        
+
         const SizedBox(height: 8),
-        
+
         // Connection status
         Text(
           'Device Connected',
@@ -180,7 +187,10 @@ class _DeviceConnectedViewBody extends StatelessWidget {
     );
   }
 
-  Widget _buildVersionInfo(BuildContext context, DeviceConnectedViewModel viewModel) {
+  Widget _buildVersionInfo(
+    BuildContext context,
+    DeviceConnectedViewModel viewModel,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -244,7 +254,10 @@ class _DeviceConnectedViewBody extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButton(BuildContext context, DeviceConnectedViewModel viewModel) {
+  Widget _buildActionButton(
+    BuildContext context,
+    DeviceConnectedViewModel viewModel,
+  ) {
     if (viewModel.isUpdating) {
       return Container(
         width: double.infinity,
@@ -279,7 +292,7 @@ class _DeviceConnectedViewBody extends StatelessWidget {
         ),
       );
     }
-    
+
     if (viewModel.updateAvailable) {
       return SizedBox(
         width: double.infinity,
@@ -295,15 +308,12 @@ class _DeviceConnectedViewBody extends StatelessWidget {
           ),
           child: const Text(
             'Update Firmware',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
         ),
       );
     }
-    
+
     return SizedBox(
       width: double.infinity,
       height: 48,
@@ -313,22 +323,20 @@ class _DeviceConnectedViewBody extends StatelessWidget {
           backgroundColor: Colors.white,
           foregroundColor: const Color(0xFFF07A60),
           side: const BorderSide(color: Color(0xFFF07A60), width: 2),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         child: const Text(
           'Check Update',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
     );
   }
 
-  Widget _buildHelpText(BuildContext context, DeviceConnectedViewModel viewModel) {
+  Widget _buildHelpText(
+    BuildContext context,
+    DeviceConnectedViewModel viewModel,
+  ) {
     return GestureDetector(
       onTap: viewModel.handleHelp,
       child: Text(
@@ -425,7 +433,7 @@ class _DeviceConnectedViewBody extends StatelessWidget {
         }
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
+        padding: const EdgeInsets.symmetric(vertical: 0.0, horizontal: 12.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

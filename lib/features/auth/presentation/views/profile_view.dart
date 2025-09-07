@@ -484,7 +484,7 @@ class _ProfileViewBody extends StatelessWidget {
         }
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
+        padding: const EdgeInsets.symmetric(vertical: 0.0, horizontal: 12.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
