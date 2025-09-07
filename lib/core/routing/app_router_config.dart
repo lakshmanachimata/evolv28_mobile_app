@@ -12,6 +12,12 @@ class AppRoutes {
   static const String getStarted = '/get-started';
   static const String programs = '/programs';
   static const String profile = '/profile';
+  static const String settings = '/settings';
+  static const String profileEdit = '/profile-edit';
+  static const String about = '/about';
+  static const String faq = '/faq';
+  static const String privacy = '/privacy';
+  static const String help = '/help';
 }
 
 class AppRouteNames {
@@ -28,4 +34,10 @@ class AppRouteNames {
   static const String getStarted = 'getStarted';
   static const String programs = 'programs';
   static const String profile = 'profile';
+  static const String settings = 'settings';
+  static const String profileEdit = 'profileEdit';
+  static const String about = 'about';
+  static const String faq = 'faq';
+  static const String privacy = 'privacy';
+  static const String help = 'help';
 }

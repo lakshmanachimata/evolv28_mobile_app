@@ -101,8 +101,7 @@ class _ProfileViewBody extends StatelessWidget {
         // Settings icon
         GestureDetector(
           onTap: () {
-            // Handle settings tap
-            print('Settings tapped');
+            context.go(AppRoutes.settings);
           },
           child: SvgPicture.asset(
             'assets/images/profile_settings.svg',

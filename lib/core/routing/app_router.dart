@@ -10,6 +10,12 @@ import '../../features/auth/presentation/views/dashboard_view.dart';
 import '../../features/auth/presentation/views/get_started_view.dart';
 import '../../features/auth/presentation/views/programs_view.dart';
 import '../../features/auth/presentation/views/profile_view.dart';
+import '../../features/auth/presentation/views/settings_view.dart';
+import '../../features/auth/presentation/views/profile_edit_view.dart';
+import '../../features/auth/presentation/views/about_view.dart';
+import '../../features/auth/presentation/views/faq_view.dart';
+import '../../features/auth/presentation/views/privacy_view.dart';
+import '../../features/auth/presentation/views/help_view.dart';
 
 class AppRouter {
   static final GoRouter _router = GoRouter(
@@ -75,6 +81,42 @@ class AppRouter {
         path: AppRoutes.profile,
         name: AppRouteNames.profile,
         builder: (context, state) => const ProfileView(),
+      ),
+      // Settings Route
+      GoRoute(
+        path: AppRoutes.settings,
+        name: AppRouteNames.settings,
+        builder: (context, state) => const SettingsView(),
+      ),
+      // Profile Edit Route
+      GoRoute(
+        path: AppRoutes.profileEdit,
+        name: AppRouteNames.profileEdit,
+        builder: (context, state) => const ProfileEditView(),
+      ),
+      // About Route
+      GoRoute(
+        path: AppRoutes.about,
+        name: AppRouteNames.about,
+        builder: (context, state) => const AboutView(),
+      ),
+      // FAQ Route
+      GoRoute(
+        path: AppRoutes.faq,
+        name: AppRouteNames.faq,
+        builder: (context, state) => const FAQView(),
+      ),
+      // Privacy Route
+      GoRoute(
+        path: AppRoutes.privacy,
+        name: AppRouteNames.privacy,
+        builder: (context, state) => const PrivacyView(),
+      ),
+      // Help Route
+      GoRoute(
+        path: AppRoutes.help,
+        name: AppRouteNames.help,
+        builder: (context, state) => const HelpView(),
       ),
     ],
     errorBuilder: (context, state) => const NotFoundPage(),
