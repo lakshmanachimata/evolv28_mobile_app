@@ -676,29 +676,33 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
     ProgramsViewModel viewModel,
   ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+      margin: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
       decoration: BoxDecoration(
         color: Colors.white,
+        borderRadius: BorderRadius.circular(12.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
+            offset: const Offset(0, 2),
             blurRadius: 8,
-            offset: const Offset(0, -2),
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildNavItem('assets/images/bottom_menu_home.svg', 0, viewModel),
-          _buildNavItem(
-            'assets/images/bottom_menu_programs_selected.svg',
-            1,
-            viewModel,
-          ),
-          _buildNavItem('assets/images/bottom_menu_device.png', 2, viewModel),
-          _buildNavItem('assets/images/bottom_menu_user.svg', 3, viewModel),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildNavItem('assets/images/bottom_menu_home.svg', 0, viewModel),
+            _buildNavItem(
+              'assets/images/bottom_menu_programs_selected.svg',
+              1,
+              viewModel,
+            ),
+            _buildNavItem('assets/images/bottom_menu_device.png', 2, viewModel),
+            _buildNavItem('assets/images/bottom_menu_user.svg', 3, viewModel),
+          ],
+        ),
       ),
     );
   }
@@ -719,15 +723,6 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
               ? Image.asset(iconPath, width: 50, height: 50)
               : SvgPicture.asset(iconPath, width: 30, height: 30),
           const SizedBox(height: 4),
-          if (isSelected)
-            Container(
-              width: 4,
-              height: 4,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF17961),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
         ],
       ),
     );

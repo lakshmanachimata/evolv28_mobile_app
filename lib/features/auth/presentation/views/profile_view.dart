@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../viewmodels/profile_viewmodel.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+
 import '../../../../core/routing/app_router_config.dart';
+import '../viewmodels/profile_viewmodel.dart';
 
 class ProfileView extends StatelessWidget {
   const ProfileView({super.key});
@@ -39,43 +40,43 @@ class _ProfileViewBody extends StatelessWidget {
                     padding: const EdgeInsets.all(24.0),
                     child: Column(
                       children: [
-                        const SizedBox(height: 20),
-                        
+                        const SizedBox(height: 40),
+
                         // Header with evolv28 logo and settings icon
                         _buildHeader(context),
-                        
-                        const SizedBox(height: 40),
-                        
+
+                        const SizedBox(height: 24),
+
                         // User profile section
                         _buildUserProfile(context, viewModel),
-                        
-                        const SizedBox(height: 32),
-                        
+
+                        const SizedBox(height: 24),
+
                         // Action buttons
                         _buildActionButtons(context, viewModel),
-                        
-                        const SizedBox(height: 32),
-                        
+
+                        const SizedBox(height: 24),
+
                         // Daily Mindfulness Goal section
                         _buildDailyGoalSection(context, viewModel),
-                        
-                        const SizedBox(height: 32),
-                        
+
+                        const SizedBox(height: 24),
+
                         // Connect to Application section
                         _buildConnectToAppSection(context, viewModel),
-                        
-                        const SizedBox(height: 32),
-                        
+
+                        const SizedBox(height: 24),
+
                         // Family section
                         _buildFamilySection(context, viewModel),
-                        
+
                         // Add extra space at bottom to ensure content doesn't get cut off
                         const SizedBox(height: 100),
                       ],
                     ),
                   ),
                 ),
-                
+
                 // Bottom Navigation
                 _buildBottomNavigation(context),
               ],
@@ -91,96 +92,11 @@ class _ProfileViewBody extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         const SizedBox(width: 40), // Spacer to center the logo
-        // evolv28 logo with smiley face
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'evolv',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 24,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'Arial',
-                letterSpacing: 0.5,
-              ),
-            ),
-            // Custom 'o' with smiley face
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                Text(
-                  'o',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Arial',
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                // Smiley face inside the 'o'
-                Positioned(
-                  top: 4,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Left eye
-                      Container(
-                        width: 2,
-                        height: 2,
-                        decoration: BoxDecoration(
-                          color: Colors.black,
-                          borderRadius: BorderRadius.circular(1),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      // Right eye
-                      Container(
-                        width: 2,
-                        height: 2,
-                        decoration: BoxDecoration(
-                          color: Colors.black,
-                          borderRadius: BorderRadius.circular(1),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Smile
-                Positioned(
-                  bottom: 4,
-                  child: Container(
-                    width: 8,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      border: Border(
-                        bottom: BorderSide(
-                          color: Colors.black,
-                          width: 1,
-                        ),
-                      ),
-                      borderRadius: const BorderRadius.only(
-                        bottomLeft: Radius.circular(4),
-                        bottomRight: Radius.circular(4),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            Text(
-              '28',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 24,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'Arial',
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
+        // evolv28 logo image
+        Image.asset(
+          'assets/images/evolv_text.png',
+          width: MediaQuery.of(context).size.width * 0.25,
+          fit: BoxFit.contain,
         ),
         // Settings icon
         GestureDetector(
@@ -267,7 +183,7 @@ class _ProfileViewBody extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        height: 56,
+        height: 42,
         decoration: BoxDecoration(
           color: const Color(0xFFF07A60), // Orange color
           borderRadius: BorderRadius.circular(12),
@@ -297,7 +213,10 @@ class _ProfileViewBody extends StatelessWidget {
     );
   }
 
-  Widget _buildDailyGoalSection(BuildContext context, ProfileViewModel viewModel) {
+  Widget _buildDailyGoalSection(
+    BuildContext context,
+    ProfileViewModel viewModel,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -312,11 +231,11 @@ class _ProfileViewBody extends StatelessWidget {
         const SizedBox(height: 12),
         Container(
           width: double.infinity,
-          height: 56,
+          height: 48,
           decoration: BoxDecoration(
-            color: Colors.grey.shade100,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade300),
+            border: Border.all(color: Color(0xFFF07A60)),
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -333,10 +252,10 @@ class _ProfileViewBody extends StatelessWidget {
                 ),
                 GestureDetector(
                   onTap: viewModel.editDailyGoal,
-                  child: const Icon(
-                    Icons.edit,
-                    color: Colors.grey,
-                    size: 20,
+                  child: SvgPicture.asset(
+                    'assets/images/profile_edit.svg',
+                    width: 20,
+                    height: 20,
                   ),
                 ),
               ],
@@ -347,7 +266,10 @@ class _ProfileViewBody extends StatelessWidget {
     );
   }
 
-  Widget _buildConnectToAppSection(BuildContext context, ProfileViewModel viewModel) {
+  Widget _buildConnectToAppSection(
+    BuildContext context,
+    ProfileViewModel viewModel,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -365,7 +287,7 @@ class _ProfileViewBody extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade300),
+            border: Border.all(color: Color(0xFFF07A60)),
           ),
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -404,11 +326,7 @@ class _ProfileViewBody extends StatelessWidget {
       onTap: onTap,
       child: Row(
         children: [
-          SvgPicture.asset(
-            iconPath,
-            width: 24,
-            height: 24,
-          ),
+          SvgPicture.asset(iconPath, width: 24, height: 24),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -451,7 +369,10 @@ class _ProfileViewBody extends StatelessWidget {
             GestureDetector(
               onTap: viewModel.addFamilyMember,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.transparent,
                   borderRadius: BorderRadius.circular(20),
@@ -581,31 +502,8 @@ class _ProfileViewBody extends StatelessWidget {
                         width: 30,
                         height: 30,
                       ),
-                if (hasNotification && !isSelected)
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFF07A60),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
               ],
             ),
-            if (isSelected)
-              Container(
-                margin: const EdgeInsets.only(top: 4),
-                width: 20,
-                height: 2,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF07A60),
-                  borderRadius: BorderRadius.all(Radius.circular(1)),
-                ),
-              ),
           ],
         ),
       ),
