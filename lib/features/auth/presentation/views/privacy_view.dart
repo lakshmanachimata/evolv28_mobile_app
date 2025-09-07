@@ -7,40 +7,40 @@ class PrivacyView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            _buildHeader(context),
-            
-            // Main content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 20),
-                    
-                    // Privacy title
-                    _buildTitle(),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // Privacy content
-                    _buildPrivacyContent(),
-                    
-                    const SizedBox(height: 100),
-                  ],
+        return Scaffold(
+          backgroundColor: Colors.white,
+          body: SafeArea(
+            child: Column(
+              children: [
+                // Header
+                _buildHeader(context),
+                
+                // Main content
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 20),
+                        
+                        // Privacy title
+                        _buildTitle(),
+                        
+                        const SizedBox(height: 24),
+                        
+                        // Privacy content
+                        _buildPrivacyContent(),
+                        
+                        const SizedBox(height: 100),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
+          ),
+        );
+      }
 
   Widget _buildHeader(BuildContext context) {
     return Padding(

@@ -52,7 +52,7 @@ class _SettingsViewBody extends StatelessWidget {
       width: double.infinity,
       height: double.infinity,
       child: Image.asset(
-        'assets/images/login-background.png',
+        'assets/images/modal-background.png',
         fit: BoxFit.cover,
       ),
     );
@@ -62,59 +62,83 @@ class _SettingsViewBody extends StatelessWidget {
     return SafeArea(
       child: Column(
         children: [
-          // Header
-          _buildHeader(context, viewModel),
-          
-          const SizedBox(height: 20),
-          
-          // Settings title
-          _buildTitle(),
-          
-          const SizedBox(height: 24),
-          
-          // Settings content
+          // Bottom sheet content
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Container(
+              height: MediaQuery.of(context).size.height * 0.85,
+              decoration: BoxDecoration(
+                image: const DecorationImage(
+                  image: AssetImage('assets/images/modal-background.png'),
+                  fit: BoxFit.cover,
+                ),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+              ),
               child: Column(
                 children: [
-                  // Main settings card
-                  _buildSettingsCard(context, viewModel),
+                  // Header with close button
+                  _buildBottomSheetHeader(context, viewModel),
                   
-                  const SizedBox(height: 16),
+                  // Settings title
+                  _buildTitle(),
                   
-                  // Other section card
-                  _buildOtherCard(context, viewModel),
+                  const SizedBox(height: 24),
                   
-                  const SizedBox(height: 100),
+                  // Settings content
+                  Expanded(
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 24.0),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            offset: const Offset(0, 2),
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(20.0),
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 20),
+                            
+                            // Main settings card
+                            _buildSettingsCard(context, viewModel),
+                            
+                            const SizedBox(height: 16),
+                            
+                            // Other section card
+                            _buildOtherCard(context, viewModel),
+                            
+                            const SizedBox(height: 100),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  
+                  // Bottom Navigation
+                  _buildBottomNavigation(context),
                 ],
               ),
             ),
           ),
-          
-          // Bottom Navigation
-          _buildBottomNavigation(context),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, SettingsViewModel viewModel) {
+  Widget _buildBottomSheetHeader(BuildContext context, SettingsViewModel viewModel) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Close button
-          GestureDetector(
-            onTap: viewModel.closeSettings,
-            child: const Icon(
-              Icons.close,
-              color: Colors.white,
-              size: 24,
-            ),
-          ),
-          
           // evolv28 logo
           Image.asset(
             'assets/images/evolv_text_white.png',
@@ -122,12 +146,21 @@ class _SettingsViewBody extends StatelessWidget {
             fit: BoxFit.contain,
           ),
           
-          // Settings icon
-          SvgPicture.asset(
-            'assets/images/profile_settings.svg',
-            width: 24,
-            height: 24,
-            colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+          // Close button
+          GestureDetector(
+            onTap: () => viewModel.closeSettings(context),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Icon(
+                Icons.close,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
           ),
         ],
       ),
@@ -148,20 +181,7 @@ class _SettingsViewBody extends StatelessWidget {
   Widget _buildSettingsCard(BuildContext context, SettingsViewModel viewModel) {
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            offset: const Offset(0, 2),
-            blurRadius: 8,
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
+      child: Column(
           children: [
             _buildSettingsItem(
               context,
@@ -208,27 +228,13 @@ class _SettingsViewBody extends StatelessWidget {
             _buildLanguageItem(context, viewModel),
           ],
         ),
-      ),
     );
   }
 
   Widget _buildOtherCard(BuildContext context, SettingsViewModel viewModel) {
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            offset: const Offset(0, 2),
-            blurRadius: 8,
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
@@ -278,7 +284,6 @@ class _SettingsViewBody extends StatelessWidget {
             ),
           ],
         ),
-      ),
     );
   }
 

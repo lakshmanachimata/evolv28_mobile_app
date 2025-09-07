@@ -28,67 +28,129 @@ class _ProfileEditViewBody extends StatelessWidget {
     return Consumer<ProfileEditViewModel>(
       builder: (context, viewModel, child) {
         return Scaffold(
-          backgroundColor: Colors.white,
-          body: SafeArea(
-            child: Column(
-              children: [
-                // Header
-                _buildHeader(context),
-                
-                // Main content
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 20),
-                        
-                        // Profile avatar
-                        _buildProfileAvatar(context, viewModel),
-                        
-                        const SizedBox(height: 32),
-                        
-                        // Form fields
-                        _buildFormFields(context, viewModel),
-                        
-                        const SizedBox(height: 32),
-                        
-                        // Save button
-                        _buildSaveButton(context, viewModel),
-                        
-                        const SizedBox(height: 100),
-                      ],
+          body: Stack(
+            children: [
+              // Background
+              _buildBackground(),
+              
+              // Main content
+              SafeArea(
+                child: Column(
+                  children: [
+                    // Bottom sheet content
+                    Expanded(
+                      child: Container(
+                        height: MediaQuery.of(context).size.height * 0.85,
+                        decoration: BoxDecoration(
+                          image: const DecorationImage(
+                            image: AssetImage('assets/images/modal-background.png'),
+                            fit: BoxFit.cover,
+                          ),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(20),
+                            topRight: Radius.circular(20),
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            // Header with close button
+                            _buildBottomSheetHeader(context),
+                            
+                            // Main content
+                            Expanded(
+                              child: Container(
+                                margin: const EdgeInsets.symmetric(horizontal: 24.0),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.1),
+                                      offset: const Offset(0, 2),
+                                      blurRadius: 8,
+                                    ),
+                                  ],
+                                ),
+                                child: SingleChildScrollView(
+                                  padding: const EdgeInsets.all(24.0),
+                                  child: Column(
+                                    children: [
+                                      const SizedBox(height: 20),
+                                      
+                                      // Profile avatar
+                                      _buildProfileAvatar(context, viewModel),
+                                      
+                                      const SizedBox(height: 32),
+                                      
+                                      // Form fields
+                                      _buildFormFields(context, viewModel),
+                                      
+                                      const SizedBox(height: 32),
+                                      
+                                      // Save button
+                                      _buildSaveButton(context, viewModel),
+                                      
+                                      const SizedBox(height: 100),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildBackground() {
+    return SizedBox(
+      width: double.infinity,
+      height: double.infinity,
+      child: Image.asset(
+        'assets/images/modal-background.png',
+        fit: BoxFit.cover,
+      ),
+    );
+  }
+
+  Widget _buildBottomSheetHeader(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Back button
-          GestureDetector(
-            onTap: () => context.go(AppRoutes.settings),
-            child: const Icon(Icons.arrow_back, color: Colors.black, size: 24),
-          ),
-          
-          const SizedBox(width: 16),
-          
           // Title
           const Text(
             'Profile',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.black,
+              color: Colors.white,
+            ),
+          ),
+          
+          // Close button
+          GestureDetector(
+            onTap: () => context.go(AppRoutes.settings),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Icon(
+                Icons.close,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
           ),
         ],

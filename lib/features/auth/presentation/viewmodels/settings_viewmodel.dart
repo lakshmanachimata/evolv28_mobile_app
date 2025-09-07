@@ -90,7 +90,7 @@ class SettingsViewModel extends ChangeNotifier {
   }
 
   // Close settings
-  void closeSettings() {
-    print('Close Settings');
+  void closeSettings(BuildContext context) {
+    context.go(AppRoutes.profile);
   }
 }
