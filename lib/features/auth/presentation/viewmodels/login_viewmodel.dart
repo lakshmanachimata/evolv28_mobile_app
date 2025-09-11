@@ -12,6 +12,7 @@ class LoginViewModel extends ChangeNotifier {
   String _password = '';
   bool _rememberMe = false;
   bool _transactionalAlerts = false;
+  bool _termsAndConditions = false;
   bool _isPasswordVisible = false;
 
   // State
@@ -23,6 +24,7 @@ class LoginViewModel extends ChangeNotifier {
   String get password => _password;
   bool get rememberMe => _rememberMe;
   bool get transactionalAlerts => _transactionalAlerts;
+  bool get termsAndConditions => _termsAndConditions;
   bool get isPasswordVisible => _isPasswordVisible;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -47,6 +49,11 @@ class LoginViewModel extends ChangeNotifier {
 
   void setTransactionalAlerts(bool value) {
     _transactionalAlerts = value;
+    notifyListeners();
+  }
+
+  void setTermsAndConditions(bool value) {
+    _termsAndConditions = value;
     notifyListeners();
   }
 
@@ -115,6 +122,7 @@ class LoginViewModel extends ChangeNotifier {
     _password = '';
     _rememberMe = false;
     _transactionalAlerts = false;
+    _termsAndConditions = false;
     _isPasswordVisible = false;
     _errorMessage = null;
     notifyListeners();

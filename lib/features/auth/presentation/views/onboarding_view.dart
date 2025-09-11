@@ -66,17 +66,25 @@ class _OnboardingViewBody extends StatelessWidget {
                   ),
                 ),
                 child: SafeArea(
-                  child: Padding(
+                  child: SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 24),
-                        
-                        // Step content based on current step
-                        Expanded(
-                          child: _buildCurrentStepContent(context),
-                        ),
-                      ],
+                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: MediaQuery.of(context).size.height * 0.75 - 
+                                   MediaQuery.of(context).padding.top - 
+                                   MediaQuery.of(context).padding.bottom - 48,
+                      ),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 24),
+                          
+                          // Step content based on current step
+                          _buildCurrentStepContent(context),
+                          
+                          const SizedBox(height: 24),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -249,7 +257,7 @@ class _OnboardingViewBody extends StatelessWidget {
             return Column(
               children: [
                 _buildConnectDeviceCard(context, viewModel),
-                const SizedBox(height: 32), // Fixed spacing instead of Spacer
+                const SizedBox(height: 32),
                 _buildConnectBottom(context, viewModel),
               ],
             );
@@ -462,6 +470,8 @@ class _OnboardingViewBody extends StatelessWidget {
           ),
           child: TextFormField(
             controller: viewModel.firstNameController,
+            keyboardType: TextInputType.name,
+            textInputAction: TextInputAction.next,
             decoration: InputDecoration(
               hintText: 'Jane',
               hintStyle: TextStyle(color: Colors.black),
@@ -494,6 +504,8 @@ class _OnboardingViewBody extends StatelessWidget {
           ),
           child: TextFormField(
             controller: viewModel.lastNameController,
+            keyboardType: TextInputType.name,
+            textInputAction: TextInputAction.done,
             decoration: InputDecoration(
               hintText: 'Doe',
               hintStyle: TextStyle(color: Colors.black),
@@ -649,6 +661,8 @@ class _OnboardingViewBody extends StatelessWidget {
           ),
           child: TextFormField(
             controller: viewModel.otpController,
+            keyboardType: TextInputType.number,
+            textInputAction: TextInputAction.done,
             decoration: InputDecoration(
               hintStyle: TextStyle(color: Colors.black),
               contentPadding: const EdgeInsets.symmetric(

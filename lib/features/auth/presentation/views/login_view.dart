@@ -74,7 +74,13 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
 
                     // Conditional Card (Login or OTP)
                     _showOtpCard
-                        ? _buildOtpCard()
+                        ? Column(
+                            children: [
+                              _buildOtpCard(),
+                              const SizedBox(height: 24),
+                              _buildTermsAndConditionsCheckbox(context),
+                            ],
+                          )
                         : _buildLoginCard(),
                     
                     const SizedBox(height: 24),
@@ -522,21 +528,19 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
 
   Widget _buildOtpCard() {
     final List<TextEditingController> _otpControllers = List.generate(
-      6,
+      4,
       (index) => TextEditingController(),
     );
     final List<FocusNode> _focusNodes = List.generate(
-      6,
+      4,
       (index) => FocusNode(),
     );
 
-    // Pre-fill with sample OTP: 105948
+    // Pre-fill with sample OTP: 1059
     _otpControllers[0].text = '1';
     _otpControllers[1].text = '0';
     _otpControllers[2].text = '5';
     _otpControllers[3].text = '9';
-    _otpControllers[4].text = '4';
-    _otpControllers[5].text = '8';
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(8.0),
@@ -580,11 +584,32 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
               ),
               const SizedBox(height: 24),
 
+              // Email field
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: TextFormField(
+                  initialValue: 'john@doe.com',
+                  readOnly: true,
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                    border: InputBorder.none,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+
               // OTP Input Fields
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: List.generate(
-                  6,
+                  4,
                   (index) =>
                       _buildOtpField(index, _otpControllers, _focusNodes),
                 ),
@@ -657,11 +682,59 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
           contentPadding: EdgeInsets.zero,
         ),
         onChanged: (value) {
-          if (value.isNotEmpty && index < 5) {
+          if (value.isNotEmpty && index < 3) {
             focusNodes[index + 1].requestFocus();
           }
         },
       ),
+    );
+  }
+
+  Widget _buildTermsAndConditionsCheckbox(BuildContext context) {
+    return Consumer<LoginViewModel>(
+      builder: (context, viewModel, child) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: SizedBox(
+            width: double.infinity,
+            child: Row(
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    viewModel.setTermsAndConditions(
+                      !viewModel.termsAndConditions,
+                    );
+                  },
+                  child: Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: viewModel.termsAndConditions
+                          ? const Color(0xFFF17961)
+                          : Colors.transparent,
+                      border: Border.all(
+                        color: const Color(0xFFF17961),
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: viewModel.termsAndConditions
+                        ? const Icon(Icons.check, size: 14, color: Colors.white)
+                        : null,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'I agree to the Terms and conditions & Privacy policy',
+                    style: TextStyle(color: Colors.black, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
