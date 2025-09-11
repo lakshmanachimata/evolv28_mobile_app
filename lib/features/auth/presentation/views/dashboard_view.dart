@@ -415,7 +415,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
 
         // Horizontal scrollable feature icons
         SizedBox(
-          height: 80,
+          height: 100,
           child: ListView(
             scrollDirection: Axis.horizontal,
             children: [

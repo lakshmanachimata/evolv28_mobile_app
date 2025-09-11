@@ -619,7 +619,10 @@ class _OnboardingViewBody extends StatelessWidget {
             child: ElevatedButton(
               onPressed: viewModel.canProceedFromCurrentStep()
                   ? () {
-                      if (viewModel.isLastStep) {
+                      if (viewModel.currentStep == 1) {
+                        // Navigate to dashboard from profile setup
+                        context.go(AppRoutes.dashboard);
+                      } else if (viewModel.isLastStep) {
                         context.go('/home');
                       } else {
                         viewModel.nextStep();
