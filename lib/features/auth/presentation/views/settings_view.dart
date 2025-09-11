@@ -141,7 +141,7 @@ class _SettingsViewBody extends StatelessWidget {
         children: [
           // evolv28 logo
           Image.asset(
-            'assets/images/evolv_text_white.png',
+            'assets/images/evolv_text.png',
             width: MediaQuery.of(context).size.width * 0.25,
             fit: BoxFit.contain,
           ),

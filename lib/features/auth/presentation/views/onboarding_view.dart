@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -35,7 +33,7 @@ class _OnboardingViewBody extends StatelessWidget {
           children: [
             // Background PNG
             Image.asset(
-              'assets/images/modal-background.png',
+              'assets/images/term-background.png',
               fit: BoxFit.cover,
               width: double.infinity,
               height: double.infinity,
@@ -43,12 +41,7 @@ class _OnboardingViewBody extends StatelessWidget {
 
             // Header Section with evolv28 logo (outside overlay)
             SafeArea(
-              child: Column(
-                children: [
-                  _buildHeader(),
-                  const Spacer(),
-                ],
-              ),
+              child: Column(children: [_buildHeader(context), const Spacer()]),
             ),
 
             // Main overlay with rounded top corners
@@ -57,9 +50,18 @@ class _OnboardingViewBody extends StatelessWidget {
               left: 0,
               right: 0,
               child: Container(
-                height: MediaQuery.of(context).size.height * 0.75, // 75% of screen height
+                height:
+                    MediaQuery.of(context).size.height *
+                    0.75, // 75% of screen height
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.6), // Semi-transparent dark overlay
+                  image: DecorationImage(
+                    image: AssetImage('assets/images/modal-background.png'),
+                    fit: BoxFit.cover,
+                    opacity: 0.9,
+                  ),
+                  color: Colors.black.withOpacity(
+                    0.6,
+                  ), // Semi-transparent dark overlay
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(32),
                     topRight: Radius.circular(32),
@@ -68,20 +70,23 @@ class _OnboardingViewBody extends StatelessWidget {
                 child: SafeArea(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
                     child: ConstrainedBox(
                       constraints: BoxConstraints(
-                        minHeight: MediaQuery.of(context).size.height * 0.75 - 
-                                   MediaQuery.of(context).padding.top - 
-                                   MediaQuery.of(context).padding.bottom - 48,
+                        minHeight:
+                            MediaQuery.of(context).size.height * 0.75 -
+                            MediaQuery.of(context).padding.top -
+                            MediaQuery.of(context).padding.bottom -
+                            48,
                       ),
                       child: Column(
                         children: [
                           const SizedBox(height: 24),
-                          
+
                           // Step content based on current step
                           _buildCurrentStepContent(context),
-                          
+
                           const SizedBox(height: 24),
                         ],
                       ),
@@ -96,149 +101,22 @@ class _OnboardingViewBody extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF5F2), // Light pink/peach background
-      ),
       child: Row(
         children: [
-          // evolv28 Logo with smiley face in 'o'
+          // evolv28 Logo
           Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'evolv',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Arial',
-                    letterSpacing: 0.5,
-                  ),
+            child: Center(
+              child: SizedBox(
+                width: MediaQuery.of(context).size.width * 0.25,
+                child: Image.asset(
+                  'assets/images/evolv_text.png',
+                  fit: BoxFit.contain,
                 ),
-                // Custom 'o' with smiley face
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Text(
-                      'o',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'Arial',
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    // Smiley face inside the 'o'
-                    Positioned(
-                      top: 4,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Left eye
-                          Container(
-                            width: 2,
-                            height: 2,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFD4C7), // Lighter peach
-                              borderRadius: BorderRadius.circular(1),
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          // Right eye
-                          Container(
-                            width: 2,
-                            height: 2,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFD4C7), // Lighter peach
-                              borderRadius: BorderRadius.circular(1),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Smile
-                    Positioned(
-                      bottom: 4,
-                      child: Container(
-                        width: 8,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          border: Border(
-                            bottom: BorderSide(
-                              color: const Color(0xFFFFD4C7), // Lighter peach
-                              width: 1,
-                            ),
-                          ),
-                          borderRadius: const BorderRadius.only(
-                            bottomLeft: Radius.circular(4),
-                            bottomRight: Radius.circular(4),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                Text(
-                  '28',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Arial',
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-
-          // Abstract graphic elements (birds and cloud shapes)
-          Row(
-            children: [
-              // Bird silhouettes
-              SvgPicture.asset(
-                'assets/images/bird_silhouette.svg',
-                height: 16,
-                colorFilter: const ColorFilter.mode(
-                  Colors.black54,
-                  BlendMode.srcIn,
-                ),
-              ),
-              const SizedBox(width: 8),
-              SvgPicture.asset(
-                'assets/images/bird_silhouette.svg',
-                height: 12,
-                colorFilter: const ColorFilter.mode(
-                  Colors.black54,
-                  BlendMode.srcIn,
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Cloud-like shapes
-              Container(
-                width: 20,
-                height: 12,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFD4C7),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                width: 16,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFD4C7),
-                  borderRadius: BorderRadius.circular(5),
-                ),
-              ),
-            ],
           ),
         ],
       ),
@@ -307,10 +185,7 @@ class _OnboardingViewBody extends StatelessWidget {
         const SizedBox(height: 24),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(
-            horizontal: 12.0,
-            vertical: 24.0,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 24.0),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16.0),
@@ -368,7 +243,7 @@ class _OnboardingViewBody extends StatelessWidget {
                     horizontal: 20,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF07A60), // Light orange/peach
+                    color: const Color(0xFF547D81), // Light orange/peach
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -650,10 +525,7 @@ class _OnboardingViewBody extends StatelessWidget {
 
         // OTP Input Field
         Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 24.0,
-            vertical: 12.0,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
           decoration: BoxDecoration(
             color: Colors.transparent,
             borderRadius: BorderRadius.circular(12),

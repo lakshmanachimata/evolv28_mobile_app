@@ -136,96 +136,13 @@ class HomePage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Custom evolv28 logo with smiley face in the 'o'
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'evolv',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 48,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Arial',
-                    letterSpacing: 1.0,
-                  ),
-                ),
-                // Custom 'o' with smiley face
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Text(
-                      'o',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 48,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'Arial',
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                    // Smiley face inside the 'o'
-                    Positioned(
-                      top: 8,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Left eye
-                          Container(
-                            width: 3,
-                            height: 3,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(1.5),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          // Right eye
-                          Container(
-                            width: 3,
-                            height: 3,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(1.5),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Smile
-                    Positioned(
-                      bottom: 8,
-                      child: Container(
-                        width: 16,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          border: Border(
-                            bottom: BorderSide(
-                              color: Colors.white,
-                              width: 2,
-                            ),
-                          ),
-                          borderRadius: const BorderRadius.only(
-                            bottomLeft: Radius.circular(8),
-                            bottomRight: Radius.circular(8),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                Text(
-                  '28',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 48,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Arial',
-                    letterSpacing: 1.0,
-                  ),
-                ),
-              ],
+            // evolv28 logo
+            SizedBox(
+              width: MediaQuery.of(context).size.width * 0.4,
+              child: Image.asset(
+                'assets/images/evolv_text.png',
+                fit: BoxFit.contain,
+              ),
             ),
             const SizedBox(height: 32),
             Text(
