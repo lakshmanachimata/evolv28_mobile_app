@@ -48,33 +48,38 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
 
           // Login content
           SafeArea(
-            child: Padding(
+            child: SingleChildScrollView(
               padding: const EdgeInsets.all(24.0),
-              child: Column(
-                children: [
-                  const SizedBox(height: 36),
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: MediaQuery.of(context).size.height - 
+                             MediaQuery.of(context).padding.top - 
+                             MediaQuery.of(context).padding.bottom - 48,
+                ),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 36),
 
-                  // Evolv28 Logo at top
-                  SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.25,
-                    child: Image.asset(
-                      'assets/images/evolv_text.png',
-                      fit: BoxFit.contain,
+                    // Evolv28 Logo at top
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.25,
+                      child: Image.asset(
+                        'assets/images/evolv_text.png',
+                        fit: BoxFit.contain,
+                      ),
                     ),
-                  ),
 
-                  // Conditional Card (Login or OTP)
-                  Expanded(
-                    child: _showOtpCard
-                        ? Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [_buildOtpCard()],
-                          )
-                        : Column(children: [const Spacer(), _buildLoginCard()]),
-                  ),
-                  const SizedBox(height: 24),
-                ],
+                    const SizedBox(height: 40),
+
+                    // Conditional Card (Login or OTP)
+                    _showOtpCard
+                        ? _buildOtpCard()
+                        : _buildLoginCard(),
+                    
+                    const SizedBox(height: 24),
+                  ],
+                ),
               ),
             ),
           ),
@@ -94,6 +99,8 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
           ),
           child: TextFormField(
             onChanged: viewModel.setEmail,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
             decoration: InputDecoration(
               hintText: 'john@doe.com',
               hintStyle: TextStyle(color: Colors.grey.shade400),
@@ -121,6 +128,8 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
           child: TextFormField(
             onChanged: viewModel.setPassword,
             obscureText: !viewModel.isPasswordVisible,
+            keyboardType: TextInputType.visiblePassword,
+            textInputAction: TextInputAction.done,
             decoration: InputDecoration(
               hintText: '••••••••',
               hintStyle: TextStyle(color: Colors.grey.shade400),
@@ -561,7 +570,7 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
             children: [
               // Title
               Text(
-                'Enter the OTP sent to your mobile\nnumber',
+                'Enter the OTP sent to your email id',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
