@@ -6,6 +6,7 @@ class AppRoutes {
   static const String onboarding = '/onboarding';
   static const String devices = '/devices';
   static const String deviceConnected = '/device-connected';
+  static const String onboardDevice = '/onboard-device';
   // Home
   static const String home = '/home';
   static const String dashboard = '/dashboard';
@@ -28,6 +29,7 @@ class AppRouteNames {
   static const String onboarding = 'onboarding';
   static const String devices = 'devices';
   static const String deviceConnected = 'deviceConnected';
+  static const String onboardDevice = 'onboardDevice';
   // Home
   static const String home = 'home';
   static const String dashboard = 'dashboard';
