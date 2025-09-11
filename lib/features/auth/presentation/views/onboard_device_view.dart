@@ -12,6 +12,85 @@ class OnboardDeviceView extends StatefulWidget {
 
 class _OnboardDeviceViewState extends State<OnboardDeviceView> {
   bool _showOtpScreen = false;
+  bool _showDeviceActivatedDialog = false;
+
+  void _showDeviceActivatedSuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Title
+                const Text(
+                  'Device Activated',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                
+                // Success Icon
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: const BoxDecoration(
+                    color: Colors.black,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check,
+                    color: Colors.white,
+                    size: 40,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                
+                // OK Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(); // Close dialog
+                      context.go(AppRoutes.devices); // Navigate to devices view
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF17961), // Coral/light orange
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'OK',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -272,8 +351,8 @@ class _OnboardDeviceViewState extends State<OnboardDeviceView> {
           height: 56,
           child: ElevatedButton(
             onPressed: () {
-              // Navigate to dashboard after successful connection
-              context.go(AppRoutes.dashboard);
+              // Show device activated success dialog
+              _showDeviceActivatedSuccessDialog();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFF17961), // Coral/light orange
