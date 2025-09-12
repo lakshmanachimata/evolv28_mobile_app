@@ -45,5 +45,15 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>This app needs Bluetooth access to connect with Evolv28 devices for health monitoring and data synchronization.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>This app needs Bluetooth access to connect with Evolv28 devices for health monitoring and data synchronization.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app needs location access to scan for nearby Bluetooth devices, which is required for Bluetooth Low Energy functionality.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>This app needs location access to scan for nearby Bluetooth devices, which is required for Bluetooth Low Energy functionality.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>This app needs location access to scan for nearby Bluetooth devices, which is required for Bluetooth Low Energy functionality.</string>
 </dict>
 </plist>

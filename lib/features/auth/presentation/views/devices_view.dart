@@ -124,7 +124,9 @@ class _DevicesViewBodyState extends State<_DevicesViewBody>
             const SizedBox(height: 36),
 
             // Content based on state
-            if (viewModel.isScanning)
+            if (viewModel.connectionStep > 0)
+              _buildConnectionFlow(context, viewModel)
+            else if (viewModel.isScanning)
               _buildScanningState()
             else if (viewModel.nearbyDevices.isEmpty &&
                 viewModel.isBluetoothEnabled)
@@ -142,6 +144,263 @@ class _DevicesViewBodyState extends State<_DevicesViewBody>
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildConnectionFlow(BuildContext context, DevicesViewModel viewModel) {
+    switch (viewModel.connectionStep) {
+      case 1:
+        return _buildConnectingStep(context, viewModel);
+      case 2:
+        return _buildLoadingStep(context, viewModel);
+      default:
+        return _buildDeviceSelectionStep(context, viewModel);
+    }
+  }
+
+  Widget _buildDeviceSelectionStep(BuildContext context, DevicesViewModel viewModel) {
+    return Column(
+      children: [
+        // Welcome message
+        Text(
+          'Welcome ${viewModel.userName}, select your device',
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 40),
+        
+        // Device illustration
+        Container(
+          width: 200,
+          height: 200,
+          decoration: const BoxDecoration(
+            color: Color(0xFF2C2C2C), // Dark background for device
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Image.asset(
+              'assets/images/user_neck_device.png',
+              width: 120,
+              height: 120,
+              fit: BoxFit.contain,
+            ),
+          ),
+        ),
+        const SizedBox(height: 40),
+        
+        // Nearby devices section
+        const Text(
+          'Nearby devices',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        // Device list
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              _buildDeviceItem(context, viewModel, {
+                'id': 'evolv28-F044CF',
+                'name': 'evolv28-F044CF',
+                'isConnected': false,
+                'signalStrength': 85,
+              }),
+            ],
+          ),
+        ),
+        const SizedBox(height: 40),
+        
+        // Can't find device button
+        TextButton(
+          onPressed: () {
+            // Handle can't find device
+          },
+          child: Text(
+            'Can\'t find your device',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.6),
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+
+  Widget _buildConnectingStep(BuildContext context, DevicesViewModel viewModel) {
+    return Column(
+      children: [
+        // Welcome message
+        Text(
+          'Welcome ${viewModel.userName}',
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 40),
+        
+        // Device illustration
+        Container(
+          width: 200,
+          height: 200,
+          decoration: const BoxDecoration(
+            color: Color(0xFF2C2C2C),
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Image.asset(
+              'assets/images/user_neck_device.png',
+              width: 120,
+              height: 120,
+              fit: BoxFit.contain,
+            ),
+          ),
+        ),
+        const SizedBox(height: 40),
+        
+        // Connection status
+        Text(
+          'Connecting to ${viewModel.selectedDeviceName}...',
+          style: const TextStyle(
+            fontSize: 16,
+            color: Colors.white,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 20),
+        
+        // Loading indicator
+        const CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoadingStep(BuildContext context, DevicesViewModel viewModel) {
+    return Column(
+      children: [
+        // Welcome message
+        Text(
+          'Welcome ${viewModel.userName}',
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 40),
+        
+        // Device illustration
+        Container(
+          width: 200,
+          height: 200,
+          decoration: const BoxDecoration(
+            color: Color(0xFF2C2C2C),
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Image.asset(
+              'assets/images/user_neck_device.png',
+              width: 120,
+              height: 120,
+              fit: BoxFit.contain,
+            ),
+          ),
+        ),
+        const SizedBox(height: 40),
+        
+        // Connection status
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Connected to ${viewModel.selectedDeviceName} successfully',
+              style: const TextStyle(
+                fontSize: 16,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(
+              Icons.check_circle,
+              color: Colors.green,
+              size: 20,
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        
+        // Battery status
+        Text(
+          'Battery ${viewModel.batteryLevel}%',
+          style: const TextStyle(
+            fontSize: 16,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 20),
+        
+        // Progress bar
+        Container(
+          width: double.infinity,
+          height: 8,
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: FractionallySizedBox(
+            alignment: Alignment.centerLeft,
+            widthFactor: viewModel.connectionProgress,
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFF17961), // Orange color
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 40),
+        
+        // Loading button
+        Container(
+          width: double.infinity,
+          height: 48,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade600,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Center(
+            child: Text(
+              'Loading...',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -280,6 +539,33 @@ class _DevicesViewBodyState extends State<_DevicesViewBody>
             ...viewModel.nearbyDevices.map(
               (device) => _buildDeviceItem(context, viewModel, device),
             ),
+            
+            // Connect New Device Button
+            const SizedBox(height: 20),
+            Container(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: () {
+                  viewModel.startDeviceConnectionFlow();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF07A60),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Connect New Device',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            
             // Add extra space to ensure pull-to-refresh works
             const SizedBox(height: 100),
           ],
@@ -380,6 +666,55 @@ class _DevicesViewBodyState extends State<_DevicesViewBody>
   }
 
   Widget _buildBottomButtons(BuildContext context, DevicesViewModel viewModel) {
+    // Show Connect button when in device selection step and device is selected
+    if (viewModel.connectionStep == 0 && viewModel.isDeviceSelected) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 150,
+            height: 40,
+            child: TextButton(
+              onPressed: () {
+                // Handle can't find device
+              },
+              style: TextButton.styleFrom(
+                side: const BorderSide(color: Color(0xFF547D81), width: 1),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ),
+              child: const Text(
+                "Can't find your device?",
+                style: TextStyle(color: Color(0xFF547D81), fontSize: 14),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          SizedBox(
+            width: 100,
+            height: 40,
+            child: ElevatedButton(
+              onPressed: viewModel.startConnection,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFF07A60),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.all(4),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                'Connect',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+    
+    // Default bottom buttons for other states
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -758,27 +1093,49 @@ class _DevicesViewBodyState extends State<_DevicesViewBody>
 
                 const SizedBox(height: 24),
 
-                // OK Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: viewModel.handleLocationPermissionErrorOk,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFF07A60),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                // Buttons Row
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: viewModel.handleLocationPermissionErrorOk,
+                        style: TextButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFF547D81), width: 1),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(color: Color(0xFF547D81), fontSize: 16),
+                        ),
                       ),
                     ),
-                    child: const Text(
-                      'OK',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          viewModel.handleLocationPermissionErrorOk();
+                          viewModel.openDeviceSettings();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF07A60),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Open Settings',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),
