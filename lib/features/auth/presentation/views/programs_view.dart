@@ -34,7 +34,9 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
       final viewModel = Provider.of<ProgramsViewModel>(context, listen: false);
       // Check if we should show player screen (coming from dashboard player card)
       if (ProgramsViewModel.programIdFromDashboard != null) {
-        viewModel.navigateFromDashboardPlayer(ProgramsViewModel.programIdFromDashboard!);
+        viewModel.navigateFromDashboardPlayer(
+          ProgramsViewModel.programIdFromDashboard!,
+        );
         ProgramsViewModel.clearProgramIdFromDashboard();
       }
     });
@@ -398,7 +400,11 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
     return Stack(
       alignment: Alignment.center,
       children: [
-        SvgPicture.asset('assets/images/sleep_icon.svg', width: 130, height: 130),
+        SvgPicture.asset(
+          'assets/images/sleep_icon.svg',
+          width: 130,
+          height: 130,
+        ),
       ],
     );
   }
@@ -529,53 +535,77 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
     BuildContext context,
     ProgramsViewModel viewModel,
   ) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Completion Icon
-          _buildCompletionIcon(),
+    return Stack(
+      children: [
+        SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Completion Icon
+              _buildCompletionIcon(),
 
-          const SizedBox(height: 40),
+              const SizedBox(height: 60),
 
-          // Feedback Question
-          const Text(
-            'Slept Better?',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Colors.black,
-            ),
-            textAlign: TextAlign.center,
+              // Feedback Question
+              const Text(
+                'Slept Better?',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black,
+                ),
+                textAlign: TextAlign.center,
+              ),
+
+              const SizedBox(height: 8),
+
+              const Text(
+                'Take a moment to check-in with yourself.',
+                style: TextStyle(fontSize: 14, color: Colors.black),
+                textAlign: TextAlign.center,
+              ),
+
+              const SizedBox(height: 32),
+
+              // Feedback Options
+              _buildFeedbackOptions(viewModel),
+
+              const SizedBox(height: 60),
+
+              // Action Buttons
+              _buildFeedbackActionButtons(context, viewModel),
+
+              const SizedBox(height: 40),
+            ],
           ),
+        ),
 
-          const SizedBox(height: 8),
-
-          const Text(
-            'Take a moment to check-in with yourself.',
-            style: TextStyle(fontSize: 14, color: Colors.grey),
-            textAlign: TextAlign.center,
-          ),
-
-          const SizedBox(height: 32),
-
-          // Feedback Options
-          _buildFeedbackOptions(viewModel),
-
-          const SizedBox(height: 60),
-
-          // Action Buttons
-          _buildFeedbackActionButtons(context, viewModel),
-
-          const SizedBox(height: 40),
-        ],
-      ),
+        // Success Popup
+        if (viewModel.showSuccessPopup) _buildSuccessPopup(context, viewModel),
+      ],
     );
   }
 
   Widget _buildCompletionIcon() {
-    return Image.asset('assets/images/nicely_done.png', width: 80, height: 105);
+    return Column(
+      children: [
+        SvgPicture.asset(
+          'assets/images/checkmark_icon.svg',
+          width: 80,
+          height: 80,
+        ),
+        const SizedBox(height: 32),
+        const Text(
+          'Nicely done!',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildFeedbackOptions(ProgramsViewModel viewModel) {
@@ -639,9 +669,7 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: isSelected
-                  ? const Color(0xFFF17961)
-                  : Colors.grey.shade600,
+              color: isSelected ? const Color(0xFFF17961) : Colors.black,
             ),
           ),
         ],
@@ -706,6 +734,109 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildSuccessPopup(BuildContext context, ProgramsViewModel viewModel) {
+    return Container(
+      color: Colors.black.withOpacity(0.5), // Semi-transparent background
+      child: Center(
+        child: Container(
+          width: 280,
+          height: 280,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Close button
+              Align(
+                alignment: Alignment.topRight,
+                child: GestureDetector(
+                  onTap: () => viewModel.hideSuccessPopup(),
+                  child: Container(
+                    width: 24,
+                    height: 24,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF17961),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ),
+                ),
+              ),
+              // Success icon
+              SvgPicture.asset(
+                'assets/images/checkmark_icon.svg',
+                width: 64,
+                height: 64,
+              ),
+
+              const SizedBox(height: 24),
+
+              // Success title
+              const Text(
+                'Success',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              // Success message
+              const Text(
+                'Feedback updated successfully',
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+
+              const SizedBox(height: 32),
+
+              // OK button
+              SizedBox(
+                width: 140,
+                height: 40,
+                child: ElevatedButton(
+                  onPressed: () => viewModel.onSuccessPopupOk(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFF17961),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'OK',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

@@ -24,6 +24,7 @@ class ProgramsViewModel extends ChangeNotifier {
   // Feedback state
   bool _isInFeedbackMode = false;
   FeedbackType? _selectedFeedback;
+  bool _showSuccessPopup = false;
 
   // Programs data matching the image flow
   final List<ProgramData> programs = [
@@ -91,6 +92,7 @@ class ProgramsViewModel extends ChangeNotifier {
   // Feedback getters
   bool get isInFeedbackMode => _isInFeedbackMode;
   FeedbackType? get selectedFeedback => _selectedFeedback;
+  bool get showSuccessPopup => _showSuccessPopup;
 
   void selectProgram(String programId) {
     _selectedProgramId = programId;
@@ -135,7 +137,24 @@ class ProgramsViewModel extends ChangeNotifier {
 
   void selectFeedback(FeedbackType feedbackType) {
     _selectedFeedback = feedbackType;
+    _showSuccessPopup = true;
     notifyListeners();
+  }
+
+  void hideSuccessPopup() {
+    _showSuccessPopup = false;
+    notifyListeners();
+  }
+
+  void onSuccessPopupOk(BuildContext context) {
+    // Hide popup and go to programs list
+    _showSuccessPopup = false;
+    _isInFeedbackMode = false;
+    _currentPlayingProgramId = null;
+    _isPlaying = false;
+    _currentPosition = Duration.zero;
+    notifyListeners();
+    // Stay on programs screen to show the list
   }
 
   void repeatProgram(BuildContext context) {
