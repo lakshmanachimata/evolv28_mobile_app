@@ -113,11 +113,11 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
               ),
               Positioned(
                 top: 0,
-                right: 10,
+                right: 12,
                 child: SvgPicture.asset(
                   'assets/images/noti_icon.svg',
-                  width: 24,
-                  height: 24,
+                  width: 30,
+                  height: 30,
                 ),
               ),
             ],
