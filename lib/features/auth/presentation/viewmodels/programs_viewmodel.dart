@@ -2,8 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/routing/app_router_config.dart';
+import 'dashboard_viewmodel.dart';
 
 class ProgramsViewModel extends ChangeNotifier {
+  // Static variable to track navigation from dashboard player card
+  static String? _programIdFromDashboard;
+  
+  // Getter for the static variable (for external access)
+  static String? get programIdFromDashboard => _programIdFromDashboard;
+
   String? _selectedProgramId;
   int _selectedTabIndex = 1; // Programs tab is selected by default
   Map<String, bool> _favorites = {};
@@ -147,6 +154,33 @@ class ProgramsViewModel extends ChangeNotifier {
     _currentPosition = Duration.zero;
     notifyListeners();
     context.go(AppRoutes.dashboard);
+  }
+
+  void minimizeToDashboard(BuildContext context) {
+    // Set the minimized state in dashboard viewmodel
+    if (_currentPlayingProgramId != null) {
+      DashboardViewModel.setMinimizedState(_currentPlayingProgramId!);
+    }
+    
+    // Navigate to dashboard
+    context.go(AppRoutes.dashboard);
+  }
+
+  // Static methods to manage dashboard navigation
+  static void setProgramIdFromDashboard(String programId) {
+    _programIdFromDashboard = programId;
+  }
+
+  static void clearProgramIdFromDashboard() {
+    _programIdFromDashboard = null;
+  }
+
+  // Handle navigation from dashboard player card
+  void navigateFromDashboardPlayer(String programId) {
+    _currentPlayingProgramId = programId;
+    _isPlaying = true;
+    _currentPosition = Duration.zero;
+    notifyListeners();
   }
 
   void onTabSelected(int index, BuildContext context) {

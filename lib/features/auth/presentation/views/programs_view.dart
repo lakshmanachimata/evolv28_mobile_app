@@ -27,6 +27,20 @@ class _ProgramsViewBody extends StatefulWidget {
 
 class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
   @override
+  void initState() {
+    super.initState();
+    // Initialize the programs view
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final viewModel = Provider.of<ProgramsViewModel>(context, listen: false);
+      // Check if we should show player screen (coming from dashboard player card)
+      if (ProgramsViewModel.programIdFromDashboard != null) {
+        viewModel.navigateFromDashboardPlayer(ProgramsViewModel.programIdFromDashboard!);
+        ProgramsViewModel.clearProgramIdFromDashboard();
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Consumer<ProgramsViewModel>(
@@ -475,28 +489,32 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
   }
 
   Widget _buildMinimizeButton(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 40,
-      child: OutlinedButton(
-        onPressed: () => context.go(AppRoutes.dashboard),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: const Color(0xFFF17961),
-          side: const BorderSide(color: Color(0xFFF17961), width: 1.5),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+    return Consumer<ProgramsViewModel>(
+      builder: (context, viewModel, child) {
+        return SizedBox(
+          width: double.infinity,
+          height: 40,
+          child: OutlinedButton(
+            onPressed: () => viewModel.minimizeToDashboard(context),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFFF17961),
+              side: const BorderSide(color: Color(0xFFF17961), width: 1.5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: Colors.transparent,
+            ),
+            child: const Text(
+              'Minimise',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF333333), // Dark gray text
+              ),
+            ),
           ),
-          backgroundColor: Colors.transparent,
-        ),
-        child: const Text(
-          'Minimise',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF333333), // Dark gray text
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 

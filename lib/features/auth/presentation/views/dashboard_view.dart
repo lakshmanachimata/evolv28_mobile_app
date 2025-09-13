@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../../../core/routing/app_router_config.dart';
 import '../viewmodels/dashboard_viewmodel.dart';
+import '../viewmodels/programs_viewmodel.dart';
 
 class DashboardView extends StatelessWidget {
   const DashboardView({super.key});
@@ -82,6 +83,9 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
               // Main Content Area
               Expanded(child: _buildContentArea(context, viewModel)),
 
+              // Player Card (if playing)
+              if (viewModel.showPlayerCard) _buildPlayerCard(context, viewModel),
+
               // Bottom Navigation
               _buildBottomNavigation(context, viewModel),
             ],
@@ -98,26 +102,22 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
         children: [
           // Logo and Notification Bell
           SizedBox(height: 30),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Stack(
             children: [
-              Image.asset(
-                'assets/images/evolv_text.png',
-                width: MediaQuery.of(context).size.width * 0.25,
-                fit: BoxFit.contain,
-              ),
-              const SizedBox(width: 16),
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  shape: BoxShape.circle,
+              Center(
+                child: Image.asset(
+                  'assets/images/evolv_text.png',
+                  width: MediaQuery.of(context).size.width * 0.25,
+                  fit: BoxFit.contain,
                 ),
-                child: const Icon(
-                  Icons.notifications_outlined,
-                  color: Colors.grey,
-                  size: 20,
+              ),
+              Positioned(
+                top: 0,
+                right: 10,
+                child: SvgPicture.asset(
+                  'assets/images/noti_icon.svg',
+                  width: 24,
+                  height: 24,
                 ),
               ),
             ],
@@ -488,12 +488,95 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
   }
 
 
+  Widget _buildPlayerCard(BuildContext context, DashboardViewModel viewModel) {
+    return GestureDetector(
+      onTap: () {
+        // Navigate to programs view and show player screen
+        // Pass the current playing program ID
+        if (viewModel.currentPlayingProgramId != null) {
+          ProgramsViewModel.setProgramIdFromDashboard(viewModel.currentPlayingProgramId!);
+        }
+        context.go(AppRoutes.programs);
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 0.0),
+        padding: const EdgeInsets.all(16.0),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF17961), // Reddish-orange background
+          borderRadius: BorderRadius.circular(12.0),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              offset: const Offset(0, 2),
+              blurRadius: 8,
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Sleep Icon
+            SvgPicture.asset(
+              'assets/images/sleep_icon.svg',
+              width: 50,
+              height: 50,
+            ),
+            const SizedBox(width: 16),
+            
+            // Now Playing Text
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Now playing',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white70,
+                    ),
+                  ),
+                  const Text(
+                    'Better Sleep',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Play/Pause Button
+            GestureDetector(
+              onTap: () {
+                // Handle play/pause
+              },
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.play_arrow,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildBottomNavigation(
     BuildContext context,
     DashboardViewModel viewModel,
   ) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+      margin: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 2.0),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12.0),
