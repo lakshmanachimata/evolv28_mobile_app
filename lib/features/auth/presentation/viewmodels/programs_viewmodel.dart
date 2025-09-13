@@ -33,7 +33,7 @@ class ProgramsViewModel extends ChangeNotifier {
       title: 'Improve Mood',
       recommendedTime: '2 hrs',
       iconPath: 'assets/images/improve_mood.svg',
-      isLocked: true,
+      isLocked: false,
       isFavorite: false,
     ),
     ProgramData(
@@ -41,7 +41,7 @@ class ProgramsViewModel extends ChangeNotifier {
       title: 'Improve Focus',
       recommendedTime: '1.5 hrs',
       iconPath: 'assets/images/focus_better.svg',
-      isLocked: true,
+      isLocked: false,
       isFavorite: false,
     ),
     ProgramData(
@@ -49,7 +49,7 @@ class ProgramsViewModel extends ChangeNotifier {
       title: 'Reduce Anxiety',
       recommendedTime: '2.5 hrs',
       iconPath: 'assets/images/reduced_anxiety.png',
-      isLocked: true,
+      isLocked: false,
       isFavorite: false,
     ),
     ProgramData(
@@ -57,7 +57,7 @@ class ProgramsViewModel extends ChangeNotifier {
       title: 'Remove Stress',
       recommendedTime: '2 hrs',
       iconPath: 'assets/images/remove_stress.svg',
-      isLocked: true,
+      isLocked: false,
       isFavorite: false,
     ),
     ProgramData(
@@ -65,7 +65,7 @@ class ProgramsViewModel extends ChangeNotifier {
       title: 'Calm Your Mind',
       recommendedTime: '1 hr',
       iconPath: 'assets/images/calm_mind.svg',
-      isLocked: true,
+      isLocked: false,
       isFavorite: false,
     ),
   ];

@@ -188,13 +188,13 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
     final isSelected = program.id == viewModel.selectedProgramId;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Color(0xFFEEEDEE),
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -203,111 +203,99 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           onTap: () => viewModel.selectProgram(program.id),
-          child: Stack(
-            children: [
-              // Main content
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: Row(
-                  children: [
-                    // Program Icon
-                    program.iconPath.endsWith('.png')
-                        ? Image.asset(program.iconPath, width: 48, height: 48)
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Row(
+              children: [
+                // Program Icon Container
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8F9FA),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Center(
+                    child: program.iconPath.endsWith('.png')
+                        ? Image.asset(program.iconPath, width: 32, height: 32)
                         : SvgPicture.asset(
                             program.iconPath,
-                            width: 48,
-                            height: 48,
+                            width: 32,
+                            height: 32,
                           ),
-                    const SizedBox(width: 16),
+                  ),
+                ),
+                const SizedBox(width: 16),
 
-                    // Program Details
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            program.title,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: isSelected
-                                  ? const Color(0xFFF17961)
-                                  : Colors.black,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Recommended Time: ${program.recommendedTime}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
+                // Program Details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        program.title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Recommended Time: ${program.recommendedTime}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Right side elements
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Favorite icon
+                    GestureDetector(
+                      onTap: () => viewModel.toggleFavorite(program.id),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        child: SvgPicture.asset(
+                          program.isFavorite
+                              ? 'assets/images/fav_filled.svg'
+                              : 'assets/images/fav_outline.svg',
+                          width: 20,
+                          height: 20,
+                        ),
                       ),
                     ),
 
-                    // Right side elements
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const SizedBox(width: 8),
+                    const SizedBox(width: 8),
 
-                        // Favorite icon
-                        GestureDetector(
-                          onTap: () => viewModel.toggleFavorite(program.id),
-                          child: SvgPicture.asset(
-                            program.isFavorite
-                                ? 'assets/images/fav_filled.svg'
-                                : 'assets/images/fav_outline.svg',
-                            width: 18,
-                            height: 18,
-                          ),
+                    // Play button
+                    GestureDetector(
+                      onTap: () => viewModel.playProgram(program.id),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF17961),
+                          borderRadius: BorderRadius.circular(20),
                         ),
-
-                        const SizedBox(width: 8),
-
-                        // Play button
-                        GestureDetector(
-                          onTap: () => viewModel.playProgram(program.id),
-                          child: Container(
-                            width: 24,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF17961),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: const Icon(
-                              Icons.play_arrow,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ),
+                        child: const Icon(
+                          Icons.play_arrow,
+                          color: Colors.white,
+                          size: 24,
                         ),
-                        const SizedBox(width: 16),
-                      ],
+                      ),
                     ),
                   ],
                 ),
-              ),
-
-              // Lock icon positioned at top right
-              if (program.isLocked)
-                Positioned(
-                  top: 0,
-                  right: 0,
-                  child: SvgPicture.asset(
-                    'assets/images/locked_program_icon.svg',
-                    width: 20,
-                    height: 20,
-                  ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -328,6 +316,7 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           // Program Icon with Sleep Z's
+          const SizedBox(height: 24),
           _buildPlayerIcon(currentProgram),
           const SizedBox(height: 12),
 
@@ -380,6 +369,11 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
           // I'm Done Button
           _buildImDoneButton(viewModel),
 
+          const SizedBox(height: 16),
+
+          // Minimize Button
+          _buildMinimizeButton(context),
+
           const SizedBox(height: 20),
         ],
       ),
@@ -390,7 +384,7 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
     return Stack(
       alignment: Alignment.center,
       children: [
-        Image.asset('assets/images/sleep_well.png', width: 130, height: 130),
+        SvgPicture.asset('assets/images/sleep_icon.svg', width: 130, height: 130),
       ],
     );
   }
@@ -474,6 +468,32 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
             fontSize: 16,
             fontWeight: FontWeight.bold,
             color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMinimizeButton(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 40,
+      child: OutlinedButton(
+        onPressed: () => context.go(AppRoutes.dashboard),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: const Color(0xFFF17961),
+          side: const BorderSide(color: Color(0xFFF17961), width: 1.5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: Colors.transparent,
+        ),
+        child: const Text(
+          'Minimise',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF333333), // Dark gray text
           ),
         ),
       ),

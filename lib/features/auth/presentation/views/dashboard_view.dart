@@ -232,50 +232,55 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
   }
 
   Widget _buildWellnessProgramsCard(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            offset: const Offset(0, 2),
-            blurRadius: 8,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Wellness Programs',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Start a session that suits your mind today.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
+    return GestureDetector(
+      onTap: () {
+        context.go(AppRoutes.programs);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(20.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16.0),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              offset: const Offset(0, 2),
+              blurRadius: 8,
             ),
-          ),
-          SvgPicture.asset(
-            'assets/images/dashboard_lotus.svg',
-            width: 40,
-            height: 40,
-          ),
-        ],
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Wellness Programs',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Start a session that suits your mind today.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SvgPicture.asset(
+              'assets/images/dashboard_lotus.svg',
+              width: 40,
+              height: 40,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -579,16 +584,6 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                   ),
               ],
             ),
-            if (isSelected)
-              Container(
-                margin: const EdgeInsets.only(top: 4),
-                height: 2,
-                width: 20,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFFB74D),
-                  borderRadius: BorderRadius.all(Radius.circular(1)),
-                ),
-              ),
           ],
         ),
       ),
