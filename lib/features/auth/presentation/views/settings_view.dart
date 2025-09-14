@@ -427,29 +427,49 @@ class _SettingsViewBody extends StatelessWidget {
           width: 280,
           margin: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: const Color(0xFFF5F5F5), // Light grey background
             borderRadius: BorderRadius.circular(16),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Select Language',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header with close button
+              Container(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    GestureDetector(
+                      onTap: () => viewModel.hideLanguageSelection(),
+                      child: Container(
+                        width: 24,
+                        height: 24,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 20),
-                _buildLanguageOption('English', viewModel),
-                _buildLanguageOption('Hindi', viewModel),
-                _buildLanguageOption('Arabic', viewModel),
-                _buildLanguageOption('Spanish', viewModel),
-              ],
-            ),
+              ),
+              // Language options
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                child: Column(
+                  children: [
+                    _buildLanguageOption('English', viewModel),
+                    _buildLanguageOption('Hindi (हिंदी)', viewModel),
+                    _buildLanguageOption('Spanish (español)', viewModel),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -460,21 +480,23 @@ class _SettingsViewBody extends StatelessWidget {
     final isSelected = viewModel.selectedLanguage.contains(language);
 
     return GestureDetector(
-      onTap: () => viewModel.selectLanguage('$language ($language)'),
+      onTap: () => viewModel.selectLanguage(language),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
         margin: const EdgeInsets.only(bottom: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFF07A60) : Colors.transparent,
+          color: isSelected ? const Color(0xFFF07A60) : const Color(0xFFE0E0E0), // Coral for selected, light grey for unselected
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Text(
-          language,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: isSelected ? Colors.white : Colors.black,
+        child: Center(
+          child: Text(
+            language,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.black,
+            ),
           ),
         ),
       ),

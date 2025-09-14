@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/routing/app_router_config.dart';
@@ -83,17 +84,12 @@ class _BulkDownloadViewBody extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 24.0),
                       child: Column(
                         children: [
-                          const SizedBox(height: 40),
+                          const SizedBox(height: 20),
 
-                          // Download Programs title
-                          _buildTitle(),
+                          // Program list
+                          _buildProgramList(context),
 
-                          const SizedBox(height: 40),
-
-                          // Program input field
-                          _buildProgramInputField(),
-
-                          const SizedBox(height: 40),
+                          const SizedBox(height: 30),
 
                           // Download All button
                           _buildDownloadAllButton(context),
@@ -165,32 +161,83 @@ class _BulkDownloadViewBody extends StatelessWidget {
     );
   }
 
-  Widget _buildTitle() {
-    return const Text(
-      'Download Programs',
-      style: TextStyle(
-        fontSize: 24,
-        fontWeight: FontWeight.bold,
-        color: Colors.white,
-      ),
+  Widget _buildProgramList(BuildContext context) {
+    final programs = [
+      {
+        'title': 'Sleep Better',
+        'iconPath': 'assets/images/bulk_sleep_better.svg',
+        'description': 'Improve your sleep quality',
+      },
+      {
+        'title': 'Improve Mood',
+        'iconPath': 'assets/images/bulk_improve_mood.svg',
+        'description': 'Boost your emotional well-being',
+      },
+      {
+        'title': 'Improve Focus',
+        'iconPath': 'assets/images/bulk_improve_focus.svg',
+        'description': 'Enhance concentration and attention',
+      },
+      {
+        'title': 'Reduce Anxiety',
+        'iconPath': 'assets/images/bulk_reduce_anxiety.svg',
+        'description': 'Manage anxiety and stress',
+      },
+      {
+        'title': 'Remove Stress',
+        'iconPath': 'assets/images/bulk_remove_stress.svg',
+        'description': 'Relax and unwind',
+      },
+      {
+        'title': 'Calm Your Mind',
+        'iconPath': 'assets/images/bulk_calm_mind.svg',
+        'description': 'Achieve mental clarity',
+      },
+    ];
+
+    return Column(
+      children: programs
+          .map((program) => _buildProgramCard(context, program))
+          .toList(),
     );
   }
 
-  Widget _buildProgramInputField() {
+  Widget _buildProgramCard(BuildContext context, Map<String, dynamic> program) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
+        color: const Color(0xFFE0E0E0), // Light grey background
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: const Text(
-        'Alert_Balance',
-        style: TextStyle(
-          fontSize: 16,
-          color: Colors.black,
-        ),
+      child: Row(
+        children: [
+          // Icon
+          SvgPicture.asset(
+            program['iconPath'] as String,
+            width: 32,
+            height: 32,
+            colorFilter: const ColorFilter.mode(
+              Color(0xFFF07A60), // Coral color
+              BlendMode.srcIn,
+            ),
+          ),
+
+          const SizedBox(width: 16),
+
+          // Text content
+          Expanded(
+            child: Text(
+              program['title'] as String,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -201,15 +248,13 @@ class _BulkDownloadViewBody extends StatelessWidget {
       child: ElevatedButton(
         onPressed: () {
           // Handle download all action
-          _showDownloadSuccessDialog(context);
+          _showDownloadSuccessDialog(context, 'All Programs');
         },
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF8B4513), // Brownish-red color
+          backgroundColor: const Color(0xFFF17A61), // Coral color
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         child: const Text(
           'DOWNLOAD ALL',
@@ -223,7 +268,7 @@ class _BulkDownloadViewBody extends StatelessWidget {
     );
   }
 
-  void _showDownloadSuccessDialog(BuildContext context) {
+  void _showDownloadSuccessDialog(BuildContext context, String programName) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -253,7 +298,7 @@ class _BulkDownloadViewBody extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF8B4513),
+                          color: const Color(0xFFF17A61),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: const Icon(
@@ -265,26 +310,22 @@ class _BulkDownloadViewBody extends StatelessWidget {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Success icon
                 Container(
                   width: 60,
                   height: 60,
                   decoration: const BoxDecoration(
-                    color: Color(0xFF8B4513),
+                    color: Color(0xFFF17A61),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.check,
-                    color: Colors.white,
-                    size: 30,
-                  ),
+                  child: const Icon(Icons.check, color: Colors.white, size: 30),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Title
                 const Text(
                   'Download Complete',
@@ -294,21 +335,18 @@ class _BulkDownloadViewBody extends StatelessWidget {
                     color: Colors.black,
                   ),
                 ),
-                
+
                 const SizedBox(height: 12),
-                
+
                 // Message
-                const Text(
-                  'All programs have been downloaded successfully',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey,
-                  ),
+                Text(
+                  '$programName has been downloaded successfully',
+                  style: const TextStyle(fontSize: 16, color: Colors.grey),
                   textAlign: TextAlign.center,
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // OK button
                 SizedBox(
                   width: double.infinity,
@@ -318,7 +356,7 @@ class _BulkDownloadViewBody extends StatelessWidget {
                       context.go(AppRoutes.settings);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF8B4513),
+                      backgroundColor: const Color(0xFFF17A61),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
