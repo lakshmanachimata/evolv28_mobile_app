@@ -22,6 +22,7 @@ class AppRoutes {
   static const String faq = '/faq';
   static const String privacy = '/privacy';
   static const String help = '/help';
+  static const String bulkDownload = '/bulk-download';
 }
 
 class AppRouteNames {
@@ -48,4 +49,5 @@ class AppRouteNames {
   static const String faq = 'faq';
   static const String privacy = 'privacy';
   static const String help = 'help';
+  static const String bulkDownload = 'bulkDownload';
 }

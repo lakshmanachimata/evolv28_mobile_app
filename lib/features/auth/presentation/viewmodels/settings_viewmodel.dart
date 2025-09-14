@@ -51,8 +51,8 @@ class SettingsViewModel extends ChangeNotifier {
   }
 
   // Handle bulk download
-  void handleBulkDownload() {
-    print('Bulk Download');
+  void handleBulkDownload(BuildContext context) {
+    context.go(AppRoutes.bulkDownload);
   }
 
   // Show language popup

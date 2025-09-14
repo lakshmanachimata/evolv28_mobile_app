@@ -231,7 +231,7 @@ class _SettingsViewBody extends StatelessWidget {
             context,
             Icons.download_outlined,
             'Bulk Download',
-            viewModel.handleBulkDownload,
+            () => viewModel.handleBulkDownload(context),
           ),
           _buildDivider(),
           _buildLanguageItem(context, viewModel, isLastItem: true),

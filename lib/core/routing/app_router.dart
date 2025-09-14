@@ -20,6 +20,7 @@ import '../../features/auth/presentation/views/about_view.dart';
 import '../../features/auth/presentation/views/faq_webview.dart';
 import '../../features/auth/presentation/views/privacy_webview.dart';
 import '../../features/auth/presentation/views/help_view.dart';
+import '../../features/auth/presentation/views/bulk_download_view.dart';
 
 class AppRouter {
   static final GoRouter _router = GoRouter(
@@ -145,6 +146,12 @@ class AppRouter {
         path: AppRoutes.help,
         name: AppRouteNames.help,
         builder: (context, state) => const HelpView(),
+      ),
+      // Bulk Download Route
+      GoRoute(
+        path: AppRoutes.bulkDownload,
+        name: AppRouteNames.bulkDownload,
+        builder: (context, state) => const BulkDownloadView(),
       ),
     ],
     errorBuilder: (context, state) => const NotFoundPage(),
