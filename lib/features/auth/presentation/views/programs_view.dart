@@ -45,6 +45,7 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Consumer<ProgramsViewModel>(
         builder: (context, viewModel, child) {
           return Stack(
@@ -71,12 +72,15 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
       backgroundImage = 'assets/images/goals-background.png';
     }
 
-    return SizedBox(
-      width: double.infinity,
-      height: double.infinity,
+    return Positioned.fill(
       child: Stack(
         children: [
-          Image.asset(backgroundImage, fit: BoxFit.cover),
+          Image.asset(
+            backgroundImage, 
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+          ),
           if (viewModel.isInFeedbackMode)
             Container(
               width: double.infinity,
@@ -863,11 +867,7 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             _buildNavItem('assets/images/bottom_menu_home.svg', 0, viewModel),
-            _buildNavItem(
-              'assets/images/bottom_menu_programs_selected.svg',
-              1,
-              viewModel,
-            ),
+            _buildNavItem('assets/images/bottom_menu_programs_selected.svg', 1, viewModel),
             _buildNavItem('assets/images/bottom_menu_device.png', 2, viewModel),
             _buildNavItem('assets/images/bottom_menu_user.svg', 3, viewModel),
           ],
@@ -888,8 +888,8 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          iconPath.contains('bottom_menu_device')
-              ? Image.asset(iconPath, width: 50, height: 50)
+          iconPath.endsWith('.png')
+              ? Image.asset(iconPath, width: 40, height: 40)
               : SvgPicture.asset(iconPath, width: 30, height: 30),
           const SizedBox(height: 4),
         ],

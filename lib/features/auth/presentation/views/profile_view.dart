@@ -415,55 +415,25 @@ class _ProfileViewBody extends StatelessWidget {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        padding: const EdgeInsets.symmetric(vertical: 4.0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildBottomNavItem(
-              'Home',
-              'assets/images/bottom_menu_home.svg',
-              'assets/images/bottom_menu_home_selected.svg',
-              0,
-              context,
-            ),
-            _buildBottomNavItem(
-              'Programs',
-              'assets/images/bottom_menu_programs.svg',
-              'assets/images/bottom_menu_programs_selected.svg',
-              1,
-              context,
-            ),
-            _buildBottomNavItem(
-              'Device',
-              'assets/images/bottom_menu_device.png',
-              'assets/images/bottom_menu_device_selected.png',
-              2,
-              context,
-              hasNotification: true,
-            ),
-            _buildBottomNavItem(
-              'Profile',
-              'assets/images/bottom_menu_user.svg',
-              'assets/images/bottom_menu_user_selected.svg',
-              3,
-              context,
-            ),
+            _buildNavItem('assets/images/bottom_menu_home.svg', 0, context),
+            _buildNavItem('assets/images/bottom_menu_programs.svg', 1, context),
+            _buildNavItem('assets/images/bottom_menu_device.png', 2, context),
+            _buildNavItem('assets/images/bottom_menu_user_selected.svg', 3, context),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildBottomNavItem(
-    String label,
+  Widget _buildNavItem(
     String iconPath,
-    String selectedIconPath,
     int index,
-    BuildContext context, {
-    bool hasNotification = false,
-  }) {
-    final isSelected = index == 3; // Profile tab is selected
-
+    BuildContext context,
+  ) {
     return GestureDetector(
       onTap: () {
         // Handle navigation based on tab selection
@@ -482,29 +452,14 @@ class _ProfileViewBody extends StatelessWidget {
             break;
         }
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 0.0, horizontal: 12.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Stack(
-              children: [
-                (iconPath.contains('bottom_menu_device') ||
-                        selectedIconPath.contains('bottom_menu_device'))
-                    ? Image.asset(
-                        isSelected ? selectedIconPath : iconPath,
-                        width: 50,
-                        height: 50,
-                      )
-                    : SvgPicture.asset(
-                        isSelected ? selectedIconPath : iconPath,
-                        width: 30,
-                        height: 30,
-                      ),
-              ],
-            ),
-          ],
-        ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          iconPath.endsWith('.png')
+              ? Image.asset(iconPath, width: 40, height: 40)
+              : SvgPicture.asset(iconPath, width: 30, height: 30),
+          const SizedBox(height: 4),
+        ],
       ),
     );
   }

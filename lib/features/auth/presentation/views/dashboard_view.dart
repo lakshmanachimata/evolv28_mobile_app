@@ -581,99 +581,50 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
     DashboardViewModel viewModel,
   ) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 2.0),
+      margin: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             offset: const Offset(0, 2),
             blurRadius: 8,
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        padding: const EdgeInsets.symmetric(vertical: 4.0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildBottomNavItem(
-              'Home',
-              'assets/images/bottom_menu_home.svg',
-              'assets/images/bottom_menu_home_selected.svg',
-              0,
-              viewModel,
-            ),
-            _buildBottomNavItem(
-              'Programs',
-              'assets/images/bottom_menu_programs.svg',
-              'assets/images/bottom_menu_programs_selected.svg',
-              1,
-              viewModel,
-            ),
-            _buildBottomNavItem(
-              'Device',
-              'assets/images/bottom_menu_device.svg',
-              'assets/images/bottom_menu_device_selected.svg',
-              2,
-              viewModel,
-              hasNotification: true,
-            ),
-            _buildBottomNavItem(
-              'Profile',
-              'assets/images/bottom_menu_user.svg',
-              'assets/images/bottom_menu_user_selected.svg',
-              3,
-              viewModel,
-            ),
+            _buildNavItem('assets/images/bottom_menu_home_selected.svg', 0, viewModel),
+            _buildNavItem('assets/images/bottom_menu_programs.svg', 1, viewModel),
+            _buildNavItem('assets/images/bottom_menu_device.png', 2, viewModel),
+            _buildNavItem('assets/images/bottom_menu_user.svg', 3, viewModel),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildBottomNavItem(
-    String label,
+  Widget _buildNavItem(
     String iconPath,
-    String selectedIconPath,
     int index,
-    DashboardViewModel viewModel, {
-    bool hasNotification = false,
-  }) {
+    DashboardViewModel viewModel,
+  ) {
     final isSelected = viewModel.selectedTabIndex == index;
 
     return GestureDetector(
       onTap: () => viewModel.onTabSelected(index, context),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Stack(
-              children: [
-                SvgPicture.asset(
-                  isSelected ? selectedIconPath : iconPath,
-                  width: 30,
-                  height: 30,
-                ),
-                if (hasNotification && !isSelected)
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Colors.green,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          iconPath.endsWith('.png')
+              ? Image.asset(iconPath, width: 40, height: 40)
+              : SvgPicture.asset(iconPath, width: 30, height: 30),
+          const SizedBox(height: 4),
+        ],
       ),
     );
   }
