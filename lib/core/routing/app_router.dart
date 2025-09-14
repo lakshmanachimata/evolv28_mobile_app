@@ -21,6 +21,10 @@ import '../../features/auth/presentation/views/faq_webview.dart';
 import '../../features/auth/presentation/views/privacy_webview.dart';
 import '../../features/auth/presentation/views/help_view.dart';
 import '../../features/auth/presentation/views/bulk_download_view.dart';
+import '../../features/auth/presentation/views/wellness_check_view.dart';
+import '../../features/auth/presentation/views/mindfulness_form_view.dart';
+import '../../features/auth/presentation/views/questionnaire_view.dart';
+import '../../features/auth/presentation/views/mind_health_analysis_view.dart';
 
 class AppRouter {
   static final GoRouter _router = GoRouter(
@@ -152,6 +156,30 @@ class AppRouter {
         path: AppRoutes.bulkDownload,
         name: AppRouteNames.bulkDownload,
         builder: (context, state) => const BulkDownloadView(),
+      ),
+      // Wellness Check Route
+      GoRoute(
+        path: AppRoutes.wellnessCheck,
+        name: AppRouteNames.wellnessCheck,
+        builder: (context, state) => const WellnessCheckView(),
+      ),
+      // Mindfulness Form Route
+      GoRoute(
+        path: AppRoutes.mindfulnessForm,
+        name: AppRouteNames.mindfulnessForm,
+        builder: (context, state) => const MindfulnessFormView(),
+      ),
+      // Questionnaire Route
+      GoRoute(
+        path: AppRoutes.questionnaire,
+        name: AppRouteNames.questionnaire,
+        builder: (context, state) => const QuestionnaireView(),
+      ),
+      // Mind Health Analysis Route
+      GoRoute(
+        path: AppRoutes.mindHealthAnalysis,
+        name: AppRouteNames.mindHealthAnalysis,
+        builder: (context, state) => const MindHealthAnalysisView(),
       ),
     ],
     errorBuilder: (context, state) => const NotFoundPage(),

@@ -139,6 +139,14 @@ class DashboardViewModel extends ChangeNotifier {
     print('Device management requested');
   }
 
+  // Play program from top picks
+  void playProgram(String programTitle) {
+    _showPlayerCard = true;
+    _isPlaying = true;
+    _currentPlayingProgramId = programTitle.toLowerCase().replaceAll(' ', '_');
+    notifyListeners();
+  }
+
   // Handle help and support
   void openHelpSupport() {
     // Implement help and support logic here

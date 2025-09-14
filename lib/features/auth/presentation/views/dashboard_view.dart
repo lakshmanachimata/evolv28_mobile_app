@@ -378,7 +378,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                 const SizedBox(height: 16),
                 GestureDetector(
                   onTap: () {
-                    print('Take Assessment tapped');
+                    context.go(AppRoutes.wellnessCheck);
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -431,67 +431,121 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
         // Horizontal scrollable feature icons
         SizedBox(
           height: 100,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            children: [
-              _buildFeatureIcon(
-                'Better Sleep',
-                'assets/images/sleep_better.svg',
-              ),
-              const SizedBox(width: 16),
-              _buildFeatureIcon(
-                'Improve Mood',
-                'assets/images/improve_mood.svg',
-              ),
-              const SizedBox(width: 16),
-              _buildFeatureIcon(
-                'Improve Focus',
-                'assets/images/focus_better.svg',
-              ),
-              const SizedBox(width: 16),
-              _buildFeatureIcon(
-                'Reduce Stress',
-                'assets/images/remove_stress.svg',
-              ),
-            ],
+          child: Consumer<DashboardViewModel>(
+            builder: (context, viewModel, child) {
+              return ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  _buildFeatureIcon(
+                    'Better Sleep',
+                    'assets/images/sleep_better.svg',
+                    viewModel,
+                  ),
+                  const SizedBox(width: 16),
+                  _buildFeatureIcon(
+                    'Improve Mood',
+                    'assets/images/improve_mood.svg',
+                    viewModel,
+                  ),
+                  const SizedBox(width: 16),
+                  _buildFeatureIcon(
+                    'Improve Focus',
+                    'assets/images/focus_better.svg',
+                    viewModel,
+                  ),
+                  const SizedBox(width: 16),
+                  _buildFeatureIcon(
+                    'Reduce Stress',
+                    'assets/images/remove_stress.svg',
+                    viewModel,
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ],
     );
   }
 
-  Widget _buildFeatureIcon(String title, String iconPath) {
-    return Column(
-      children: [
-        Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: const Color(0xFFFFB74D), // Light orange border
-              width: 2,
+  Widget _buildFeatureIcon(String title, String iconPath, DashboardViewModel viewModel) {
+    return GestureDetector(
+      onTap: () {
+        viewModel.playProgram(title);
+      },
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: const Color(0xFFFFB74D), // Light orange border
+                width: 2,
+              ),
+            ),
+            child: Center(
+              child: SvgPicture.asset(iconPath, width: 30, height: 30),
             ),
           ),
-          child: Center(
-            child: SvgPicture.asset(iconPath, width: 30, height: 30),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Colors.black87,
+            ),
+            textAlign: TextAlign.center,
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: Colors.black87,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
+        ],
+      ),
     );
   }
 
+  Widget _buildProgramIcon(String? programId) {
+    String iconPath;
+    
+    switch (programId) {
+      case 'better_sleep':
+        iconPath = 'assets/images/sleep_icon.svg';
+        break;
+      case 'improve_mood':
+        iconPath = 'assets/images/improve_mood.svg';
+        break;
+      case 'improve_focus':
+        iconPath = 'assets/images/focus_better.svg';
+        break;
+      case 'reduce_stress':
+        iconPath = 'assets/images/remove_stress.svg';
+        break;
+      default:
+        iconPath = 'assets/images/sleep_icon.svg';
+    }
+    
+    return SvgPicture.asset(
+      iconPath,
+      width: 50,
+      height: 50,
+    );
+  }
+
+  String _getProgramTitle(String? programId) {
+    switch (programId) {
+      case 'better_sleep':
+        return 'Better Sleep';
+      case 'improve_mood':
+        return 'Improve Mood';
+      case 'improve_focus':
+        return 'Improve Focus';
+      case 'reduce_stress':
+        return 'Reduce Stress';
+      default:
+        return 'Better Sleep';
+    }
+  }
 
   Widget _buildPlayerCard(BuildContext context, DashboardViewModel viewModel) {
     return GestureDetector(
@@ -519,12 +573,8 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
         ),
         child: Row(
           children: [
-            // Sleep Icon
-            SvgPicture.asset(
-              'assets/images/sleep_icon.svg',
-              width: 50,
-              height: 50,
-            ),
+            // Program Icon
+            _buildProgramIcon(viewModel.currentPlayingProgramId),
             const SizedBox(width: 16),
             
             // Now Playing Text
@@ -539,9 +589,9 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                       color: Colors.white70,
                     ),
                   ),
-                  const Text(
-                    'Better Sleep',
-                    style: TextStyle(
+                  Text(
+                    _getProgramTitle(viewModel.currentPlayingProgramId),
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
