@@ -17,8 +17,8 @@ import '../../features/auth/presentation/views/profile_view.dart';
 import '../../features/auth/presentation/views/settings_view.dart';
 import '../../features/auth/presentation/views/profile_edit_view.dart';
 import '../../features/auth/presentation/views/about_view.dart';
-import '../../features/auth/presentation/views/faq_view.dart';
-import '../../features/auth/presentation/views/privacy_view.dart';
+import '../../features/auth/presentation/views/faq_webview.dart';
+import '../../features/auth/presentation/views/privacy_webview.dart';
 import '../../features/auth/presentation/views/help_view.dart';
 
 class AppRouter {
@@ -132,13 +132,13 @@ class AppRouter {
       GoRoute(
         path: AppRoutes.faq,
         name: AppRouteNames.faq,
-        builder: (context, state) => const FAQView(),
+        builder: (context, state) => const FAQWebView(),
       ),
       // Privacy Route
       GoRoute(
         path: AppRoutes.privacy,
         name: AppRouteNames.privacy,
-        builder: (context, state) => const PrivacyView(),
+        builder: (context, state) => const PrivacyWebView(),
       ),
       // Help Route
       GoRoute(

@@ -46,6 +46,10 @@ dependencies:
   http: ^1.2.2
   dio: ^5.7.0
   
+  # WebView
+  webview_flutter: ^4.4.2
+  url_launcher: ^6.2.2
+  
   # Local Storage
   shared_preferences: ^2.3.2
   hive: ^2.2.3

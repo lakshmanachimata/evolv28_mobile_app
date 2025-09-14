@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+
 import '../viewmodels/settings_viewmodel.dart';
-import '../../../../core/routing/app_router_config.dart';
 
 class SettingsView extends StatelessWidget {
   const SettingsView({super.key});
@@ -33,10 +31,10 @@ class _SettingsViewBody extends StatelessWidget {
             children: [
               // Background
               _buildBackground(),
-              
+
               // Main content
               _buildMainContent(context, viewModel),
-              
+
               // Language selection popup
               if (viewModel.showLanguagePopup)
                 _buildLanguagePopup(context, viewModel),
@@ -66,11 +64,9 @@ class _SettingsViewBody extends StatelessWidget {
           top: 0,
           left: 0,
           right: 0,
-          child: SafeArea(
-            child: _buildTopLogo(context),
-          ),
+          child: SafeArea(child: _buildTopLogo(context)),
         ),
-        
+
         // Bottom sheet content
         Positioned(
           bottom: 0,
@@ -95,7 +91,7 @@ class _SettingsViewBody extends StatelessWidget {
                 children: [
                   // Dark brown header bar
                   _buildDarkHeader(context, viewModel),
-                  
+
                   // Settings content
                   Expanded(
                     child: SingleChildScrollView(
@@ -103,25 +99,25 @@ class _SettingsViewBody extends StatelessWidget {
                       child: Column(
                         children: [
                           const SizedBox(height: 20),
-                          
+
                           // Main settings section
                           _buildMainSettingsSection(context, viewModel),
-                          
+
                           const SizedBox(height: 20),
-                          
+
                           // Other section header
                           _buildOtherSectionHeader(),
-                          
+
                           const SizedBox(height: 16),
-                          
+
                           // Other section
                           _buildOtherSection(context, viewModel),
-                          
+
                           const SizedBox(height: 20),
-                          
+
                           // Logout button
                           _buildLogoutButton(viewModel),
-                          
+
                           const SizedBox(height: 40),
                         ],
                       ),
@@ -164,13 +160,9 @@ class _SettingsViewBody extends StatelessWidget {
           // Close button
           GestureDetector(
             onTap: () => viewModel.closeSettings(context),
-            child: const Icon(
-              Icons.close,
-              color: Colors.white,
-              size: 24,
-            ),
+            child: const Icon(Icons.close, color: Colors.white, size: 24),
           ),
-          
+
           // Settings title
           const Expanded(
             child: Center(
@@ -185,7 +177,7 @@ class _SettingsViewBody extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Empty space to balance the close button
           const SizedBox(width: 24),
         ],
@@ -193,10 +185,15 @@ class _SettingsViewBody extends StatelessWidget {
     );
   }
 
-  Widget _buildMainSettingsSection(BuildContext context, SettingsViewModel viewModel) {
+  Widget _buildMainSettingsSection(
+    BuildContext context,
+    SettingsViewModel viewModel,
+  ) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF6B7B8C).withOpacity(0.3), // Semi-transparent teal/grey
+        color: const Color(
+          0xFF6B7B8C,
+        ).withOpacity(0.3), // Semi-transparent teal/grey
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -260,7 +257,9 @@ class _SettingsViewBody extends StatelessWidget {
   Widget _buildOtherSection(BuildContext context, SettingsViewModel viewModel) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF6B7B8C).withOpacity(0.3), // Semi-transparent teal/grey
+        color: const Color(
+          0xFF6B7B8C,
+        ).withOpacity(0.3), // Semi-transparent teal/grey
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -300,10 +299,7 @@ class _SettingsViewBody extends StatelessWidget {
         ),
         child: const Text(
           'Log out',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -318,7 +314,7 @@ class _SettingsViewBody extends StatelessWidget {
     bool isLastItem = false,
   }) {
     BorderRadius? borderRadius;
-    
+
     if (isFirstItem && isLastItem) {
       // Both first and last item (single item)
       borderRadius = BorderRadius.circular(8);
@@ -335,7 +331,7 @@ class _SettingsViewBody extends StatelessWidget {
         bottomRight: Radius.circular(8),
       );
     }
-    
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -346,11 +342,7 @@ class _SettingsViewBody extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(
-              icon,
-              color: Colors.white,
-              size: 24,
-            ),
+            Icon(icon, color: Colors.white, size: 24),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
@@ -362,27 +354,27 @@ class _SettingsViewBody extends StatelessWidget {
                 ),
               ),
             ),
-            const Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.white,
-              size: 16,
-            ),
+            const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildLanguageItem(BuildContext context, SettingsViewModel viewModel, {bool isLastItem = false}) {
+  Widget _buildLanguageItem(
+    BuildContext context,
+    SettingsViewModel viewModel, {
+    bool isLastItem = false,
+  }) {
     BorderRadius? borderRadius;
-    
+
     if (isLastItem) {
       borderRadius = const BorderRadius.only(
         bottomLeft: Radius.circular(8),
         bottomRight: Radius.circular(8),
       );
     }
-    
+
     return GestureDetector(
       onTap: viewModel.showLanguageSelection,
       child: Container(
@@ -409,11 +401,7 @@ class _SettingsViewBody extends StatelessWidget {
                 ),
               ),
             ),
-            const Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.white,
-              size: 16,
-            ),
+            const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
           ],
         ),
       ),
@@ -423,12 +411,15 @@ class _SettingsViewBody extends StatelessWidget {
   Widget _buildDivider() {
     return Container(
       height: 1,
-      margin: const EdgeInsets.symmetric(horizontal: 20),
+      margin: const EdgeInsets.symmetric(horizontal: 0),
       color: const Color(0xFF547D81),
     );
   }
 
-  Widget _buildLanguagePopup(BuildContext context, SettingsViewModel viewModel) {
+  Widget _buildLanguagePopup(
+    BuildContext context,
+    SettingsViewModel viewModel,
+  ) {
     return Container(
       color: Colors.black.withValues(alpha: 0.5),
       child: Center(
@@ -467,7 +458,7 @@ class _SettingsViewBody extends StatelessWidget {
 
   Widget _buildLanguageOption(String language, SettingsViewModel viewModel) {
     final isSelected = viewModel.selectedLanguage.contains(language);
-    
+
     return GestureDetector(
       onTap: () => viewModel.selectLanguage('$language ($language)'),
       child: Container(
@@ -489,5 +480,4 @@ class _SettingsViewBody extends StatelessWidget {
       ),
     );
   }
-
 }

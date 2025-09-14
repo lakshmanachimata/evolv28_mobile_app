@@ -7,147 +7,148 @@ class AboutView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-        return Scaffold(
-          body: Stack(
-            children: [
-              // Background
-              _buildBackground(),
-              
-              // Main content
-              SafeArea(
-                child: Column(
-                  children: [
-                    // Bottom sheet content
-                    Expanded(
-                      child: Container(
-                        height: MediaQuery.of(context).size.height * 0.85,
-                        decoration: BoxDecoration(
-                          image: const DecorationImage(
-                            image: AssetImage('assets/images/modal-background.png'),
-                            fit: BoxFit.cover,
-                          ),
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(20),
-                            topRight: Radius.circular(20),
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            // Header with close button
-                            _buildBottomSheetHeader(context),
-                            
-                            // Main content
-                            Expanded(
-                              child: Container(
-                                margin: const EdgeInsets.symmetric(horizontal: 24.0),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.1),
-                                      offset: const Offset(0, 2),
-                                      blurRadius: 8,
-                                    ),
-                                  ],
-                                ),
-                                child: SingleChildScrollView(
-                                  padding: const EdgeInsets.all(24.0),
-                                  child: Column(
-                                    children: [
-                                      const SizedBox(height: 20),
-                                      
-                                      // App logo
-                                      _buildAppLogo(),
-                                      
-                                      const SizedBox(height: 32),
-                                      
-                                      // About content
-                                      _buildAboutContent(),
-                                      
-                                      const SizedBox(height: 100),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      }
+    return Scaffold(
+      body: Stack(
+        children: [
+          // Background
+          _buildBackground(),
+
+          // Main content
+          _buildMainContent(context),
+        ],
+      ),
+    );
+  }
 
   Widget _buildBackground() {
     return SizedBox(
       width: double.infinity,
       height: double.infinity,
       child: Image.asset(
-        'assets/images/modal-background.png',
+        'assets/images/term-background.png',
         fit: BoxFit.cover,
       ),
     );
   }
 
-  Widget _buildBottomSheetHeader(BuildContext context) {
-    return Padding(
+  Widget _buildMainContent(BuildContext context) {
+    return Stack(
+      children: [
+        // evolv28 logo at top center
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: SafeArea(child: _buildTopLogo(context)),
+        ),
+
+        // Bottom sheet content
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.86,
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(25),
+                  topRight: Radius.circular(25),
+                ),
+              ),
+              child: Column(
+                children: [
+                  // Header bar
+                  _buildHeader(context),
+
+                  // About content
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 20),
+
+                          // About content
+                          _buildAboutContent(),
+
+                          const SizedBox(height: 40),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTopLogo(BuildContext context) {
+    return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Title
-          const Text(
-            'About',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+          const SizedBox(width: 40), // Spacer to center the logo
+          // evolv28 logo image
+          Image.asset(
+            'assets/images/evolv_text.png',
+            width: MediaQuery.of(context).size.width * 0.25,
+            fit: BoxFit.contain,
           ),
-          
-          // Close button
+          // Settings icon
           GestureDetector(
-            onTap: () => context.go(AppRoutes.settings),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Icon(
-                Icons.close,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
+            onTap: () {
+              context.go(AppRoutes.settings);
+            },
+            child: const Icon(Icons.settings, color: Colors.white, size: 24),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildAppLogo() {
-    return Column(
-      children: [
-        Image.asset(
-          'assets/images/evolv_text.png',
-          width: 200,
-          fit: BoxFit.contain,
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(25),
+          topRight: Radius.circular(25),
         ),
-        const SizedBox(height: 16),
-        const Text(
-          'Version 1.0.0',
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.grey,
+      ),
+      child: Row(
+        children: [
+          // Close button
+          GestureDetector(
+            onTap: () => context.go(AppRoutes.settings),
+            child: const Icon(Icons.close, color: Colors.black, size: 24),
           ),
-        ),
-      ],
+
+          // About title
+          const Expanded(
+            child: Center(
+              child: Text(
+                'ABOUT',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ),
+          ),
+
+          // Empty space to balance the close button
+          const SizedBox(width: 24),
+        ],
+      ),
     );
   }
 
@@ -156,74 +157,53 @@ class AboutView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'About evolv28',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-        const SizedBox(height: 16),
-        const Text(
-          'evolv28 is an innovative wearable device designed to enhance your mental well-being through advanced neurotechnology. Our cutting-edge device combines the latest in neuroscience research with user-friendly technology to help you achieve better mental health outcomes.',
+          'evolv28 is a state-of-the-art innovative wearable device that helps the human cope with issues related to Mental Well-being like work stress, anxiety, restlessness, lack of focus, irregular sleeping patterns, and a slew of other day-to-day problems associated with a restless brain.',
           style: TextStyle(
             fontSize: 16,
-            color: Colors.black87,
+            color: Colors.black,
             height: 1.5,
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
         const Text(
-          'Safety & Effectiveness',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-        const SizedBox(height: 12),
-        const Text(
-          'Our device has been extensively tested and validated through rigorous clinical trials. It is designed with your safety as the top priority, featuring multiple safety mechanisms and real-time monitoring to ensure optimal and secure operation.',
+          'evolv28 is a safe and environment-friendly supportive device, aiming to bring harmony to your mind and body.',
           style: TextStyle(
             fontSize: 16,
-            color: Colors.black87,
+            color: Colors.black,
             height: 1.5,
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
         const Text(
-          'Developed by Aether Mindtech',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-        const SizedBox(height: 12),
-        const Text(
-          'evolv28 is proudly developed by Aether Mindtech, a leading company in the field of neurotechnology and mental health innovation. Our team of experts includes neuroscientists, engineers, and healthcare professionals dedicated to improving lives through technology.',
+          'evolv28 is part of InnoPark group of companies, based out of Hyderabad and is a 6-year-old organization comprising highly successful tech companies with a key focus on gaming. Innopark ventured into the Preventive healthcare portfolio by developing products in Medtech Mental wellness and Nutraceutical space.',
           style: TextStyle(
             fontSize: 16,
-            color: Colors.black87,
+            color: Colors.black,
             height: 1.5,
           ),
         ),
-        const SizedBox(height: 24),
-        const Text(
-          'Contact Information',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-        const SizedBox(height: 12),
-        const Text(
-          'For support, questions, or feedback, please contact us at:\n\nEmail: support@evolv28.com\nPhone: +1 (555) 123-4567\nWebsite: www.evolv28.com',
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.black87,
-            height: 1.5,
+        const SizedBox(height: 40),
+        // App version section
+        const Center(
+          child: Column(
+            children: [
+              Text(
+                'evolv28',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'App Version 3.12',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.black,
+                ),
+              ),
+            ],
           ),
         ),
       ],
