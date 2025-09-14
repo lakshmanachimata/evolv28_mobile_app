@@ -52,238 +52,260 @@ class _SettingsViewBody extends StatelessWidget {
       width: double.infinity,
       height: double.infinity,
       child: Image.asset(
-        'assets/images/modal-background.png',
+        'assets/images/term-background.png',
         fit: BoxFit.cover,
       ),
     );
   }
 
   Widget _buildMainContent(BuildContext context, SettingsViewModel viewModel) {
-    return SafeArea(
-      child: Column(
-        children: [
-          // Bottom sheet content
-          Expanded(
+    return Stack(
+      children: [
+        // evolv28 logo at top center
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: SafeArea(
+            child: _buildTopLogo(context),
+          ),
+        ),
+        
+        // Bottom sheet content
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.86,
             child: Container(
-              height: MediaQuery.of(context).size.height * 0.85,
               decoration: BoxDecoration(
                 image: const DecorationImage(
                   image: AssetImage('assets/images/modal-background.png'),
                   fit: BoxFit.cover,
+                  opacity: 0.9,
                 ),
+                color: Colors.black.withOpacity(0.6),
                 borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
+                  topLeft: Radius.circular(25),
+                  topRight: Radius.circular(25),
                 ),
               ),
               child: Column(
                 children: [
-                  // Header with close button
-                  _buildBottomSheetHeader(context, viewModel),
-                  
-                  // Settings title
-                  _buildTitle(),
-                  
-                  const SizedBox(height: 24),
+                  // Dark brown header bar
+                  _buildDarkHeader(context, viewModel),
                   
                   // Settings content
                   Expanded(
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 24.0),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            offset: const Offset(0, 2),
-                            blurRadius: 8,
-                          ),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 20),
+                          
+                          // Main settings section
+                          _buildMainSettingsSection(context, viewModel),
+                          
+                          const SizedBox(height: 20),
+                          
+                          // Other section header
+                          _buildOtherSectionHeader(),
+                          
+                          const SizedBox(height: 16),
+                          
+                          // Other section
+                          _buildOtherSection(context, viewModel),
+                          
+                          const SizedBox(height: 20),
+                          
+                          // Logout button
+                          _buildLogoutButton(viewModel),
+                          
+                          const SizedBox(height: 40),
                         ],
-                      ),
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(20.0),
-                        child: Column(
-                          children: [
-                            const SizedBox(height: 20),
-                            
-                            // Main settings card
-                            _buildSettingsCard(context, viewModel),
-                            
-                            const SizedBox(height: 16),
-                            
-                            // Other section card
-                            _buildOtherCard(context, viewModel),
-                            
-                            const SizedBox(height: 100),
-                          ],
-                        ),
                       ),
                     ),
                   ),
-                  
-                  // Bottom Navigation
-                  _buildBottomNavigation(context),
                 ],
               ),
             ),
           ),
-        ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTopLogo(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+      child: Center(
+        child: Image.asset(
+          'assets/images/evolv_text.png',
+          width: MediaQuery.of(context).size.width * 0.25,
+          fit: BoxFit.contain,
+        ),
       ),
     );
   }
 
-  Widget _buildBottomSheetHeader(BuildContext context, SettingsViewModel viewModel) {
-    return Padding(
+  Widget _buildDarkHeader(BuildContext context, SettingsViewModel viewModel) {
+    return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+      decoration: const BoxDecoration(
+        color: Colors.transparent, // Dark brown color
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(25),
+          topRight: Radius.circular(25),
+        ),
+      ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // evolv28 logo
-          Image.asset(
-            'assets/images/evolv_text.png',
-            width: MediaQuery.of(context).size.width * 0.25,
-            fit: BoxFit.contain,
-          ),
-          
           // Close button
           GestureDetector(
             onTap: () => viewModel.closeSettings(context),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Icon(
-                Icons.close,
-                color: Colors.white,
-                size: 20,
+            child: const Icon(
+              Icons.close,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+          
+          // Settings title
+          const Expanded(
+            child: Center(
+              child: Text(
+                'SETTINGS',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: 1.0,
+                ),
               ),
             ),
+          ),
+          
+          // Empty space to balance the close button
+          const SizedBox(width: 24),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMainSettingsSection(BuildContext context, SettingsViewModel viewModel) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF6B7B8C).withOpacity(0.3), // Semi-transparent teal/grey
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          _buildSettingsItem(
+            context,
+            Icons.info_outline,
+            'About',
+            () => viewModel.navigateToAbout(context),
+            isFirstItem: true,
+          ),
+          _buildDivider(),
+          _buildSettingsItem(
+            context,
+            Icons.chat_bubble_outline,
+            'FAQ',
+            () => viewModel.navigateToFAQ(context),
+          ),
+          _buildDivider(),
+          _buildSettingsItem(
+            context,
+            Icons.gavel,
+            'Privacy & Legal Terms',
+            () => viewModel.navigateToPrivacy(context),
+          ),
+          _buildDivider(),
+          _buildSettingsItem(
+            context,
+            Icons.help_outline,
+            'Help',
+            () => viewModel.navigateToHelp(context),
+          ),
+          _buildDivider(),
+          _buildSettingsItem(
+            context,
+            Icons.download_outlined,
+            'Bulk Download',
+            viewModel.handleBulkDownload,
+          ),
+          _buildDivider(),
+          _buildLanguageItem(context, viewModel, isLastItem: true),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOtherSectionHeader() {
+    return const Align(
+      alignment: Alignment.centerLeft,
+      child: Text(
+        'Other',
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOtherSection(BuildContext context, SettingsViewModel viewModel) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF6B7B8C).withOpacity(0.3), // Semi-transparent teal/grey
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          _buildSettingsItem(
+            context,
+            Icons.star_outline,
+            'Rate Curie',
+            viewModel.rateApp,
+            isFirstItem: true,
+          ),
+          _buildDivider(),
+          _buildSettingsItem(
+            context,
+            Icons.share_outlined,
+            'Share the App',
+            viewModel.shareApp,
+            isLastItem: true,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTitle() {
-    return const Text(
-      'SETTINGS',
-      style: TextStyle(
-        fontSize: 24,
-        fontWeight: FontWeight.bold,
-        color: Colors.white,
+  Widget _buildLogoutButton(SettingsViewModel viewModel) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: viewModel.logout,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFFF07A60), // Coral/orange color
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: const Text(
+          'Log out',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
-    );
-  }
-
-  Widget _buildSettingsCard(BuildContext context, SettingsViewModel viewModel) {
-    return Container(
-      width: double.infinity,
-      child: Column(
-          children: [
-            _buildSettingsItem(
-              context,
-              Icons.person_outline,
-              'Profile',
-              () => viewModel.navigateToProfile(context),
-            ),
-            _buildDivider(),
-            _buildSettingsItem(
-              context,
-              Icons.info_outline,
-              'About',
-              () => viewModel.navigateToAbout(context),
-            ),
-            _buildDivider(),
-            _buildSettingsItem(
-              context,
-              Icons.chat_bubble_outline,
-              'FAQ',
-              () => viewModel.navigateToFAQ(context),
-            ),
-            _buildDivider(),
-            _buildSettingsItem(
-              context,
-              Icons.description_outlined,
-              'Privacy & Legal Terms',
-              () => viewModel.navigateToPrivacy(context),
-            ),
-            _buildDivider(),
-            _buildSettingsItem(
-              context,
-              Icons.help_outline,
-              'Help',
-              () => viewModel.navigateToHelp(context),
-            ),
-            _buildDivider(),
-            _buildSettingsItem(
-              context,
-              Icons.download_outlined,
-              'Bulk Download',
-              viewModel.handleBulkDownload,
-            ),
-            _buildDivider(),
-            _buildLanguageItem(context, viewModel),
-          ],
-        ),
-    );
-  }
-
-  Widget _buildOtherCard(BuildContext context, SettingsViewModel viewModel) {
-    return Container(
-      width: double.infinity,
-      child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Other',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildSettingsItem(
-              context,
-              Icons.star_outline,
-              'Rate Curie',
-              viewModel.rateApp,
-            ),
-            _buildDivider(),
-            _buildSettingsItem(
-              context,
-              Icons.share_outlined,
-              'Share the App',
-              viewModel.shareApp,
-            ),
-            const SizedBox(height: 20),
-            // Logout button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: viewModel.logout,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFF07A60),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Log out',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
     );
   }
 
@@ -291,17 +313,42 @@ class _SettingsViewBody extends StatelessWidget {
     BuildContext context,
     IconData icon,
     String title,
-    VoidCallback onTap,
-  ) {
+    VoidCallback onTap, {
+    bool isFirstItem = false,
+    bool isLastItem = false,
+  }) {
+    BorderRadius? borderRadius;
+    
+    if (isFirstItem && isLastItem) {
+      // Both first and last item (single item)
+      borderRadius = BorderRadius.circular(8);
+    } else if (isFirstItem) {
+      // First item only
+      borderRadius = const BorderRadius.only(
+        topLeft: Radius.circular(8),
+        topRight: Radius.circular(8),
+      );
+    } else if (isLastItem) {
+      // Last item only
+      borderRadius = const BorderRadius.only(
+        bottomLeft: Radius.circular(8),
+        bottomRight: Radius.circular(8),
+      );
+    }
+    
     return GestureDetector(
       onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF9FB6B9),
+          borderRadius: borderRadius,
+        ),
         child: Row(
           children: [
             Icon(
               icon,
-              color: Colors.grey.shade600,
+              color: Colors.white,
               size: 24,
             ),
             const SizedBox(width: 16),
@@ -311,13 +358,13 @@ class _SettingsViewBody extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.black,
+                  color: Colors.white,
                 ),
               ),
             ),
             const Icon(
               Icons.arrow_forward_ios,
-              color: Colors.grey,
+              color: Colors.white,
               size: 16,
             ),
           ],
@@ -326,16 +373,29 @@ class _SettingsViewBody extends StatelessWidget {
     );
   }
 
-  Widget _buildLanguageItem(BuildContext context, SettingsViewModel viewModel) {
+  Widget _buildLanguageItem(BuildContext context, SettingsViewModel viewModel, {bool isLastItem = false}) {
+    BorderRadius? borderRadius;
+    
+    if (isLastItem) {
+      borderRadius = const BorderRadius.only(
+        bottomLeft: Radius.circular(8),
+        bottomRight: Radius.circular(8),
+      );
+    }
+    
     return GestureDetector(
       onTap: viewModel.showLanguageSelection,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF9FB6B9),
+          borderRadius: borderRadius,
+        ),
         child: Row(
           children: [
             Icon(
-              Icons.language_outlined,
-              color: Colors.grey.shade600,
+              Icons.menu_book_outlined, // Book with text icon
+              color: Colors.white,
               size: 24,
             ),
             const SizedBox(width: 16),
@@ -345,13 +405,13 @@ class _SettingsViewBody extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.black,
+                  color: Colors.white,
                 ),
               ),
             ),
             const Icon(
               Icons.arrow_forward_ios,
-              color: Colors.grey,
+              color: Colors.white,
               size: 16,
             ),
           ],
@@ -361,9 +421,10 @@ class _SettingsViewBody extends StatelessWidget {
   }
 
   Widget _buildDivider() {
-    return Divider(
-      color: Colors.grey.shade200,
+    return Container(
       height: 1,
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      color: const Color(0xFF547D81),
     );
   }
 
@@ -429,112 +490,4 @@ class _SettingsViewBody extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomNavigation(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(12.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            offset: const Offset(0, 2),
-            blurRadius: 8,
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildBottomNavItem(
-              'Home',
-              'assets/images/bottom_menu_home_selected.svg',
-              'assets/images/bottom_menu_home_selected.svg',
-              0,
-              context,
-            ),
-            _buildBottomNavItem(
-              'Programs',
-              'assets/images/bottom_menu_programs.svg',
-              'assets/images/bottom_menu_programs_selected.svg',
-              1,
-              context,
-            ),
-            _buildBottomNavItem(
-              'Device',
-              'assets/images/bottom_menu_device.png',
-              'assets/images/bottom_menu_device_selected.png',
-              2,
-              context,
-              hasNotification: true,
-            ),
-            _buildBottomNavItem(
-              'Profile',
-              'assets/images/bottom_menu_user.svg',
-              'assets/images/bottom_menu_user_selected.svg',
-              3,
-              context,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBottomNavItem(
-    String label,
-    String iconPath,
-    String selectedIconPath,
-    int index,
-    BuildContext context, {
-    bool hasNotification = false,
-  }) {
-    final isSelected = index == 0; // Home tab is selected
-
-    return GestureDetector(
-      onTap: () {
-        // Handle navigation based on tab selection
-        switch (index) {
-          case 0: // Home
-            context.go(AppRoutes.dashboard);
-            break;
-          case 1: // Programs
-            context.go(AppRoutes.programs);
-            break;
-          case 2: // Device
-            context.go(AppRoutes.deviceConnected);
-            break;
-          case 3: // Profile
-            context.go(AppRoutes.profile);
-            break;
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Stack(
-              children: [
-                (iconPath.contains('bottom_menu_device') ||
-                        selectedIconPath.contains('bottom_menu_device'))
-                    ? Image.asset(
-                        isSelected ? selectedIconPath : iconPath,
-                        width: 50,
-                        height: 50,
-                      )
-                    : SvgPicture.asset(
-                        isSelected ? selectedIconPath : iconPath,
-                        width: 30,
-                        height: 30,
-                      ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
