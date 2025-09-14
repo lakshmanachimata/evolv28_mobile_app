@@ -10,6 +10,9 @@ import '../../features/auth/presentation/views/device_connected_view.dart';
 import '../../features/auth/presentation/views/dashboard_view.dart';
 import '../../features/auth/presentation/views/get_started_view.dart';
 import '../../features/auth/presentation/views/programs_view.dart';
+import '../../features/auth/presentation/views/insights_view.dart';
+import '../../features/auth/presentation/views/mindful_score_view.dart';
+import '../../features/auth/presentation/views/goal_insights_view.dart';
 import '../../features/auth/presentation/views/profile_view.dart';
 import '../../features/auth/presentation/views/settings_view.dart';
 import '../../features/auth/presentation/views/profile_edit_view.dart';
@@ -82,6 +85,24 @@ class AppRouter {
         path: AppRoutes.programs,
         name: AppRouteNames.programs,
         builder: (context, state) => const ProgramsView(),
+      ),
+      // Insights Route
+      GoRoute(
+        path: AppRoutes.insights,
+        name: AppRouteNames.insights,
+        builder: (context, state) => const InsightsView(),
+      ),
+      // MindFulScore Route
+      GoRoute(
+        path: AppRoutes.mindfulScore,
+        name: AppRouteNames.mindfulScore,
+        builder: (context, state) => const MindfulScoreView(),
+      ),
+      // GoalInsights Route
+      GoRoute(
+        path: AppRoutes.goalInsights,
+        name: AppRouteNames.goalInsights,
+        builder: (context, state) => const GoalInsightsView(),
       ),
       // Profile Route
       GoRoute(

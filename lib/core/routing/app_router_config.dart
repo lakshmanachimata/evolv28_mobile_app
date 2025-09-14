@@ -12,6 +12,9 @@ class AppRoutes {
   static const String dashboard = '/dashboard';
   static const String getStarted = '/get-started';
   static const String programs = '/programs';
+  static const String insights = '/insights';
+  static const String mindfulScore = '/mindful-score';
+  static const String goalInsights = '/goal-insights';
   static const String profile = '/profile';
   static const String settings = '/settings';
   static const String profileEdit = '/profile-edit';
@@ -35,6 +38,9 @@ class AppRouteNames {
   static const String dashboard = 'dashboard';
   static const String getStarted = 'getStarted';
   static const String programs = 'programs';
+  static const String insights = 'insights';
+  static const String mindfulScore = 'mindfulScore';
+  static const String goalInsights = 'goalInsights';
   static const String profile = 'profile';
   static const String settings = 'settings';
   static const String profileEdit = 'profileEdit';
