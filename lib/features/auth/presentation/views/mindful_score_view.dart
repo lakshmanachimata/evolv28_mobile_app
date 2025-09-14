@@ -74,19 +74,23 @@ class _MindfulScoreViewBodyState extends State<_MindfulScoreViewBody> {
     MindfulScoreViewModel viewModel,
   ) {
     return SafeArea(
-      child: Column(
-        children: [
-          // Header
-          _buildHeader(context),
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Header
+            _buildHeader(context),
 
-          // Stress Alleviation Timeline
-          _buildStressTimelineCard(viewModel),
+            // Stress Alleviation Timeline
+            _buildStressTimelineCard(viewModel),
 
-          const SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-          // Goals List
-          Expanded(child: _buildGoalsList(viewModel)),
-        ],
+            // Goals List
+            _buildGoalsList(viewModel),
+            
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }
@@ -258,30 +262,67 @@ class _MindfulScoreViewBodyState extends State<_MindfulScoreViewBody> {
   Widget _buildStressTimelineChart(String selectedTab, [String? selectedWeek]) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 0),
-      child: CustomPaint(
-        painter: _StressTimelineChartPainterV2(selectedTab, selectedWeek),
-        size: const Size(double.infinity, 220),
+      child: GestureDetector(
+        onTapDown: (details) {
+          _handleChartTap(details.localPosition, selectedTab, selectedWeek);
+        },
+        child: CustomPaint(
+          painter: _StressTimelineChartPainterV2(selectedTab, selectedWeek),
+          size: const Size(double.infinity, 220),
+        ),
       ),
     );
   }
 
+  void _handleChartTap(Offset position, String selectedTab, String? selectedWeek) {
+    // Calculate which bar was tapped based on position
+    final double leftPadding = 36;
+    final double chartWidth = MediaQuery.of(context).size.width - leftPadding - 32; // 32 for margins
+    final double barWidth = 18.0;
+    
+    List<String> xLabels;
+    if (selectedTab == '6 Months') {
+      xLabels = ['Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'];
+    } else if (selectedTab == 'Monthly') {
+      xLabels = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    } else {
+      xLabels = ['TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN', 'MON'];
+    }
+    
+    // Calculate which bar was tapped
+    final double barSpacing = chartWidth / xLabels.length;
+    final int barIndex = ((position.dx - leftPadding) / barSpacing).round();
+    
+    // Check if tap is within a bar area
+    if (barIndex >= 0 && barIndex < xLabels.length) {
+      final double barX = leftPadding + (barIndex + 0.5) * barSpacing;
+      final double barLeft = barX - barWidth / 2;
+      final double barRight = barX + barWidth / 2;
+      
+      if (position.dx >= barLeft && position.dx <= barRight) {
+        // Navigate to GoalInsightsView
+        context.go(AppRoutes.goalInsights);
+      }
+    }
+  }
+
   Widget _buildGoalsList(MindfulScoreViewModel viewModel) {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-      itemCount: viewModel.goals.length,
-      itemBuilder: (context, index) {
-        final goal = viewModel.goals[index];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 16.0),
-          child: _buildGoalCard(goal),
-        );
-      },
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: Column(
+        children: viewModel.goals.map((goal) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+            child: _buildGoalCard(goal),
+          );
+        }).toList(),
+      ),
     );
   }
 
   Widget _buildGoalCard(GoalData goal) {
     return GestureDetector(
-      onTap: () => context.go(AppRoutes.goalInsights),
+      onTap: () => {},
       child: Container(
         padding: const EdgeInsets.all(8.0),
         decoration: BoxDecoration(

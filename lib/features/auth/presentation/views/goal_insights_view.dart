@@ -29,7 +29,10 @@ class _GoalInsightsViewBodyState extends State<_GoalInsightsViewBody> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final viewModel = Provider.of<GoalInsightsViewModel>(context, listen: false);
+      final viewModel = Provider.of<GoalInsightsViewModel>(
+        context,
+        listen: false,
+      );
       viewModel.initialize();
     });
   }
@@ -40,35 +43,34 @@ class _GoalInsightsViewBodyState extends State<_GoalInsightsViewBody> {
       backgroundColor: Colors.white,
       body: Consumer<GoalInsightsViewModel>(
         builder: (context, viewModel, child) {
-          return Column(
-            children: [
-              // Header Section
-              _buildHeader(context),
-              
-              // Main Content
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      // Resting Heart Rate Graph
-                      _buildRestingHeartRateGraph(viewModel),
-                      
-                      const SizedBox(height: 20),
-                      
-                      // Mindfulness Timeline
-                      _buildMindfulnessTimeline(viewModel),
-                      
-                      const SizedBox(height: 20),
-                      
-                      // Session Cards
-                      _buildSessionCards(viewModel),
-                      
-                      const SizedBox(height: 20),
-                    ],
+          return SafeArea(
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        _buildHeader(context),
+                        _buildMindfulnessTimelineCard(viewModel),
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          padding: const EdgeInsets.only(top: 16, bottom: 0),
+                          itemCount: viewModel.sessionCards.length,
+                          itemBuilder: (context, index) {
+                            return _buildSessionCard(
+                              viewModel.sessionCards[index],
+                              index,
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+                _buildBottomNavBar(),
+              ],
+            ),
           );
         },
       ),
@@ -76,550 +78,397 @@ class _GoalInsightsViewBodyState extends State<_GoalInsightsViewBody> {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final restingHeartRate = Provider.of<GoalInsightsViewModel>(
+      context,
+      listen: false,
+    ).restingHeartRate;
     return Container(
-      height: 200,
-      decoration: const BoxDecoration(
-        color: Color(0xFF4FC3F7), // Light teal
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
-        ),
-      ),
-      child: SafeArea(
-        child: Column(
-          children: [
-            // Top Navigation
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => context.go(AppRoutes.mindfulScore),
-                    child: const Icon(
-                      Icons.arrow_back,
-                      color: Colors.white,
-                      size: 24,
+      color: const Color(0xFF6FC7B6),
+      padding: const EdgeInsets.only(top: 36, left: 0, right: 0, bottom: 24),
+      child: Stack(
+        children: [
+          Align(
+            alignment: Alignment.topLeft,
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
+              onPressed: () => context.go(AppRoutes.mindfulScore),
+            ),
+          ),
+          Column(
+            children: [
+              const SizedBox(height: 8),
+              Center(
+                child: Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.transparent,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: Center(
+                    child: Text(
+                      restingHeartRate.toString(),
+                      style: const TextStyle(
+                        fontSize: 40,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF6FC7B6),
+                      ),
                     ),
                   ),
-                ],
-              ),
-            ),
-            
-            // Heart Rate Display
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Heart Rate Circle
-                    Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white,
-                        border: Border.all(
-                          color: Colors.white,
-                          width: 2,
-                        ),
-                      ),
-                      child: const Center(
-                        child: Text(
-                          '72',
-                          style: TextStyle(
-                            fontSize: 36,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF4FC3F7),
-                          ),
-                        ),
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // Resting Heart Rate Text
-                    const Text(
-                      'Resting Heart Rate',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRestingHeartRateGraph(GoalInsightsViewModel viewModel) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24.0),
-      padding: const EdgeInsets.all(20.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            offset: const Offset(0, 2),
-            blurRadius: 8,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Title
-          const Text(
-            'Resting Heart Rate (Today)',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF4FC3F7),
-            ),
-          ),
-          
-          const SizedBox(height: 20),
-          
-          // Graph
-          SizedBox(
-            height: 200,
-            child: _buildHeartRateChart(viewModel),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeartRateChart(GoalInsightsViewModel viewModel) {
-    return Row(
-      children: [
-        // Y-axis labels
-        Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: const [
-            Text('90', style: TextStyle(fontSize: 12, color: Colors.grey)),
-            Text('80', style: TextStyle(fontSize: 12, color: Colors.grey)),
-            Text('70', style: TextStyle(fontSize: 12, color: Colors.grey)),
-            Text('60', style: TextStyle(fontSize: 12, color: Colors.grey)),
-            Text('50', style: TextStyle(fontSize: 12, color: Colors.grey)),
-          ],
-        ),
-        
-        const SizedBox(width: 8),
-        
-        // Chart
-        Expanded(
-          child: CustomPaint(
-            painter: RestingHeartRateChartPainter(),
-            size: const Size(300, 200),
-          ),
-        ),
-        
-        const SizedBox(width: 8),
-        
-        // X-axis labels
-        Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: const [
-            SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Text('00', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                Text('06', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                Text('12', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                Text('18', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                Text('24', style: TextStyle(fontSize: 10, color: Colors.grey)),
-              ],
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMindfulnessTimeline(GoalInsightsViewModel viewModel) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24.0),
-      padding: const EdgeInsets.all(20.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            offset: const Offset(0, 2),
-            blurRadius: 8,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Title
-          const Text(
-            'Mindfulness Timeline (This Week)',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF4FC3F7),
-            ),
-          ),
-          
-          const SizedBox(height: 20),
-          
-          // Chart
-          SizedBox(
-            height: 200,
-            child: _buildTimelineChart(viewModel),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTimelineChart(GoalInsightsViewModel viewModel) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        // Y-axis labels
-        Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: const [
-            Text('24', style: TextStyle(fontSize: 12, color: Colors.grey)),
-            Text('18', style: TextStyle(fontSize: 12, color: Colors.grey)),
-            Text('12', style: TextStyle(fontSize: 12, color: Colors.grey)),
-            Text('06', style: TextStyle(fontSize: 12, color: Colors.grey)),
-            Text('00', style: TextStyle(fontSize: 12, color: Colors.grey)),
-          ],
-        ),
-        
-        const SizedBox(width: 8),
-        
-        // Chart bars
-        Expanded(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: viewModel.timelineData.map((dayData) {
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  // Bars for this day
-                  SizedBox(
-                    height: 150,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: dayData.sessions.map((session) {
-                        final height = session.intensity * 30;
-                        final color = session.intensity > 0.7 
-                            ? const Color(0xFFF17961) 
-                            : Colors.grey.shade300;
-                        
-                        return Container(
-                          width: 8,
-                          height: height,
-                          margin: const EdgeInsets.only(bottom: 2),
-                          decoration: BoxDecoration(
-                            color: color,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        );
-                      }).toList(),
-                    ),
+              const SizedBox(height: 12),
+              const Center(
+                child: Text(
+                  'Resting Heart Rate',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
                   ),
-                  
-                  const SizedBox(height: 8),
-                  
-                  // Day label
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMindfulnessTimelineCard(GoalInsightsViewModel viewModel) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0x0D000000), // 0.05 opacity black
+            offset: const Offset(0, 2),
+            blurRadius: 8,
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: 0),
+          const Center(
+            child: Text(
+              'Mindfulness Timeline (This Week)',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF6FC7B6),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(height: 140, child: _MindfulnessTimelineChart()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSessionCard(SessionCardData card, int index) {
+    String dateLabel = card.date;
+    if (card.year != null && card.year!.isNotEmpty) {
+      dateLabel = "${card.date} ${card.year}";
+    }
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0x0D000000), // 0.05 opacity black
+            offset: const Offset(0, 2),
+            blurRadius: 8,
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Left: Date and bpm
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(
+                left: 16,
+                top: 16,
+                bottom: 16,
+                right: 0,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    dayData.day,
+                    dateLabel,
                     style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
                       color: Colors.black,
                     ),
                   ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${card.heartRate} bpm resting',
+                    style: const TextStyle(fontSize: 13, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 2),
+                  SizedBox(
+                    height: 28,
+                    child: MiniLineChart(card.heartRateData),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Sleep Better Rate Improved by ${card.improvement}%',
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
                 ],
-              );
-            }).toList(),
+              ),
+            ),
           ),
+          // Right: Duration and Sessions
+          Container(
+            width: 90,
+            height: 80,
+            margin: const EdgeInsets.only(right: 12, left: 0),
+            decoration: BoxDecoration(
+              color: const Color(0xFF6FC7B6),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  card.duration,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${card.sessionCount} Sessions',
+                  style: const TextStyle(fontSize: 13, color: Colors.white),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomNavBar() {
+    return Container(
+      height: 64,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x11000000),
+            blurRadius: 8,
+            offset: Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildNavBarItem(Icons.home, true),
+          _buildNavBarItem(Icons.article_outlined, false),
+          _buildNavBarItem(Icons.show_chart, false),
+          _buildNavBarItem(Icons.person_outline, false),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavBarItem(IconData icon, bool selected) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          icon,
+          color: selected ? const Color(0xFF6FC7B6) : Colors.grey,
+          size: 28,
         ),
+        if (selected)
+          Container(
+            margin: const EdgeInsets.only(top: 2),
+            width: 6,
+            height: 6,
+            decoration: const BoxDecoration(
+              color: Color(0xFF6FC7B6),
+              shape: BoxShape.circle,
+            ),
+          ),
       ],
     );
   }
+}
 
-  Widget _buildSessionCards(GoalInsightsViewModel viewModel) {
-    return Column(
-      children: viewModel.sessionCards.map((card) {
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
-          padding: const EdgeInsets.all(20.0),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16.0),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                offset: const Offset(0, 2),
-                blurRadius: 8,
+// --- Custom Timeline Chart ---
+class _MindfulnessTimelineChart extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    // Example data: first 3 days have red bars, rest are gray
+    final bars = [18, 12, 6, 0, 0];
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          // Y-axis
+          Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: const [
+              Text(
+                '24',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF6FC7B6),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                '18',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF6FC7B6),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                '12',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF6FC7B6),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                '06',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF6FC7B6),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                '00',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF6FC7B6),
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),
-          child: Row(
-            children: [
-              // Left side - Date and Heart Rate
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Date
-                    Text(
-                      card.date,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
+          const SizedBox(width: 8),
+          // Bars
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 8, bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: List.generate(7, (i) {
+                  final isRed = i < 3;
+                  final barHeight = isRed ? (bars[i] * 4.0) : 24.0;
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        width: 12,
+                        height: isRed ? barHeight : 24.0,
+                        decoration: BoxDecoration(
+                          color: isRed
+                              ? const Color(0xFFF17961)
+                              : Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
                       ),
-                    ),
-                    
-                    if (card.year != null) ...[
+                      const SizedBox(height: 8),
                       Text(
-                        card.year!,
+                        ['SUN', 'MON', 'TU', 'WED', 'THU', 'FRI', 'SAT'][i],
                         style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
+                          fontSize: 12,
+                          color: Color(0xFF6FC7B6),
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
-                    
-                    const SizedBox(height: 8),
-                    
-                    // Heart Rate
-                    Text(
-                      '${card.heartRate} bpm resting',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 12),
-                    
-                    // Heart Rate Graph
-                    SizedBox(
-                      height: 30,
-                      child: CustomPaint(
-                        painter: HeartRateGraphPainter(card.heartRateData),
-                        size: const Size(200, 30),
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 8),
-                    
-                    // Improvement Text
-                    Text(
-                      'Sleep Better Rate Improved by ${card.improvement}%',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
+                  );
+                }),
               ),
-              
-              const SizedBox(width: 16),
-              
-              // Right side - Session Info
-              Container(
-                width: 80,
-                padding: const EdgeInsets.all(16.0),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF4FC3F7),
-                  borderRadius: BorderRadius.circular(12.0),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      card.duration,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 8),
-                    
-                    Text(
-                      '${card.sessionCount}',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    
-                    const Text(
-                      'Sessions',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
-        );
-      }).toList(),
+        ],
+      ),
     );
   }
 }
 
-// Custom painter for resting heart rate chart
-class RestingHeartRateChartPainter extends CustomPainter {
+// --- Mini Line Chart for Session Cards ---
+class MiniLineChart extends StatelessWidget {
+  final List<int> data;
+  const MiniLineChart(this.data, {super.key});
+
   @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint();
-    
-    // Draw background grid lines
-    paint.color = Colors.grey.shade200;
-    paint.strokeWidth = 0.5;
-    
-    // Vertical grid lines (hourly)
-    for (int i = 0; i <= 24; i++) {
-      final x = (i / 24) * size.width;
-      canvas.drawLine(
-        Offset(x, 0),
-        Offset(x, size.height),
-        paint,
-      );
-    }
-    
-    // Horizontal grid lines
-    for (int i = 0; i <= 4; i++) {
-      final y = (i / 4) * size.height;
-      canvas.drawLine(
-        Offset(0, y),
-        Offset(size.width, y),
-        paint,
-      );
-    }
-    
-    // Heart rate data points (24-hour period)
-    final heartRateData = [
-      62, 61, 60, 59, 58, 57, 58, 60, 62, 65, 68, 70, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61
-    ];
-    
-    // Draw main heart rate line
-    paint.color = Colors.grey.shade400;
-    paint.strokeWidth = 2;
-    paint.style = PaintingStyle.stroke;
-    
-    final path = Path();
-    for (int i = 0; i < heartRateData.length; i++) {
-      final x = (i / (heartRateData.length - 1)) * size.width;
-      final normalizedY = (90 - heartRateData[i]) / 40; // Normalize to 50-90 range
-      final y = normalizedY * size.height;
-      
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
-    }
-    
-    canvas.drawPath(path, paint);
-    
-    // Draw highlighted segment (14:00 to 17:00)
-    paint.color = const Color(0xFF4FC3F7);
-    paint.strokeWidth = 3;
-    
-    final highlightedPath = Path();
-    final startHour = 14;
-    final endHour = 17;
-    
-    for (int i = startHour; i <= endHour; i++) {
-      final x = (i / (heartRateData.length - 1)) * size.width;
-      final normalizedY = (90 - heartRateData[i]) / 40;
-      final y = normalizedY * size.height;
-      
-      if (i == startHour) {
-        highlightedPath.moveTo(x, y);
-      } else {
-        highlightedPath.lineTo(x, y);
-      }
-    }
-    
-    canvas.drawPath(highlightedPath, paint);
-    
-    // Draw circular markers at start and end of highlighted segment
-    paint.style = PaintingStyle.fill;
-    paint.color = const Color(0xFF4FC3F7);
-    
-    // Start marker (14:00)
-    final startX = (startHour / (heartRateData.length - 1)) * size.width;
-    final startY = ((90 - heartRateData[startHour]) / 40) * size.height;
-    canvas.drawCircle(Offset(startX, startY), 4, paint);
-    
-    // End marker (17:00)
-    final endX = (endHour / (heartRateData.length - 1)) * size.width;
-    final endY = ((90 - heartRateData[endHour]) / 40) * size.height;
-    canvas.drawCircle(Offset(endX, endY), 4, paint);
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _MiniLineChartPainter(data),
+      size: const Size(80, 28),
+    );
   }
-  
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }
 
-// Custom painter for heart rate graph
-class HeartRateGraphPainter extends CustomPainter {
-  final List<int> heartRateData;
-  
-  HeartRateGraphPainter(this.heartRateData);
-  
+class _MiniLineChartPainter extends CustomPainter {
+  final List<int> data;
+  _MiniLineChartPainter(this.data);
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFF4FC3F7)
+      ..color = const Color(0xFF6FC7B6)
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
-    
-    if (heartRateData.length < 2) return;
-    
+    final bgPaint = Paint()
+      ..color = Colors.grey.shade200
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+    // Draw background line
+    final bgPath = Path();
+    bgPath.moveTo(0, size.height / 2);
+    bgPath.lineTo(size.width, size.height / 2);
+    canvas.drawPath(bgPath, bgPaint);
+    // Draw data line
+    if (data.length < 2) return;
+    final minVal = data.reduce((a, b) => a < b ? a : b);
+    final maxVal = data.reduce((a, b) => a > b ? a : b);
+    final range = (maxVal - minVal).abs() == 0 ? 1 : (maxVal - minVal).abs();
+    final stepX = size.width / (data.length - 1);
     final path = Path();
-    final stepX = size.width / (heartRateData.length - 1);
-    final minRate = heartRateData.reduce((a, b) => a < b ? a : b);
-    final maxRate = heartRateData.reduce((a, b) => a > b ? a : b);
-    final range = maxRate - minRate;
-    
-    for (int i = 0; i < heartRateData.length; i++) {
+    for (int i = 0; i < data.length; i++) {
       final x = i * stepX;
-      final normalizedY = range > 0 
-          ? (heartRateData[i] - minRate) / range 
-          : 0.5;
-      final y = size.height - (normalizedY * size.height);
-      
+      final y = size.height - ((data[i] - minVal) / range) * size.height;
       if (i == 0) {
         path.moveTo(x, y);
       } else {
         path.lineTo(x, y);
       }
     }
-    
     canvas.drawPath(path, paint);
   }
-  
+
   @override
   bool shouldRepaint(CustomPainter oldDelegate) => false;
 }
