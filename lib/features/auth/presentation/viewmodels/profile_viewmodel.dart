@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/routing/app_router_config.dart';
 
 class ProfileViewModel extends ChangeNotifier {
   // State variables
@@ -68,9 +70,8 @@ class ProfileViewModel extends ChangeNotifier {
   }
 
   // Handle edit profile
-  void editProfile() {
-    // Implement edit profile logic here
-    print('Edit profile requested');
+  void editProfile(BuildContext context) {
+    context.go(AppRoutes.profileEdit);
   }
 
   // Handle badges and leaderboard

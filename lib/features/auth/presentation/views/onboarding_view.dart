@@ -337,25 +337,18 @@ class _OnboardingViewBody extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white),
-          ),
-          child: TextFormField(
-            controller: viewModel.firstNameController,
-            keyboardType: TextInputType.name,
-            textInputAction: TextInputAction.next,
-            decoration: InputDecoration(
-              hintText: 'Jane',
-              hintStyle: TextStyle(color: Colors.black),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 16,
-              ),
-              border: InputBorder.none,
+        TextFormField(
+          controller: viewModel.firstNameController,
+          keyboardType: TextInputType.name,
+          textInputAction: TextInputAction.next,
+          decoration: InputDecoration(
+            hintText: 'Jane',
+            hintStyle: TextStyle(color: Colors.black),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
             ),
+            border: InputBorder.none,
           ),
         ),
 

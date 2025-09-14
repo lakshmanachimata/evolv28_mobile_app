@@ -158,7 +158,7 @@ class _ProfileViewBody extends StatelessWidget {
           context,
           'Edit profile',
           'assets/images/profile_edit.svg',
-          viewModel.editProfile,
+          () => viewModel.editProfile(context),
         ),
         const SizedBox(height: 16),
         // Badges & Leaderboard button
