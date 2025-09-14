@@ -46,35 +46,13 @@ class _PrivacyWebViewState extends State<PrivacyWebView> {
   }
 
   void _retryWithDetailedLogging() {
-    print('=== RETRYING PRIVACY LOAD WITH DETAILED LOGGING ===');
-    print('Timestamp: ${DateTime.now()}');
-    print('Current loading state: $_isLoading');
-    print('Controller: $_controller');
-    print('WebView Failed: $_webViewFailed');
-    print('Error Message: $_errorMessage');
-    print('===================================================');
-    
     setState(() {
       _errorMessage = null;
       _isLoading = true;
       _webViewFailed = false;
     });
     _startTimeout();
-
-    // Retry with detailed logging
-    _controller?.loadRequest(Uri.parse('https://evolv28.com/privacy-policy')).catchError((error) {
-      print('=== DETAILED PRIVACY RETRY LOAD REQUEST ERROR ===');
-      print('Error: $error');
-      print('Error Type: ${error.runtimeType}');
-      print('Stack Trace: ${StackTrace.current}');
-      print('Timestamp: ${DateTime.now()}');
-      print('=================================================');
-      
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Detailed retry failed: $error';
-      });
-    });
+    _controller?.loadRequest(Uri.parse('https://evolv28.com/privacy-policy'));
   }
   
   void _openInExternalBrowser() async {
@@ -87,10 +65,6 @@ class _PrivacyWebViewState extends State<PrivacyWebView> {
   }
 
   void _initializeWebView() {
-    print('=== INITIALIZING PRIVACY WEBVIEW ===');
-    print('Timestamp: ${DateTime.now()}');
-    print('====================================');
-    
     try {
       _controller = WebViewController()
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
@@ -100,20 +74,12 @@ class _PrivacyWebViewState extends State<PrivacyWebView> {
         ..setNavigationDelegate(
           NavigationDelegate(
             onPageStarted: (String url) {
-              print('=== PRIVACY PAGE LOADING STARTED ===');
-              print('URL: $url');
-              print('Timestamp: ${DateTime.now()}');
-              print('====================================');
               setState(() {
                 _isLoading = true;
                 _errorMessage = null;
               });
             },
             onPageFinished: (String url) {
-              print('=== PRIVACY PAGE LOADING FINISHED ===');
-              print('URL: $url');
-              print('Timestamp: ${DateTime.now()}');
-              print('=====================================');
               _timeoutTimer?.cancel();
               setState(() {
                 _isLoading = false;
@@ -122,73 +88,25 @@ class _PrivacyWebViewState extends State<PrivacyWebView> {
             },
             onWebResourceError: (WebResourceError error) {
               _timeoutTimer?.cancel();
-              print('=== PRIVACY WEBVIEW RESOURCE ERROR ===');
-              print('Error Type: ${error.errorType}');
-              print('Error Code: ${error.errorCode}');
-              print('Description: ${error.description}');
-              print('Is For Main Frame: ${error.isForMainFrame}');
-              print('Timestamp: ${DateTime.now()}');
-              print('======================================');
-              
-              String errorMessage = 'Failed to load Privacy Policy.\n\n';
-              errorMessage += 'Error Code: ${error.errorCode}\n';
-              errorMessage += 'Description: ${error.description}\n\n';
-              
-              if (error.errorCode == -2) {
-                errorMessage += 'This appears to be a network connectivity issue.';
-              } else if (error.errorCode == -6) {
-                errorMessage += 'This appears to be a certificate or SSL issue.';
-              } else if (error.errorCode == -8) {
-                errorMessage += 'This appears to be a timeout issue.';
-              } else {
-                errorMessage += 'Please check your internet connection and try again.';
-              }
-              
               setState(() {
                 _isLoading = false;
-                _errorMessage = errorMessage;
+                _errorMessage = 'Failed to load Privacy Policy. Please check your internet connection.';
               });
             },
             onNavigationRequest: (NavigationRequest request) {
-              print('=== PRIVACY NAVIGATION REQUEST ===');
-              print('URL: ${request.url}');
-              print('Timestamp: ${DateTime.now()}');
-              print('==================================');
               return NavigationDecision.navigate;
             },
           ),
         );
       
-      print('=== PRIVACY WEBVIEW CONTROLLER CREATED ===');
-      print('Controller: $_controller');
-      print('==========================================');
-      
       // Load the URL
-      _controller?.loadRequest(Uri.parse('https://evolv28.com/privacy-policy')).catchError((error) {
-        print('=== PRIVACY LOAD REQUEST ERROR ===');
-        print('Error: $error');
-        print('Error Type: ${error.runtimeType}');
-        print('Timestamp: ${DateTime.now()}');
-        print('==================================');
-        
-        setState(() {
-          _isLoading = false;
-          _errorMessage = 'Failed to load Privacy Policy: $error';
-        });
-      });
+      _controller?.loadRequest(Uri.parse('https://evolv28.com/privacy-policy'));
       
-    } catch (e, stackTrace) {
-      print('=== PRIVACY WEBVIEW INITIALIZATION ERROR ===');
-      print('Error: $e');
-      print('Error Type: ${e.runtimeType}');
-      print('Stack Trace: $stackTrace');
-      print('Timestamp: ${DateTime.now()}');
-      print('============================================');
-      
+    } catch (e) {
       setState(() {
         _webViewFailed = true;
         _isLoading = false;
-        _errorMessage = 'Privacy WebView initialization failed: $e';
+        _errorMessage = 'WebView initialization failed.';
       });
     }
   }
@@ -297,8 +215,21 @@ class _PrivacyWebViewState extends State<PrivacyWebView> {
                               ),
                             ),
                           ),
-                        if (!_webViewFailed && _errorMessage == null && _controller != null)
+                        // Always show WebView if controller exists, regardless of loading state
+                        if (_controller != null)
                           WebViewWidget(controller: _controller!),
+                        
+                        // Show message when controller is null
+                        if (_controller == null)
+                          const Center(
+                            child: Text(
+                              'Initializing WebView...',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ),
                         if (!_webViewFailed && _errorMessage != null)
                           Center(
                             child: Padding(
