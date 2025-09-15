@@ -509,16 +509,16 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
     String iconPath;
     
     switch (programId) {
-      case 'better_sleep':
+      case 'sleep_better':
         iconPath = 'assets/images/sleep_icon.svg';
         break;
       case 'improve_mood':
         iconPath = 'assets/images/improve_mood.svg';
         break;
-      case 'improve_focus':
+      case 'focus_better':
         iconPath = 'assets/images/focus_better.svg';
         break;
-      case 'reduce_stress':
+      case 'remove_stress':
         iconPath = 'assets/images/remove_stress.svg';
         break;
       default:
@@ -534,13 +534,13 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
 
   String _getProgramTitle(String? programId) {
     switch (programId) {
-      case 'better_sleep':
+      case 'sleep_better':
         return 'Better Sleep';
       case 'improve_mood':
         return 'Improve Mood';
-      case 'improve_focus':
+      case 'focus_better':
         return 'Improve Focus';
-      case 'reduce_stress':
+      case 'remove_stress':
         return 'Reduce Stress';
       default:
         return 'Better Sleep';

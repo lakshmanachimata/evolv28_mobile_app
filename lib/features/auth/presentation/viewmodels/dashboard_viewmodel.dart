@@ -143,8 +143,24 @@ class DashboardViewModel extends ChangeNotifier {
   void playProgram(String programTitle) {
     _showPlayerCard = true;
     _isPlaying = true;
-    _currentPlayingProgramId = programTitle.toLowerCase().replaceAll(' ', '_');
+    _currentPlayingProgramId = _getProgramIdFromTitle(programTitle);
     notifyListeners();
+  }
+
+  // Map program titles to their actual IDs in ProgramsViewModel
+  String _getProgramIdFromTitle(String title) {
+    switch (title) {
+      case 'Better Sleep':
+        return 'sleep_better';
+      case 'Improve Mood':
+        return 'improve_mood';
+      case 'Improve Focus':
+        return 'focus_better';
+      case 'Reduce Stress':
+        return 'remove_stress';
+      default:
+        return 'sleep_better';
+    }
   }
 
   // Handle help and support
