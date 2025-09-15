@@ -11,19 +11,17 @@ class QuestionnaireView extends StatefulWidget {
 }
 
 class _QuestionnaireViewState extends State<QuestionnaireView> {
-  List<int?> _answers = [1, 2, null]; // Pre-filled answers for first two questions
+  List<int?> _answers = [
+    1,
+    2,
+    null,
+  ]; // Pre-filled answers for first two questions
   int _currentPage = 2; // Current page indicator
   int _totalPages = 6; // Total pages
 
   final List<Map<String, dynamic>> _questions = [
-    {
-      'question': 'I found it hard to wind down',
-      'answer': 1,
-    },
-    {
-      'question': 'I was aware of dryness of my mouth',
-      'answer': 2,
-    },
+    {'question': 'I found it hard to wind down', 'answer': 1},
+    {'question': 'I was aware of dryness of my mouth', 'answer': 2},
     {
       'question': 'I couldn\'t seem to experience any positive feeling at all',
       'answer': null,
@@ -33,39 +31,52 @@ class _QuestionnaireViewState extends State<QuestionnaireView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            _buildHeader(context),
-            
-            // Content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 20),
-                    
-                    // Rating Scale Explanation
-                    _buildRatingScaleExplanation(),
-                    
-                    const SizedBox(height: 30),
-                    
-                    // Questionnaires Section
-                    _buildQuestionnairesSection(),
-                    
-                    const SizedBox(height: 40),
-                  ],
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFE8F5E8), // Light teal-green
+              Color(0xFFF0F8F0), // Very light green
+              Colors.white, // White at bottom
+            ],
+            stops: [0.0, 0.6, 1.0],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Header
+              _buildHeader(context),
+
+              // Content
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 20),
+
+                      // Rating Scale Explanation
+                      _buildRatingScaleExplanation(),
+
+                      const SizedBox(height: 30),
+
+                      // Questionnaires Section
+                      _buildQuestionnairesSection(),
+
+                      const SizedBox(height: 40),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            
-            // Bottom Navigation
-            _buildBottomNavigation(context),
-          ],
+
+              // Bottom Navigation
+              _buildBottomNavigation(context),
+            ],
+          ),
         ),
       ),
     );
@@ -84,9 +95,9 @@ class _QuestionnaireViewState extends State<QuestionnaireView> {
             onTap: () => context.go(AppRoutes.mindfulnessForm),
             child: const Icon(Icons.arrow_back, color: Colors.black, size: 24),
           ),
-          
+
           const SizedBox(width: 16),
-          
+
           // Title
           const Text(
             'Mindfulness',
@@ -127,10 +138,7 @@ class _QuestionnaireViewState extends State<QuestionnaireView> {
       padding: const EdgeInsets.only(bottom: 4),
       child: Text(
         text,
-        style: const TextStyle(
-          fontSize: 14,
-          color: Colors.grey,
-        ),
+        style: const TextStyle(fontSize: 14, color: Colors.grey),
       ),
     );
   }
@@ -148,7 +156,7 @@ class _QuestionnaireViewState extends State<QuestionnaireView> {
           ),
         ),
         const SizedBox(height: 20),
-        
+
         // Questions
         ...List.generate(_questions.length, (index) {
           return _buildQuestionItem(index);
@@ -160,7 +168,7 @@ class _QuestionnaireViewState extends State<QuestionnaireView> {
   Widget _buildQuestionItem(int index) {
     final question = _questions[index];
     final currentAnswer = _answers[index];
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -173,7 +181,7 @@ class _QuestionnaireViewState extends State<QuestionnaireView> {
           ),
         ),
         const SizedBox(height: 12),
-        
+
         // Answer options
         Row(
           children: List.generate(4, (optionIndex) {
@@ -210,7 +218,7 @@ class _QuestionnaireViewState extends State<QuestionnaireView> {
             );
           }),
         ),
-        
+
         if (index < _questions.length - 1) const SizedBox(height: 30),
       ],
     );
@@ -234,9 +242,9 @@ class _QuestionnaireViewState extends State<QuestionnaireView> {
               child: const Icon(Icons.arrow_back, color: Colors.grey, size: 20),
             ),
           ),
-          
+
           const Spacer(),
-          
+
           // Page indicator
           Text(
             '$_currentPage/$_totalPages',
@@ -246,9 +254,9 @@ class _QuestionnaireViewState extends State<QuestionnaireView> {
               color: Colors.black,
             ),
           ),
-          
+
           const Spacer(),
-          
+
           // Forward arrow
           GestureDetector(
             onTap: () => context.go(AppRoutes.mindHealthAnalysis),
@@ -259,7 +267,11 @@ class _QuestionnaireViewState extends State<QuestionnaireView> {
                 color: const Color(0xFFF07A60),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Icon(Icons.arrow_forward, color: Colors.white, size: 20),
+              child: const Icon(
+                Icons.arrow_forward,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
           ),
         ],

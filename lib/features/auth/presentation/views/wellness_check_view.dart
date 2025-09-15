@@ -10,34 +10,47 @@ class WellnessCheckView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            _buildHeader(context),
-            
-            // Content
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 40),
-                    
-                    // Wellness Cards
-                    _buildMindfulnessCard(context),
-                    
-                    const SizedBox(height: 20),
-                    
-                    _buildSleepCard(context),
-                    
-                    const Spacer(),
-                  ],
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFE8F5E8), // Light teal-green
+              Color(0xFFF0F8F0), // Very light green
+              Colors.white,       // White at bottom
+            ],
+            stops: [0.0, 0.6, 1.0],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Header
+              _buildHeader(context),
+              
+              // Content
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 40),
+                      
+                      // Wellness Cards
+                      _buildMindfulnessCard(context),
+                      
+                      const SizedBox(height: 20),
+                      
+                      _buildSleepCard(context),
+                      
+                      const Spacer(),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -47,7 +60,7 @@ class WellnessCheckView extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
       decoration: const BoxDecoration(
-        color: Color(0xFFE8F5E8), // Light blue-green background
+        color: Colors.transparent, // Fully transparent background
       ),
       child: Row(
         children: [
@@ -83,9 +96,14 @@ class WellnessCheckView extends StatelessWidget {
           borderRadius: BorderRadius.circular(16.0),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              offset: const Offset(0, 2),
-              blurRadius: 8,
+              color: Colors.black.withOpacity(0.08),
+              offset: const Offset(0, 4),
+              blurRadius: 12,
+            ),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              offset: const Offset(0, 1),
+              blurRadius: 4,
             ),
           ],
         ),
@@ -155,9 +173,14 @@ class WellnessCheckView extends StatelessWidget {
           borderRadius: BorderRadius.circular(16.0),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              offset: const Offset(0, 2),
-              blurRadius: 8,
+              color: Colors.black.withOpacity(0.08),
+              offset: const Offset(0, 4),
+              blurRadius: 12,
+            ),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              offset: const Offset(0, 1),
+              blurRadius: 4,
             ),
           ],
         ),

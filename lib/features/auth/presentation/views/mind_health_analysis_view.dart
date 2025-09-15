@@ -31,40 +31,53 @@ class _MindHealthAnalysisViewState extends State<MindHealthAnalysisView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            _buildHeader(context),
-            
-            // Content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 20),
-                    
-                    // Wellness Categories
-                    _buildWellnessCategories(),
-                    
-                    const SizedBox(height: 30),
-                    
-                    // Tabs
-                    _buildTabs(),
-                    
-                    const SizedBox(height: 20),
-                    
-                    // Tab Content
-                    _buildTabContent(),
-                    
-                    const SizedBox(height: 40),
-                  ],
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFE8F5E8), // Light teal-green
+              Color(0xFFF0F8F0), // Very light green
+              Colors.white, // White at bottom
+            ],
+            stops: [0.0, 0.6, 1.0],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Header
+              _buildHeader(context),
+
+              // Content
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 20),
+
+                      // Wellness Categories
+                      _buildWellnessCategories(),
+
+                      const SizedBox(height: 30),
+
+                      // Tabs
+                      _buildTabs(),
+
+                      const SizedBox(height: 20),
+
+                      // Tab Content
+                      _buildTabContent(),
+
+                      const SizedBox(height: 40),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -83,9 +96,9 @@ class _MindHealthAnalysisViewState extends State<MindHealthAnalysisView> {
             onTap: () => context.go(AppRoutes.questionnaire),
             child: const Icon(Icons.arrow_back, color: Colors.black, size: 24),
           ),
-          
+
           const SizedBox(width: 16),
-          
+
           // Title
           const Text(
             'Mind Health Analysis',
@@ -109,9 +122,9 @@ class _MindHealthAnalysisViewState extends State<MindHealthAnalysisView> {
           Icons.self_improvement,
           const Color(0xFFF07A60),
         ),
-        
+
         const SizedBox(height: 20),
-        
+
         _buildWellnessCard(
           'Sleep',
           'Enable sleep tracking to build better bedtime habits.',
@@ -122,7 +135,12 @@ class _MindHealthAnalysisViewState extends State<MindHealthAnalysisView> {
     );
   }
 
-  Widget _buildWellnessCard(String title, String description, IconData icon, Color color) {
+  Widget _buildWellnessCard(
+    String title,
+    String description,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(20.0),
       decoration: BoxDecoration(
@@ -146,15 +164,11 @@ class _MindHealthAnalysisViewState extends State<MindHealthAnalysisView> {
               color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 30,
-            ),
+            child: Icon(icon, color: color, size: 30),
           ),
-          
+
           const SizedBox(width: 16),
-          
+
           // Content
           Expanded(
             child: Column(
@@ -171,21 +185,14 @@ class _MindHealthAnalysisViewState extends State<MindHealthAnalysisView> {
                 const SizedBox(height: 8),
                 Text(
                   description,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
+                  style: const TextStyle(fontSize: 14, color: Colors.grey),
                 ),
               ],
             ),
           ),
-          
+
           // Arrow
-          const Icon(
-            Icons.arrow_forward_ios,
-            color: Colors.grey,
-            size: 16,
-          ),
+          const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 16),
         ],
       ),
     );
@@ -205,7 +212,9 @@ class _MindHealthAnalysisViewState extends State<MindHealthAnalysisView> {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: _selectedTab == 'Result' ? const Color(0xFFF07A60) : Colors.transparent,
+                  color: _selectedTab == 'Result'
+                      ? const Color(0xFFF07A60)
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Center(
@@ -214,7 +223,9 @@ class _MindHealthAnalysisViewState extends State<MindHealthAnalysisView> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: _selectedTab == 'Result' ? Colors.white : Colors.black,
+                      color: _selectedTab == 'Result'
+                          ? Colors.white
+                          : Colors.black,
                     ),
                   ),
                 ),
@@ -227,7 +238,9 @@ class _MindHealthAnalysisViewState extends State<MindHealthAnalysisView> {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: _selectedTab == 'Recommendations' ? const Color(0xFFF07A60) : Colors.transparent,
+                  color: _selectedTab == 'Recommendations'
+                      ? const Color(0xFFF07A60)
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Center(
@@ -236,7 +249,9 @@ class _MindHealthAnalysisViewState extends State<MindHealthAnalysisView> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: _selectedTab == 'Recommendations' ? Colors.white : Colors.black,
+                      color: _selectedTab == 'Recommendations'
+                          ? Colors.white
+                          : Colors.black,
                     ),
                   ),
                 ),
@@ -280,14 +295,38 @@ class _MindHealthAnalysisViewState extends State<MindHealthAnalysisView> {
                 ),
                 child: const Row(
                   children: [
-                    Expanded(flex: 2, child: Text('Date', style: TextStyle(fontWeight: FontWeight.bold))),
-                    Expanded(flex: 2, child: Text('Category', style: TextStyle(fontWeight: FontWeight.bold))),
-                    Expanded(flex: 1, child: Text('Score', style: TextStyle(fontWeight: FontWeight.bold))),
-                    Expanded(flex: 2, child: Text('Interpretation', style: TextStyle(fontWeight: FontWeight.bold))),
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        'Date',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        'Category',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: Text(
+                        'Score',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        'Interpretation',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   ],
                 ),
               ),
-              
+
               // Table Rows
               ...List.generate(_wellnessResults.length, (index) {
                 final result = _wellnessResults[index];
@@ -311,9 +350,9 @@ class _MindHealthAnalysisViewState extends State<MindHealthAnalysisView> {
             ],
           ),
         ),
-        
+
         const SizedBox(height: 20),
-        
+
         // Lorem ipsum placeholder
         Container(
           padding: const EdgeInsets.all(16),
@@ -323,10 +362,7 @@ class _MindHealthAnalysisViewState extends State<MindHealthAnalysisView> {
           ),
           child: const Text(
             'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey),
           ),
         ),
       ],
@@ -342,10 +378,7 @@ class _MindHealthAnalysisViewState extends State<MindHealthAnalysisView> {
       ),
       child: const Text(
         'Recommendations content will be displayed here. This section will contain personalized recommendations based on the wellness check results.',
-        style: TextStyle(
-          fontSize: 14,
-          color: Colors.grey,
-        ),
+        style: TextStyle(fontSize: 14, color: Colors.grey),
       ),
     );
   }
