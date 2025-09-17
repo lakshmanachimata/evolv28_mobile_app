@@ -25,6 +25,7 @@ class BluetoothService extends ChangeNotifier {
   Timer? _scanTimer;
   Timer? _countdownTimer;
   int _scanCountdown = 0;
+  bool _isExecutingCommands = false;
   
   // Command handling
   ble.BluetoothService? _uartService;
@@ -48,6 +49,7 @@ class BluetoothService extends ChangeNotifier {
   bool get isConnected => _connectionState == BluetoothConnectionState.connected;
   bool get isScanning => _connectionState == BluetoothConnectionState.scanning;
   int get scanCountdown => _scanCountdown;
+  bool get isExecutingCommands => _isExecutingCommands;
 
   Future<void> initialize() async {
     // Check permissions
@@ -204,6 +206,9 @@ class BluetoothService extends ChangeNotifier {
     if (_connectedDevice == null) return;
 
     try {
+      _isExecutingCommands = true;
+      notifyListeners();
+      
       // Discover services
       final services = await _connectedDevice!.discoverServices();
 
@@ -236,7 +241,13 @@ class BluetoothService extends ChangeNotifier {
       // Send all commands from the reference implementation
       await _sendCommandSequence();
 
+      // Command sequence completed
+      _isExecutingCommands = false;
+      notifyListeners();
+
     } catch (e) {
+      _isExecutingCommands = false;
+      notifyListeners();
       _setError('Command sequence failed: $e');
     }
   }
@@ -452,18 +463,90 @@ class BluetoothService extends ChangeNotifier {
       // Remove duplicates and sort
       programFiles.toSet().toList()..sort();
       
-      print('Found ${programFiles.length} program files: $programFiles');
+      print('Found ${programFiles.length} .bcu program files: $programFiles');
       
-      // Store the program list for later use
-      _availablePrograms = programFiles;
+      // Convert .bcu files to wellness programs format
+      _availablePrograms = _convertBcuFilesToWellnessPrograms(programFiles);
+      
+      print('Converted to ${_availablePrograms.length} wellness programs: $_availablePrograms');
       
     } catch (e) {
       print('Error parsing program list: $e');
     }
   }
 
+  List<String> _convertBcuFilesToWellnessPrograms(List<String> bcuFiles) {
+    final wellnessPrograms = <String>[];
+    
+    for (final bcuFile in bcuFiles) {
+      // Remove .bcu extension
+      String programName = bcuFile.replaceAll('.bcu', '');
+      
+      // Replace underscore with space and convert to title case
+      programName = programName.replaceAll('_', ' ');
+      programName = _toTitleCase(programName);
+      
+      // Keep file ID as same as original filename
+      String fileId = bcuFile;
+      
+      // Create formatted program entry
+      String formattedProgram = '$programName|$fileId';
+      wellnessPrograms.add(formattedProgram);
+      
+      print('Converted: $bcuFile -> $programName (ID: $fileId)');
+    }
+    
+    return wellnessPrograms;
+  }
+
+  String _toTitleCase(String text) {
+    if (text.isEmpty) return text;
+    
+    return text.split(' ').map((word) {
+      if (word.isEmpty) return word;
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
+  }
+
   List<String> _availablePrograms = [];
   List<String> get availablePrograms => _availablePrograms;
+  
+  // Helper methods to get program names and IDs
+  List<String> get programNames {
+    return _availablePrograms.map((program) {
+      final parts = program.split('|');
+      return parts.isNotEmpty ? parts[0] : '';
+    }).toList();
+  }
+  
+  List<String> get programIds {
+    return _availablePrograms.map((program) {
+      final parts = program.split('|');
+      return parts.length > 1 ? parts[1] : '';
+    }).toList();
+  }
+  
+  // Get program name by ID
+  String getProgramNameById(String id) {
+    for (final program in _availablePrograms) {
+      final parts = program.split('|');
+      if (parts.length > 1 && parts[1] == id) {
+        return parts[0];
+      }
+    }
+    return '';
+  }
+  
+  // Get program ID by name
+  String getProgramIdByName(String name) {
+    for (final program in _availablePrograms) {
+      final parts = program.split('|');
+      if (parts.isNotEmpty && parts[0] == name) {
+        return parts.length > 1 ? parts[1] : '';
+      }
+    }
+    return '';
+  }
 
   void _setError(String error) {
     _errorMessage = error;

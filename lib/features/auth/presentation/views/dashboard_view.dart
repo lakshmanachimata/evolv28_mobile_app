@@ -47,6 +47,16 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
 
           // Main Content
           _buildMainContent(context),
+          
+          // Loading Overlay
+          Consumer<DashboardViewModel>(
+            builder: (context, viewModel, child) {
+              if (viewModel.isExecutingCommands) {
+                return _buildLoadingOverlay(context);
+              }
+              return SizedBox.shrink();
+            },
+          ),
         ],
       ),
     );
@@ -463,33 +473,34 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
           height: 100,
           child: Consumer<DashboardViewModel>(
             builder: (context, viewModel, child) {
+              // Get BLE programs or use default ones
+              final programNames = viewModel.bluetoothProgramNames;
+              final programIds = viewModel.bluetoothProgramIds;
+              
+              // Use BLE programs if available, otherwise use default
+              final topPicks = programNames.isNotEmpty 
+                  ? programNames.take(4).toList()
+                  : ['Sleep Better', 'Improve Mood', 'Focus Better', 'Remove Stress'];
+              
               return ListView(
                 scrollDirection: Axis.horizontal,
-                children: [
-                  _buildFeatureIcon(
-                    'Better Sleep',
-                    'assets/images/sleep_better.svg',
-                    viewModel,
-                  ),
-                  const SizedBox(width: 16),
-                  _buildFeatureIcon(
-                    'Improve Mood',
-                    'assets/images/improve_mood.svg',
-                    viewModel,
-                  ),
-                  const SizedBox(width: 16),
-                  _buildFeatureIcon(
-                    'Improve Focus',
-                    'assets/images/focus_better.svg',
-                    viewModel,
-                  ),
-                  const SizedBox(width: 16),
-                  _buildFeatureIcon(
-                    'Reduce Stress',
-                    'assets/images/remove_stress.svg',
-                    viewModel,
-                  ),
-                ],
+                children: topPicks.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final programName = entry.value;
+                  final programId = programIds.length > index ? programIds[index] : '';
+                  
+                  return Row(
+                    children: [
+                      _buildFeatureIcon(
+                        programName,
+                        _getIconPathForProgram(programName),
+                        viewModel,
+                        programId: programId,
+                      ),
+                      if (index < topPicks.length - 1) const SizedBox(width: 16),
+                    ],
+                  );
+                }).toList(),
               );
             },
           ),
@@ -498,7 +509,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
     );
   }
 
-  Widget _buildFeatureIcon(String title, String iconPath, DashboardViewModel viewModel) {
+  Widget _buildFeatureIcon(String title, String iconPath, DashboardViewModel viewModel, {String? programId}) {
     return GestureDetector(
       onTap: () {
         viewModel.playProgram(title);
@@ -517,7 +528,9 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
               ),
             ),
             child: Center(
-              child: SvgPicture.asset(iconPath, width: 30, height: 30),
+              child: iconPath.endsWith('.svg')
+                  ? SvgPicture.asset(iconPath, width: 30, height: 30)
+                  : Image.asset(iconPath, width: 30, height: 30),
             ),
           ),
           const SizedBox(height: 8),
@@ -533,6 +546,23 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
         ],
       ),
     );
+  }
+
+  String _getIconPathForProgram(String programName) {
+    switch (programName) {
+      case 'Sleep Better':
+        return 'assets/images/sleep_better.svg';
+      case 'Improve Mood':
+        return 'assets/images/improve_mood.svg';
+      case 'Focus Better':
+        return 'assets/images/focus_better.svg';
+      case 'Remove Stress':
+        return 'assets/images/remove_stress.svg';
+      case 'Calm Mind':
+        return 'assets/images/calm_mind.svg';
+      default:
+        return 'assets/images/sleep_better.svg';
+    }
   }
 
   Widget _buildProgramIcon(String? programId) {
@@ -708,6 +738,67 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
       ),
     );
   }
+
+  Widget _buildLoadingOverlay(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      color: Colors.black.withOpacity(0.3), // Semi-transparent overlay
+      child: Center(
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.8, // 80% of screen width
+          padding: EdgeInsets.symmetric(horizontal: 40, vertical: 30),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Loading indicator
+              SizedBox(
+                width: 50,
+                height: 50,
+                child: CircularProgressIndicator(
+                  strokeWidth: 4,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    Color(0xFF4CAF50), // Green color
+                  ),
+                ),
+              ),
+              SizedBox(height: 20),
+              // Loading text
+              Text(
+                'Fetching Programs...',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Please wait while we retrieve your wellness programs',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _BlinkingBluetoothIcon extends StatefulWidget {
@@ -759,4 +850,5 @@ class _BlinkingBluetoothIconState extends State<_BlinkingBluetoothIcon>
       },
     );
   }
+
 }

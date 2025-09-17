@@ -35,6 +35,12 @@ class DashboardViewModel extends ChangeNotifier {
   String get bluetoothStatusMessage => _bluetoothService.statusMessage;
   String get bluetoothErrorMessage => _bluetoothService.errorMessage;
   int get bluetoothScanCountdown => _bluetoothService.scanCountdown;
+  bool get isExecutingCommands => _bluetoothService.isExecutingCommands;
+  
+  // Bluetooth program getters
+  List<String> get bluetoothProgramNames => _bluetoothService.programNames;
+  List<String> get bluetoothProgramIds => _bluetoothService.programIds;
+  List<String> get bluetoothAvailablePrograms => _bluetoothService.availablePrograms;
 
   // Static methods to manage minimized state
   static void setMinimizedState(String programId) {
