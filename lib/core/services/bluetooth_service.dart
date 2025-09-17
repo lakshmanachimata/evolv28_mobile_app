@@ -438,6 +438,40 @@ class BluetoothService extends ChangeNotifier {
         '5th command - Accumulated response: "$stringValue" (Total: ${_fifthCommandResponses.length})',
       );
     }
+
+    // If we're sending play commands, check for play command responses
+    if (_isSendingPlayCommands && stringValue.isNotEmpty) {
+      print('🎵 Play command notification received: "$stringValue"');
+      
+      // Check if this is a response to the last play command (5#SPL!)
+      if (stringValue.contains('#SPL,')) {
+        print('✅ Received 5#SPL! response: "$stringValue"');
+        
+        // Parse the response to extract the filename
+        final parts = stringValue.split(',');
+        print('DEBUG: Response parts count: ${parts.length}');
+        
+        if (parts.length >= 8) {
+          final responseFileName = parts[7]; // Filename is at index 7
+          print('DEBUG: Extracted filename: $responseFileName');
+          
+          // Check if this matches our expected filename
+          if (_selectedBcuFile != null && 
+              responseFileName.toLowerCase().contains(_selectedBcuFile!.toLowerCase())) {
+            _isPlaySuccessful = true;
+            _isSendingPlayCommands = false; // Stop showing loader
+            print('✅ Play successful! File $_selectedBcuFile found in response: $stringValue');
+            print('✅ Extracted filename from response: $responseFileName');
+            print('✅ Setting _isPlaySuccessful = true, _isSendingPlayCommands = false');
+            notifyListeners();
+          } else {
+            print('❌ Filename mismatch: expected $_selectedBcuFile, got $responseFileName');
+          }
+        } else {
+          print('❌ Not enough parts in response: ${parts.length}');
+        }
+      }
+    }
   }
 
   void _handleError(String error) {
@@ -655,36 +689,6 @@ class BluetoothService extends ChangeNotifier {
         _playCommandResponses.add('$command -> $response');
         print('Play command response: $command -> $response');
 
-        // Check for success after 5#SPL! command (last command)
-        if (command == '5#SPL!') {
-          print('DEBUG: Checking 5#SPL! response for success...');
-          print('DEBUG: Response contains #SPL,: ${response.contains('#SPL,')}');
-          if (response.contains('#SPL,')) {
-            // Parse the response to extract the filename
-            final parts = response.split(',');
-            print('DEBUG: Response parts count: ${parts.length}');
-            if (parts.length >= 8) {
-              final responseFileName = parts[7]; // Filename is at index 7
-              print('DEBUG: Extracted filename: $responseFileName');
-              print('DEBUG: Looking for: $bcuFileName');
-              print('DEBUG: Filename match: ${responseFileName.toLowerCase().contains(bcuFileName.toLowerCase())}');
-              if (responseFileName.toLowerCase().contains(bcuFileName.toLowerCase())) {
-                _isPlaySuccessful = true;
-                _isSendingPlayCommands = false; // Stop showing loader
-                print('✅ Play successful! File $bcuFileName found in response: $response');
-                print('✅ Extracted filename from response: $responseFileName');
-                print('✅ Setting _isPlaySuccessful = true, _isSendingPlayCommands = false');
-              } else {
-                print('❌ Filename mismatch: expected $bcuFileName, got $responseFileName');
-              }
-            } else {
-              print('❌ Not enough parts in response: ${parts.length}');
-            }
-          } else {
-            print('❌ Response does not contain #SPL,');
-          }
-        }
-
         notifyListeners();
 
         // Special delay for #ST command - wait 1 second before sending 24#PL
@@ -724,32 +728,14 @@ class BluetoothService extends ChangeNotifier {
       }
     });
 
-    // Listen for next notification
-    if (_notifyCharacteristic != null) {
-      final subscription = _notifyCharacteristic!.lastValueStream.listen(
-        (value) {
-          if (!completer.isCompleted) {
-            lastResponse = String.fromCharCodes(value);
-            print('Play command notification received: $lastResponse');
-            completer.complete(lastResponse!);
-          }
-        },
-        onError: (error) {
-          if (!completer.isCompleted) {
-            completer.complete('Error: $error');
-          }
-        },
-      );
-
-      final response = await completer.future;
-      timeoutTimer.cancel();
-      subscription.cancel();
-
-      return response;
-    } else {
-      timeoutTimer.cancel();
-      return 'Error: Notify characteristic not available';
-    }
+    // Use a simple delay approach instead of creating a new subscription
+    // The _handleNotification method will handle the response
+    await Future.delayed(const Duration(milliseconds: 1000));
+    
+    // For now, return a placeholder - the actual response will be handled
+    // by the existing notification system
+    timeoutTimer.cancel();
+    return 'Response handled by existing notification system';
   }
 
   @override
