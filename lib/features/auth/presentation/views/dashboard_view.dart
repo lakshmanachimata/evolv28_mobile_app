@@ -94,11 +94,14 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
               // Main Content Area
               Expanded(child: _buildContentArea(context, viewModel)),
 
-              // Player Card (if playing)
+              // Player Card (after successful play response or for non-Bluetooth programs)
               Consumer<DashboardViewModel>(
                 builder: (context, viewModel, child) {
                   print('DEBUG: showPlayerCard: ${viewModel.showPlayerCard}, isPlaySuccessful: ${viewModel.isPlaySuccessful}');
-                  if (viewModel.showPlayerCard || viewModel.isPlaySuccessful) {
+                  // Show player card if:
+                  // 1. Bluetooth play was successful (isPlaySuccessful = true)
+                  // 2. Non-Bluetooth program is playing (showPlayerCard = true)
+                  if (viewModel.isPlaySuccessful || viewModel.showPlayerCard) {
                     return _buildPlayerCard(context, viewModel);
                   }
                   return SizedBox.shrink();
@@ -791,7 +794,11 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
           title = 'Fetching Programs...';
           subtitle = 'Please wait while we retrieve your wellness programs';
         } else if (viewModel.isSendingPlayCommands) {
-          title = 'Playing Program...';
+          // Show the actual program name being played
+          final programName = viewModel.selectedBcuFile != null 
+              ? _formatProgramName(viewModel.selectedBcuFile!)
+              : 'Program';
+          title = 'Playing $programName';
           subtitle = 'Starting your wellness program';
         } else {
           title = 'Loading...';

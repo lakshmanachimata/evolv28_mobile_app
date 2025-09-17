@@ -178,7 +178,7 @@ class DashboardViewModel extends ChangeNotifier {
     print('Device management requested');
   }
 
-  // Play program from top picks
+  // Play program from top picks (non-Bluetooth)
   void playProgram(String programTitle) {
     _showPlayerCard = true;
     _isPlaying = true;
@@ -231,6 +231,12 @@ class DashboardViewModel extends ChangeNotifier {
     // Get the file ID for the program name
     final programId = _bluetoothService.getProgramIdByName(programName);
     if (programId != null) {
+      print('🎵 Switching to program: $programName (ID: $programId)');
+      
+      // Don't show player card immediately - wait for success response
+      _currentPlayingProgramId = _getProgramIdFromTitle(programName);
+      notifyListeners();
+      
       await _bluetoothService.playProgram(programId);
     } else {
       print('Program ID not found for: $programName');

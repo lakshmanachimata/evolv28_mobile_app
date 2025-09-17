@@ -463,6 +463,7 @@ class BluetoothService extends ChangeNotifier {
             print('✅ Play successful! File $_selectedBcuFile found in response: $stringValue');
             print('✅ Extracted filename from response: $responseFileName');
             print('✅ Setting _isPlaySuccessful = true, _isSendingPlayCommands = false');
+            print('🎵 Program switched successfully to: $_selectedBcuFile');
             notifyListeners();
           } else {
             print('❌ Filename mismatch: expected $_selectedBcuFile, got $responseFileName');
@@ -631,6 +632,9 @@ class BluetoothService extends ChangeNotifier {
     }
 
     try {
+      print('🎵 Starting play program: $bcuFileName');
+      print('🎵 Previous file: $_selectedBcuFile');
+      
       _selectedBcuFile = bcuFileName;
       _isSendingPlayCommands = true;
       _isPlaySuccessful = false;
