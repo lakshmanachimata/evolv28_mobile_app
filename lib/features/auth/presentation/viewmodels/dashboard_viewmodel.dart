@@ -37,6 +37,7 @@ class DashboardViewModel extends ChangeNotifier {
   int get bluetoothScanCountdown => _bluetoothService.scanCountdown;
   bool get isExecutingCommands => _bluetoothService.isExecutingCommands;
   bool get isSendingPlayCommands => _bluetoothService.isSendingPlayCommands;
+  bool get isPlaySuccessful => _bluetoothService.isPlaySuccessful;
   String get selectedBcuFile => _bluetoothService.selectedBcuFile;
   List<String> get playCommandResponses => _bluetoothService.playCommandResponses;
   
@@ -69,6 +70,14 @@ class DashboardViewModel extends ChangeNotifier {
       notifyListeners();
     };
     _bluetoothService.addListener(_bluetoothListener);
+
+    // Start scanning automatically if not already connected
+    if (!_bluetoothService.isConnected) {
+      print('🚀 Auto-starting Bluetooth scan on dashboard load...');
+      // Small delay to ensure UI is fully loaded
+      await Future.delayed(const Duration(milliseconds: 500));
+      await _bluetoothService.startScanning();
+    }
 
     // Check if we're coming from a minimized player
     if (_isMinimizedFromPlayer && _minimizedProgramId != null) {

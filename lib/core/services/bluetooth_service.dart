@@ -27,6 +27,7 @@ class BluetoothService extends ChangeNotifier {
   int _scanCountdown = 0;
   bool _isExecutingCommands = false;
   bool _isSendingPlayCommands = false;
+  bool _isPlaySuccessful = false;
   String _selectedBcuFile = 'Uplift_Mood.bcu'; // Default file
   List<String> _playCommandResponses = [];
   
@@ -54,6 +55,7 @@ class BluetoothService extends ChangeNotifier {
   int get scanCountdown => _scanCountdown;
   bool get isExecutingCommands => _isExecutingCommands;
   bool get isSendingPlayCommands => _isSendingPlayCommands;
+  bool get isPlaySuccessful => _isPlaySuccessful;
   String get selectedBcuFile => _selectedBcuFile;
   List<String> get playCommandResponses => _playCommandResponses;
 
@@ -172,6 +174,8 @@ class BluetoothService extends ChangeNotifier {
       _setError('No Evolv28 devices found nearby');
     } else if (_scannedDevices.length == 1) {
       // Auto-connect to the single device found
+      print('✅ Single device found: ${_scannedDevices.first.platformName}');
+      print('✅ Auto-connecting and starting command sequence...');
       _connectToDevice(_scannedDevices.first);
     } else {
       _connectionState = BluetoothConnectionState.disconnected;
@@ -184,6 +188,7 @@ class BluetoothService extends ChangeNotifier {
 
   Future<void> _connectToDevice(ble.BluetoothDevice device) async {
     try {
+      print('🔗 Connecting to device: ${device.platformName}');
       _connectionState = BluetoothConnectionState.connecting;
       _statusMessage = 'Connecting...';
       _clearError();
@@ -194,10 +199,12 @@ class BluetoothService extends ChangeNotifier {
       
       _connectedDevice = device;
       _connectionState = BluetoothConnectionState.connected;
-      _statusMessage = 'Connected';
+      _statusMessage = '${device.platformName} is connected';
+      print('✅ Device connected: ${device.platformName}');
       notifyListeners();
 
       // Start command sequence to get program list
+      print('🚀 Starting command sequence to get program list...');
       await _startCommandSequence();
 
     } catch (e) {
@@ -212,6 +219,7 @@ class BluetoothService extends ChangeNotifier {
     if (_connectedDevice == null) return;
 
     try {
+      print('📋 Starting command sequence to fetch program list...');
       _isExecutingCommands = true;
       notifyListeners();
       
@@ -591,10 +599,10 @@ class BluetoothService extends ChangeNotifier {
     try {
       _selectedBcuFile = bcuFileName;
       _isSendingPlayCommands = true;
+      _isPlaySuccessful = false;
       _playCommandResponses.clear();
+      print('DEBUG: Starting play commands - _isPlaySuccessful: $_isPlaySuccessful, _isSendingPlayCommands: $_isSendingPlayCommands');
       notifyListeners();
-
-      print('Starting play commands for file: $bcuFileName');
 
       // Generate current timestamp for #ST command
       final now = DateTime.now();
@@ -606,12 +614,18 @@ class BluetoothService extends ChangeNotifier {
           '${now.second.toString().padLeft(2, '0')}';
 
       // Generate timestamp for 24#PL command (1 second later)
-      final plTimestamp = '${now.year.toString().padLeft(4, '0')}'
-          '${now.month.toString().padLeft(2, '0')}'
-          '${now.day.toString().padLeft(2, '0')}'
-          '${now.hour.toString().padLeft(2, '0')}'
-          '${now.minute.toString().padLeft(2, '0')}'
-          '${(now.second + 1).toString().padLeft(2, '0')}';
+      final plTime = now.add(const Duration(seconds: 1));
+      final plTimestamp = '${plTime.year.toString().padLeft(4, '0')}'
+          '${plTime.month.toString().padLeft(2, '0')}'
+          '${plTime.day.toString().padLeft(2, '0')}'
+          '${plTime.hour.toString().padLeft(2, '0')}'
+          '${plTime.minute.toString().padLeft(2, '0')}'
+          '${plTime.second.toString().padLeft(2, '0')}';
+
+      print('=== STARTING PLAY COMMANDS ===');
+      print('Selected file: $bcuFileName');
+      print('Current timestamp: $timestamp');
+      print('PL timestamp: $plTimestamp');
 
       // Create dynamic play commands
       final dynamicPlayCommands = [
@@ -633,14 +647,43 @@ class BluetoothService extends ChangeNotifier {
         await writeCommand(command);
 
         // Wait for response
-        final response = await _waitForResponse(
+        final response = await _waitForPlayCommandResponse(
           timeout: const Duration(seconds: 10),
-          commandIndex: null, // No special handling for play commands
         );
 
         // Add command response
         _playCommandResponses.add('$command -> $response');
         print('Play command response: $command -> $response');
+
+        // Check for success after 5#SPL! command (last command)
+        if (command == '5#SPL!') {
+          print('DEBUG: Checking 5#SPL! response for success...');
+          print('DEBUG: Response contains #SPL,: ${response.contains('#SPL,')}');
+          if (response.contains('#SPL,')) {
+            // Parse the response to extract the filename
+            final parts = response.split(',');
+            print('DEBUG: Response parts count: ${parts.length}');
+            if (parts.length >= 8) {
+              final responseFileName = parts[7]; // Filename is at index 7
+              print('DEBUG: Extracted filename: $responseFileName');
+              print('DEBUG: Looking for: $bcuFileName');
+              print('DEBUG: Filename match: ${responseFileName.toLowerCase().contains(bcuFileName.toLowerCase())}');
+              if (responseFileName.toLowerCase().contains(bcuFileName.toLowerCase())) {
+                _isPlaySuccessful = true;
+                _isSendingPlayCommands = false; // Stop showing loader
+                print('✅ Play successful! File $bcuFileName found in response: $response');
+                print('✅ Extracted filename from response: $responseFileName');
+                print('✅ Setting _isPlaySuccessful = true, _isSendingPlayCommands = false');
+              } else {
+                print('❌ Filename mismatch: expected $bcuFileName, got $responseFileName');
+              }
+            } else {
+              print('❌ Not enough parts in response: ${parts.length}');
+            }
+          } else {
+            print('❌ Response does not contain #SPL,');
+          }
+        }
 
         notifyListeners();
 
@@ -655,12 +698,57 @@ class BluetoothService extends ChangeNotifier {
       }
 
       _isSendingPlayCommands = false;
-      print('Play commands completed for file: $bcuFileName');
+      print('=== PLAY COMMANDS COMPLETED ===');
+      print('File: $bcuFileName');
+      print('Total responses: ${_playCommandResponses.length}');
+      print('DEBUG: Final state - _isPlaySuccessful: $_isPlaySuccessful, _isSendingPlayCommands: $_isSendingPlayCommands');
       notifyListeners();
 
     } catch (e) {
       _isSendingPlayCommands = false;
       _setError('Play commands error: $e');
+    }
+  }
+
+  Future<String> _waitForPlayCommandResponse({
+    required Duration timeout,
+  }) async {
+    final completer = Completer<String>();
+    Timer? timeoutTimer;
+    String? lastResponse;
+
+    // Set timeout
+    timeoutTimer = Timer(timeout, () {
+      if (!completer.isCompleted) {
+        completer.complete(lastResponse ?? 'Timeout - No response received');
+      }
+    });
+
+    // Listen for next notification
+    if (_notifyCharacteristic != null) {
+      final subscription = _notifyCharacteristic!.lastValueStream.listen(
+        (value) {
+          if (!completer.isCompleted) {
+            lastResponse = String.fromCharCodes(value);
+            print('Play command notification received: $lastResponse');
+            completer.complete(lastResponse!);
+          }
+        },
+        onError: (error) {
+          if (!completer.isCompleted) {
+            completer.complete('Error: $error');
+          }
+        },
+      );
+
+      final response = await completer.future;
+      timeoutTimer.cancel();
+      subscription.cancel();
+
+      return response;
+    } else {
+      timeoutTimer.cancel();
+      return 'Error: Notify characteristic not available';
     }
   }
 

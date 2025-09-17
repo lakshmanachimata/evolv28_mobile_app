@@ -51,7 +51,8 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
           // Loading Overlay
           Consumer<DashboardViewModel>(
             builder: (context, viewModel, child) {
-              if (viewModel.isExecutingCommands) {
+              print('DEBUG: isExecutingCommands: ${viewModel.isExecutingCommands}, isSendingPlayCommands: ${viewModel.isSendingPlayCommands}');
+              if (viewModel.isExecutingCommands || viewModel.isSendingPlayCommands) {
                 return _buildLoadingOverlay(context);
               }
               return SizedBox.shrink();
@@ -94,7 +95,15 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
               Expanded(child: _buildContentArea(context, viewModel)),
 
               // Player Card (if playing)
-              if (viewModel.showPlayerCard || viewModel.isSendingPlayCommands) _buildPlayerCard(context, viewModel),
+              Consumer<DashboardViewModel>(
+                builder: (context, viewModel, child) {
+                  print('DEBUG: showPlayerCard: ${viewModel.showPlayerCard}, isPlaySuccessful: ${viewModel.isPlaySuccessful}');
+                  if (viewModel.showPlayerCard || viewModel.isPlaySuccessful) {
+                    return _buildPlayerCard(context, viewModel);
+                  }
+                  return SizedBox.shrink();
+                },
+              ),
 
               // Bottom Navigation
               _buildBottomNavigation(context, viewModel),
@@ -224,7 +233,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                       const SizedBox(height: 8),
                       Text(
                         viewModel.isBluetoothConnected 
-                            ? 'Evolv28 device connected'
+                            ? viewModel.bluetoothStatusMessage
                             : viewModel.bluetoothService.isScanning
                                 ? 'Scanning... ${viewModel.bluetoothScanCountdown}s remaining'
                                 : 'Tap to connect your Evolv28 device',
@@ -609,6 +618,16 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
     );
   }
 
+  String _formatProgramName(String bcuFileName) {
+    // Convert bcu filename to readable program name
+    return bcuFileName
+        .replaceAll('.bcu', '')
+        .replaceAll('_', ' ')
+        .split(' ')
+        .map((word) => word.isNotEmpty ? word[0].toUpperCase() + word.substring(1).toLowerCase() : word)
+        .join(' ');
+  }
+
   String _getProgramTitle(String? programId) {
     switch (programId) {
       case 'sleep_better':
@@ -669,9 +688,11 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                     ),
                   ),
                   Text(
-                    viewModel.isSendingPlayCommands 
-                        ? viewModel.selectedBcuFile.replaceAll('.bcu', '').replaceAll('_', ' ').toUpperCase()
-                        : _getProgramTitle(viewModel.currentPlayingProgramId),
+                    viewModel.isPlaySuccessful 
+                        ? _formatProgramName(viewModel.selectedBcuFile)
+                        : viewModel.isSendingPlayCommands 
+                            ? _formatProgramName(viewModel.selectedBcuFile)
+                            : _getProgramTitle(viewModel.currentPlayingProgramId),
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -761,63 +782,81 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
   }
 
   Widget _buildLoadingOverlay(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      color: Colors.black.withOpacity(0.3), // Semi-transparent overlay
-      child: Center(
-        child: Container(
-          width: MediaQuery.of(context).size.width * 0.8, // 80% of screen width
-          padding: EdgeInsets.symmetric(horizontal: 40, vertical: 30),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 20,
-                offset: Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Loading indicator
-              SizedBox(
-                width: 50,
-                height: 50,
-                child: CircularProgressIndicator(
-                  strokeWidth: 4,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    Color(0xFF4CAF50), // Green color
+    return Consumer<DashboardViewModel>(
+      builder: (context, viewModel, child) {
+        String title;
+        String subtitle;
+        
+        if (viewModel.isExecutingCommands) {
+          title = 'Fetching Programs...';
+          subtitle = 'Please wait while we retrieve your wellness programs';
+        } else if (viewModel.isSendingPlayCommands) {
+          title = 'Playing Program...';
+          subtitle = 'Starting your wellness program';
+        } else {
+          title = 'Loading...';
+          subtitle = 'Please wait';
+        }
+        
+        return Container(
+          width: double.infinity,
+          height: double.infinity,
+          color: Colors.black.withOpacity(0.3), // Semi-transparent overlay
+          child: Center(
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.8, // 80% of screen width
+              padding: EdgeInsets.symmetric(horizontal: 40, vertical: 30),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 20,
+                    offset: Offset(0, 10),
                   ),
-                ),
+                ],
               ),
-              SizedBox(height: 20),
-              // Loading text
-              Text(
-                'Fetching Programs...',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
-                textAlign: TextAlign.center,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Loading indicator
+                  SizedBox(
+                    width: 50,
+                    height: 50,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 4,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Color(0xFF4CAF50), // Green color
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  // Loading text
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
-              SizedBox(height: 8),
-              Text(
-                'Please wait while we retrieve your wellness programs',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
