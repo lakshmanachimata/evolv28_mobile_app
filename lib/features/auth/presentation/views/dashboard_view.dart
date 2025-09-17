@@ -149,7 +149,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Connect Card
-          _buildConnectCard(context),
+          _buildConnectCard(context, viewModel),
           
           const SizedBox(height: 16),
 
@@ -177,58 +177,88 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
     );
   }
 
-  Widget _buildConnectCard(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        context.go(AppRoutes.onboardDevice);
-      },
-      child: Container(
-        padding: const EdgeInsets.all(20.0),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16.0),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              offset: const Offset(0, 2),
-              blurRadius: 8,
-            ),
-          ],
-        ),
-        child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Connect',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Tap to connect your Evolv28 device',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
+  Widget _buildConnectCard(BuildContext context, DashboardViewModel viewModel) {
+    return Consumer<DashboardViewModel>(
+      builder: (context, viewModel, child) {
+        return GestureDetector(
+          onTap: () {
+            viewModel.connectBluetoothDevice();
+          },
+          child: Container(
+            padding: const EdgeInsets.all(20.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16.0),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  offset: const Offset(0, 2),
+                  blurRadius: 8,
                 ),
               ],
             ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        viewModel.bluetoothStatusMessage,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        viewModel.isBluetoothConnected 
+                            ? 'Evolv28 device connected'
+                            : viewModel.bluetoothService.isScanning
+                                ? 'Scanning... ${viewModel.bluetoothScanCountdown}s remaining'
+                                : 'Tap to connect your Evolv28 device',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      if (viewModel.bluetoothErrorMessage.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          viewModel.bluetoothErrorMessage,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.red,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                _buildBluetoothIcon(viewModel),
+              ],
+            ),
           ),
-          SvgPicture.asset(
-            'assets/images/dashboard_ble.svg',
-            width: 40,
-            height: 40,
-          ),
-        ],
-      ),
-      ),
+        );
+      },
     );
+  }
+
+  Widget _buildBluetoothIcon(DashboardViewModel viewModel) {
+    if (viewModel.bluetoothService.isScanning) {
+      return _BlinkingBluetoothIcon();
+    } else {
+      return Icon(
+        viewModel.isBluetoothConnected 
+            ? Icons.bluetooth_connected 
+            : Icons.bluetooth,
+        color: viewModel.isBluetoothConnected 
+            ? Colors.blue 
+            : Colors.grey,
+        size: 30,
+      );
+    }
   }
 
   Widget _buildWellnessProgramsCard(BuildContext context) {
@@ -676,6 +706,57 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
           const SizedBox(height: 4),
         ],
       ),
+    );
+  }
+}
+
+class _BlinkingBluetoothIcon extends StatefulWidget {
+  @override
+  _BlinkingBluetoothIconState createState() => _BlinkingBluetoothIconState();
+}
+
+class _BlinkingBluetoothIconState extends State<_BlinkingBluetoothIcon>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+    _animation = Tween<double>(
+      begin: 0.3,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+    _animationController.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Opacity(
+          opacity: _animation.value,
+          child: const Icon(
+            Icons.bluetooth_searching,
+            color: Colors.orange,
+            size: 30,
+          ),
+        );
+      },
     );
   }
 }

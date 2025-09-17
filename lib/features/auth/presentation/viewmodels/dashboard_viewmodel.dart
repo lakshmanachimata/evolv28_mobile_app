@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/routing/app_router_config.dart';
+import '../../../../core/services/bluetooth_service.dart';
 
 class DashboardViewModel extends ChangeNotifier {
   // Static variables to track minimized state
@@ -15,6 +16,10 @@ class DashboardViewModel extends ChangeNotifier {
   bool _isPlaying = false; // Track if a program is currently playing
   bool _showPlayerCard = false; // Track if player card should be shown
   String? _currentPlayingProgramId; // Track which program is playing
+  
+  // Bluetooth service
+  final BluetoothService _bluetoothService = BluetoothService();
+  late VoidCallback _bluetoothListener;
 
   // Getters
   bool get isLoading => _isLoading;
@@ -23,6 +28,13 @@ class DashboardViewModel extends ChangeNotifier {
   bool get isPlaying => _isPlaying;
   bool get showPlayerCard => _showPlayerCard;
   String? get currentPlayingProgramId => _currentPlayingProgramId;
+  
+  // Bluetooth getters
+  BluetoothService get bluetoothService => _bluetoothService;
+  bool get isBluetoothConnected => _bluetoothService.isConnected;
+  String get bluetoothStatusMessage => _bluetoothService.statusMessage;
+  String get bluetoothErrorMessage => _bluetoothService.errorMessage;
+  int get bluetoothScanCountdown => _bluetoothService.scanCountdown;
 
   // Static methods to manage minimized state
   static void setMinimizedState(String programId) {
@@ -39,6 +51,15 @@ class DashboardViewModel extends ChangeNotifier {
   Future<void> initialize() async {
     _isLoading = true;
     notifyListeners();
+
+    // Initialize Bluetooth service
+    await _bluetoothService.initialize();
+    
+    // Listen to Bluetooth service changes
+    _bluetoothListener = () {
+      notifyListeners();
+    };
+    _bluetoothService.addListener(_bluetoothListener);
 
     // Check if we're coming from a minimized player
     if (_isMinimizedFromPlayer && _minimizedProgramId != null) {
@@ -167,5 +188,29 @@ class DashboardViewModel extends ChangeNotifier {
   void openHelpSupport() {
     // Implement help and support logic here
     print('Help and support requested');
+  }
+
+  // Handle Bluetooth connection
+  Future<void> connectBluetoothDevice() async {
+    if (_bluetoothService.isConnected) {
+      // If already connected, disconnect
+      await _bluetoothService.disconnect();
+    } else {
+      // Start scanning for devices
+      await _bluetoothService.startScanning();
+    }
+    notifyListeners();
+  }
+
+  // Disconnect Bluetooth device
+  Future<void> disconnectBluetoothDevice() async {
+    await _bluetoothService.disconnect();
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _bluetoothService.removeListener(_bluetoothListener);
+    super.dispose();
   }
 }
