@@ -94,7 +94,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
               Expanded(child: _buildContentArea(context, viewModel)),
 
               // Player Card (if playing)
-              if (viewModel.showPlayerCard) _buildPlayerCard(context, viewModel),
+              if (viewModel.showPlayerCard || viewModel.isSendingPlayCommands) _buildPlayerCard(context, viewModel),
 
               // Bottom Navigation
               _buildBottomNavigation(context, viewModel),
@@ -512,7 +512,12 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
   Widget _buildFeatureIcon(String title, String iconPath, DashboardViewModel viewModel, {String? programId}) {
     return GestureDetector(
       onTap: () {
-        viewModel.playProgram(title);
+        // If Bluetooth is connected, play via Bluetooth, otherwise use default behavior
+        if (viewModel.isBluetoothConnected) {
+          viewModel.playBluetoothProgram(title);
+        } else {
+          viewModel.playProgram(title);
+        }
       },
       child: Column(
         children: [
@@ -592,6 +597,18 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
     );
   }
 
+  Widget _buildProgramIconForBluetooth(String bcuFileName) {
+    // Convert bcu filename to program name and get icon
+    final programName = bcuFileName.replaceAll('.bcu', '').replaceAll('_', ' ');
+    final iconPath = _getIconPathForProgram(programName);
+    
+    return SvgPicture.asset(
+      iconPath,
+      width: 50,
+      height: 50,
+    );
+  }
+
   String _getProgramTitle(String? programId) {
     switch (programId) {
       case 'sleep_better':
@@ -634,7 +651,9 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
         child: Row(
           children: [
             // Program Icon
-            _buildProgramIcon(viewModel.currentPlayingProgramId),
+            viewModel.isSendingPlayCommands 
+                ? _buildProgramIconForBluetooth(viewModel.selectedBcuFile)
+                : _buildProgramIcon(viewModel.currentPlayingProgramId),
             const SizedBox(width: 16),
             
             // Now Playing Text
@@ -650,7 +669,9 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                     ),
                   ),
                   Text(
-                    _getProgramTitle(viewModel.currentPlayingProgramId),
+                    viewModel.isSendingPlayCommands 
+                        ? viewModel.selectedBcuFile.replaceAll('.bcu', '').replaceAll('_', ' ').toUpperCase()
+                        : _getProgramTitle(viewModel.currentPlayingProgramId),
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,

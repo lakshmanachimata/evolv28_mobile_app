@@ -130,35 +130,12 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
               ? _buildFeedbackHeader(context, viewModel)
               : viewModel.isInPlayerMode
               ? _buildPlayerHeader(context, viewModel)
-              : _buildProgramsHeader(context),
+              : SizedBox.shrink(), // Remove programs header
         );
       },
     );
   }
 
-  Widget _buildProgramsHeader(BuildContext context) {
-    return Row(
-      children: [
-        // Back Button
-        GestureDetector(
-          onTap: () => context.go(AppRoutes.dashboard),
-          child: const Icon(Icons.arrow_back, color: Colors.black, size: 24),
-        ),
-
-        const SizedBox(width: 16),
-
-        // Title
-        const Text(
-          'All Programs',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildPlayerHeader(BuildContext context, ProgramsViewModel viewModel) {
     return Column(

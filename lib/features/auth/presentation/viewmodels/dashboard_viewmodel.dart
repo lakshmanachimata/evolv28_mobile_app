@@ -36,6 +36,9 @@ class DashboardViewModel extends ChangeNotifier {
   String get bluetoothErrorMessage => _bluetoothService.errorMessage;
   int get bluetoothScanCountdown => _bluetoothService.scanCountdown;
   bool get isExecutingCommands => _bluetoothService.isExecutingCommands;
+  bool get isSendingPlayCommands => _bluetoothService.isSendingPlayCommands;
+  String get selectedBcuFile => _bluetoothService.selectedBcuFile;
+  List<String> get playCommandResponses => _bluetoothService.playCommandResponses;
   
   // Bluetooth program getters
   List<String> get bluetoothProgramNames => _bluetoothService.programNames;
@@ -212,6 +215,17 @@ class DashboardViewModel extends ChangeNotifier {
   Future<void> disconnectBluetoothDevice() async {
     await _bluetoothService.disconnect();
     notifyListeners();
+  }
+
+  // Play Bluetooth program
+  Future<void> playBluetoothProgram(String programName) async {
+    // Get the file ID for the program name
+    final programId = _bluetoothService.getProgramIdByName(programName);
+    if (programId != null) {
+      await _bluetoothService.playProgram(programId);
+    } else {
+      print('Program ID not found for: $programName');
+    }
   }
 
   @override

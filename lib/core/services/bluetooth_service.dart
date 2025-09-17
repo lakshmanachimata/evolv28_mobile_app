@@ -26,6 +26,9 @@ class BluetoothService extends ChangeNotifier {
   Timer? _countdownTimer;
   int _scanCountdown = 0;
   bool _isExecutingCommands = false;
+  bool _isSendingPlayCommands = false;
+  String _selectedBcuFile = 'Uplift_Mood.bcu'; // Default file
+  List<String> _playCommandResponses = [];
   
   // Command handling
   ble.BluetoothService? _uartService;
@@ -50,6 +53,9 @@ class BluetoothService extends ChangeNotifier {
   bool get isScanning => _connectionState == BluetoothConnectionState.scanning;
   int get scanCountdown => _scanCountdown;
   bool get isExecutingCommands => _isExecutingCommands;
+  bool get isSendingPlayCommands => _isSendingPlayCommands;
+  String get selectedBcuFile => _selectedBcuFile;
+  List<String> get playCommandResponses => _playCommandResponses;
 
   Future<void> initialize() async {
     // Check permissions
@@ -572,6 +578,89 @@ class BluetoothService extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       _setError('Disconnect error: $e');
+    }
+  }
+
+  // Play command methods
+  Future<void> playProgram(String bcuFileName) async {
+    if (_connectedDevice == null || _connectionState != BluetoothConnectionState.connected) {
+      _setError('Device not connected');
+      return;
+    }
+
+    try {
+      _selectedBcuFile = bcuFileName;
+      _isSendingPlayCommands = true;
+      _playCommandResponses.clear();
+      notifyListeners();
+
+      print('Starting play commands for file: $bcuFileName');
+
+      // Generate current timestamp for #ST command
+      final now = DateTime.now();
+      final timestamp = '${now.year.toString().padLeft(4, '0')}'
+          '${now.month.toString().padLeft(2, '0')}'
+          '${now.day.toString().padLeft(2, '0')}'
+          '${now.hour.toString().padLeft(2, '0')}'
+          '${now.minute.toString().padLeft(2, '0')}'
+          '${now.second.toString().padLeft(2, '0')}';
+
+      // Generate timestamp for 24#PL command (1 second later)
+      final plTimestamp = '${now.year.toString().padLeft(4, '0')}'
+          '${now.month.toString().padLeft(2, '0')}'
+          '${now.day.toString().padLeft(2, '0')}'
+          '${now.hour.toString().padLeft(2, '0')}'
+          '${now.minute.toString().padLeft(2, '0')}'
+          '${(now.second + 1).toString().padLeft(2, '0')}';
+
+      // Create dynamic play commands
+      final dynamicPlayCommands = [
+        '#BSV!',
+        '5#STP!',
+        '5#CPS!',
+        '#PS,1,$bcuFileName,48,5.0,4,10!',
+        '#ST,$timestamp!',
+        '#GAIN,27!',
+        '24#PL,3341,$plTimestamp,!',
+        '5#SPL!',
+      ];
+
+      for (int i = 0; i < dynamicPlayCommands.length; i++) {
+        final command = dynamicPlayCommands[i];
+        print('Sending play command ${i + 1}/${dynamicPlayCommands.length}: $command');
+
+        // Send command
+        await writeCommand(command);
+
+        // Wait for response
+        final response = await _waitForResponse(
+          timeout: const Duration(seconds: 10),
+          commandIndex: null, // No special handling for play commands
+        );
+
+        // Add command response
+        _playCommandResponses.add('$command -> $response');
+        print('Play command response: $command -> $response');
+
+        notifyListeners();
+
+        // Special delay for #ST command - wait 1 second before sending 24#PL
+        if (command.startsWith('#ST,')) {
+          print('Waiting 1 second before sending 24#PL command...');
+          await Future.delayed(const Duration(seconds: 1));
+        } else {
+          // Small delay between other commands
+          await Future.delayed(const Duration(milliseconds: 500));
+        }
+      }
+
+      _isSendingPlayCommands = false;
+      print('Play commands completed for file: $bcuFileName');
+      notifyListeners();
+
+    } catch (e) {
+      _isSendingPlayCommands = false;
+      _setError('Play commands error: $e');
     }
   }
 
