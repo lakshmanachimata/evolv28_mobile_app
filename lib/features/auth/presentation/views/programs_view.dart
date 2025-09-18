@@ -215,13 +215,19 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
 
               const SizedBox(height: 20),
 
-              // Content - Programs List, Player, or Feedback
+              // Content - Programs List, Player, or Feedback with animations
               Expanded(
-                child: viewModel.isInFeedbackMode
-                    ? _buildFeedbackInterface(context, viewModel)
-                    : viewModel.isInPlayerMode
-                    ? _buildPlayerInterface(context, viewModel)
-                    : _buildProgramsList(context, viewModel),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 400),
+                  transitionBuilder: (Widget child, Animation<double> animation) {
+                    return _buildTransition(child, animation);
+                  },
+                  child: viewModel.isInFeedbackMode
+                      ? _buildFeedbackInterface(context, viewModel)
+                      : viewModel.isInPlayerMode
+                      ? _buildPlayerInterface(context, viewModel)
+                      : _buildProgramsList(context, viewModel),
+                ),
               ),
 
               // Bottom Navigation
@@ -640,6 +646,45 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
     final minutes = twoDigits(duration.inMinutes.remainder(60));
     final seconds = twoDigits(duration.inSeconds.remainder(60));
     return '$minutes:$seconds';
+  }
+
+  // Custom transition builder for different view changes
+  Widget _buildTransition(Widget child, Animation<double> animation) {
+    return Consumer<ProgramsViewModel>(
+      builder: (context, viewModel, _) {
+        // Determine animation direction based on current view
+        Offset beginOffset;
+        switch (viewModel.currentView) {
+          case 'player':
+            // Coming from programs list, slide in from right
+            beginOffset = const Offset(1.0, 0.0);
+            break;
+          case 'feedback':
+            // Coming from player, slide in from right
+            beginOffset = const Offset(1.0, 0.0);
+            break;
+          case 'programs':
+          default:
+            // Coming back to programs list, slide in from left
+            beginOffset = const Offset(-1.0, 0.0);
+            break;
+        }
+        
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: beginOffset,
+            end: Offset.zero,
+          ).animate(CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeInOut,
+          )),
+          child: FadeTransition(
+            opacity: animation,
+            child: child,
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildFeedbackInterface(

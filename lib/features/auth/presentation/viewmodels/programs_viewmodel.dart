@@ -37,6 +37,12 @@ class ProgramsViewModel extends ChangeNotifier {
   bool _isInFeedbackMode = false;
   FeedbackType? _selectedFeedback;
   bool _showSuccessPopup = false;
+  
+  // View state tracking for animations
+  String _currentView = 'programs'; // 'programs', 'player', 'feedback'
+  
+  // Getter for current view
+  String get currentView => _currentView;
 
   // Programs data - dynamically generated from BLE programs
   List<ProgramData> get programs {
@@ -174,6 +180,7 @@ class ProgramsViewModel extends ChangeNotifier {
     _currentPlayingProgramId = programId;
     _isPlaying = true;
     _currentPosition = Duration.zero;
+    _currentView = 'player'; // Update view state for animation
     notifyListeners();
   }
 
@@ -204,6 +211,7 @@ class ProgramsViewModel extends ChangeNotifier {
         _currentPosition = Duration.zero;
         _isPlaySuccessful = false;
         _selectedBcuFile = null;
+        _currentView = 'programs'; // Update view state for animation
         notifyListeners();
         
         // Show success snackbar
@@ -258,6 +266,7 @@ class ProgramsViewModel extends ChangeNotifier {
     // Show feedback screen
     _isInFeedbackMode = true;
     _isPlaying = false;
+    _currentView = 'feedback'; // Update view state for animation
     notifyListeners();
   }
 
@@ -279,6 +288,7 @@ class ProgramsViewModel extends ChangeNotifier {
     _currentPlayingProgramId = null;
     _isPlaying = false;
     _currentPosition = Duration.zero;
+    _currentView = 'programs'; // Update view state for animation
     notifyListeners();
     // Stay on programs screen to show the list
   }
@@ -288,6 +298,7 @@ class ProgramsViewModel extends ChangeNotifier {
     _isInFeedbackMode = false;
     _isPlaying = true;
     _currentPosition = Duration.zero;
+    _currentView = 'player'; // Update view state for animation
     notifyListeners();
   }
 
