@@ -178,6 +178,34 @@ class DashboardViewModel extends ChangeNotifier {
     print('Device management requested');
   }
 
+  // Check if a program is currently playing when navigating to dashboard
+  Future<void> checkPlayerStatus() async {
+    print('🎵 Dashboard: checkPlayerStatus called');
+    
+    if (!_bluetoothService.isConnected) {
+      print('🎵 Dashboard: Bluetooth not connected, skipping player check');
+      return;
+    }
+    
+    try {
+      final playingFile = await _bluetoothService.checkPlayerCommand();
+      
+      if (playingFile != null) {
+        print('🎵 Dashboard: Program is playing: $playingFile');
+        _showPlayerCard = true;
+        _isPlaying = true;
+        notifyListeners();
+      } else {
+        print('🎵 Dashboard: No program currently playing');
+        _showPlayerCard = false;
+        _isPlaying = false;
+        notifyListeners();
+      }
+    } catch (e) {
+      print('🎵 Dashboard: Error checking player status: $e');
+    }
+  }
+
   // Play program from top picks (non-Bluetooth)
   void playProgram(String programTitle) {
     _showPlayerCard = true;

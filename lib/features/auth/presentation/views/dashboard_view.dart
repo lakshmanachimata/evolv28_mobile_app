@@ -31,9 +31,11 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
   void initState() {
     super.initState();
     // Initialize the dashboard
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final viewModel = Provider.of<DashboardViewModel>(context, listen: false);
-      viewModel.initialize();
+      await viewModel.initialize();
+      // Check if a program is currently playing when navigating to dashboard
+      await viewModel.checkPlayerStatus();
     });
   }
 
@@ -718,10 +720,10 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                   color: Colors.white.withOpacity(0.2),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.play_arrow,
-                  color: Colors.white,
-                  size: 24,
+                child: Image.asset(
+                  'assets/images/stop_play.png',
+                  width: 24,
+                  height: 24,
                 ),
               ),
             ),

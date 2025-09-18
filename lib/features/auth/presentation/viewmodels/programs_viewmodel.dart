@@ -314,6 +314,35 @@ class ProgramsViewModel extends ChangeNotifier {
     print('🎵 Programs: Bluetooth service initialized. Connected: ${_bluetoothService.isConnected}');
   }
   
+  // Check if a program is currently playing when navigating to programs screen
+  Future<void> checkPlayerStatus() async {
+    print('🎵 Programs: checkPlayerStatus called');
+    
+    if (!_bluetoothService.isConnected) {
+      print('🎵 Programs: Bluetooth not connected, skipping player check');
+      return;
+    }
+    
+    try {
+      final playingFile = await _bluetoothService.checkPlayerCommand();
+      
+      if (playingFile != null) {
+        print('🎵 Programs: Program is playing: $playingFile');
+        _selectedBcuFile = playingFile;
+        _isPlaySuccessful = true;
+        _isPlaying = true;
+        notifyListeners();
+      } else {
+        print('🎵 Programs: No program currently playing');
+        _isPlaySuccessful = false;
+        _isPlaying = false;
+        notifyListeners();
+      }
+    } catch (e) {
+      print('🎵 Programs: Error checking player status: $e');
+    }
+  }
+  
   // Dispose method to remove listener
   @override
   void dispose() {

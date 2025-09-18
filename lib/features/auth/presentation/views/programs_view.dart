@@ -34,6 +34,8 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
       final viewModel = Provider.of<ProgramsViewModel>(context, listen: false);
       // Initialize Bluetooth listener
       await viewModel.initialize();
+      // Check if a program is currently playing when navigating to programs screen
+      await viewModel.checkPlayerStatus();
       // Check if we should show player screen (coming from dashboard player card)
       if (ProgramsViewModel.programIdFromDashboard != null) {
         viewModel.navigateFromDashboardPlayer(
@@ -527,13 +529,11 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
         width: 100,
         height: 100,
         child: Center(
-          child: viewModel.isPlaying
-              ? Image.asset(
-                  'assets/images/stop_play.png',
-                  width: 100,
-                  height: 100,
-                )
-              : const Icon(Icons.play_arrow, color: Colors.white, size: 100),
+          child: Image.asset(
+            'assets/images/stop_play.png',
+            width: 100,
+            height: 100,
+          ),
         ),
       ),
     );

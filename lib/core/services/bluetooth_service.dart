@@ -747,6 +747,48 @@ class BluetoothService extends ChangeNotifier {
     return 'Response handled by existing notification system';
   }
 
+  // Check if a program is currently playing by sending 5#SPL! command
+  Future<String?> checkPlayerCommand() async {
+    print('🎵 BluetoothService: checkPlayerCommand called');
+    
+    if (_connectedDevice == null || _connectionState != BluetoothConnectionState.connected) {
+      print('🎵 BluetoothService: Device not connected, cannot check player status');
+      return null;
+    }
+    
+    if (_writeCharacteristic == null || _notifyCharacteristic == null) {
+      print('🎵 BluetoothService: UART characteristics not available');
+      return null;
+    }
+    
+    try {
+      print('🎵 BluetoothService: Sending 5#SPL! to check player status...');
+      
+      // Send the 5#SPL! command
+      await writeCommand('5#SPL!');
+      
+      // Wait for response
+      final response = await _waitForResponse(timeout: Duration(seconds: 5));
+      print('🎵 BluetoothService: Player check response: $response');
+      
+      if (response != null && response.contains('#SPL,')) {
+        // Parse the response to extract the filename
+        final parts = response.split(',');
+        if (parts.length > 7) {
+          final filename = parts[7];
+          print('🎵 BluetoothService: Currently playing file: $filename');
+          return filename;
+        }
+      }
+      
+      print('🎵 BluetoothService: No program currently playing');
+      return null;
+    } catch (e) {
+      print('🎵 BluetoothService: Error checking player status: $e');
+      return null;
+    }
+  }
+
   @override
   void dispose() {
     _scanSubscription?.cancel();
