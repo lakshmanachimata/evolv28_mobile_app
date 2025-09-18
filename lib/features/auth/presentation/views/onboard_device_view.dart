@@ -25,6 +25,13 @@ class _OnboardDeviceViewState extends State<OnboardDeviceView> {
     _otpFocusNode = FocusNode();
     _scrollController = ScrollController();
 
+    // Clear text when focused
+    _otpFocusNode.addListener(() {
+      if (_otpFocusNode.hasFocus && _otpController.text == 'ABC1234567') {
+        _otpController.clear();
+      }
+    });
+
     // No automatic scrolling - let the user manually scroll if needed
   }
 
@@ -354,11 +361,11 @@ class _OnboardDeviceViewState extends State<OnboardDeviceView> {
             keyboardType: TextInputType.text,
             textInputAction: TextInputAction.done,
             style: const TextStyle(fontSize: 16, color: Colors.black87),
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(vertical: 12),
-              hintText: 'Enter alphanumeric code',
-              hintStyle: TextStyle(color: Colors.grey),
+              contentPadding: const EdgeInsets.symmetric(vertical: 12),
+              hintText: _otpFocusNode.hasFocus ? '' : 'Enter alphanumeric code',
+              hintStyle: const TextStyle(color: Colors.grey),
             ),
             onChanged: (value) {
               // Handle OTP input changes
