@@ -716,9 +716,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
             
             // Play/Pause Button
             GestureDetector(
-              onTap: () {
-                // Handle play/pause
-              },
+              onTap: () => viewModel.stopBluetoothProgram(context),
               child: Container(
                 width: 40,
                 height: 40,

@@ -249,6 +249,60 @@ class DashboardViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Stop the currently playing program via Bluetooth
+  Future<void> stopBluetoothProgram(BuildContext context) async {
+    print('🎵 Dashboard: stopBluetoothProgram called');
+    
+    if (!_bluetoothService.isConnected) {
+      print('🎵 Dashboard: Bluetooth not connected, cannot stop program');
+      _showStopErrorSnackbar(context, 'Bluetooth not connected');
+      return;
+    }
+    
+    try {
+      print('🎵 Dashboard: Sending stop command to Bluetooth device...');
+      final success = await _bluetoothService.stopProgram();
+      
+      if (success) {
+        print('🎵 Dashboard: Program stopped successfully');
+        // Reset player state
+        _showPlayerCard = false;
+        _isPlaying = false;
+        _currentPlayingProgramId = null;
+        notifyListeners();
+        
+        // Show success snackbar
+        _showStopSuccessSnackbar(context, 'Player stopped');
+      } else {
+        print('🎵 Dashboard: Failed to stop program');
+        _showStopErrorSnackbar(context, 'Failed to stop program');
+      }
+    } catch (e) {
+      print('🎵 Dashboard: Error stopping program: $e');
+      _showStopErrorSnackbar(context, 'Error stopping program: $e');
+    }
+  }
+
+  void _showStopSuccessSnackbar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _showStopErrorSnackbar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   // Map program titles to their actual IDs in ProgramsViewModel
   String _getProgramIdFromTitle(String title) {
     switch (title) {
