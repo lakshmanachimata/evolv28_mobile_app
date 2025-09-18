@@ -119,6 +119,20 @@ class AuthRepositoryImpl implements AuthRepository {
       print('🔐 AuthRepository: OTP validation API response: ${response.data}');
       print('🔐 AuthRepository: Response type: ${response.data.runtimeType}');
       print('🔐 AuthRepository: Response keys: ${response.data is Map ? (response.data as Map).keys.toList() : 'Not a Map'}');
+      
+      // Debug the data structure more deeply
+      if (response.data is Map) {
+        final responseMap = response.data as Map<String, dynamic>;
+        print('🔐 AuthRepository: Full response map: $responseMap');
+        
+        if (responseMap.containsKey('data') && responseMap['data'] is Map) {
+          final dataMap = responseMap['data'] as Map<String, dynamic>;
+          print('🔐 AuthRepository: Data section keys: ${dataMap.keys.toList()}');
+          print('🔐 AuthRepository: Data section values: $dataMap');
+          print('🔐 AuthRepository: Token in data: ${dataMap['token']}');
+          print('🔐 AuthRepository: UserId in data: ${dataMap['UserId']}');
+        }
+      }
 
       if (response.statusCode == 200) {
         final otpValidationResponse = OtpValidationResponse.fromJson(response.data);
@@ -158,13 +172,23 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<void> _storeUserData(OtpValidationData userData) async {
     try {
       print('🔐 AuthRepository: Storing user data in SharedPreferences');
+      print('🔐 AuthRepository: Raw userData.token: ${userData.token}');
+      print('🔐 AuthRepository: Raw userData.userId: ${userData.userId}');
+      print('🔐 AuthRepository: Raw userData.fname: ${userData.fname}');
+      print('🔐 AuthRepository: Raw userData.lname: ${userData.lname}');
       
       // Store complete user data as JSON
       await sharedPreferences.setString('user_data_json', jsonEncode(userData.toJson()));
       
       // Store individual fields for easy access
-      await sharedPreferences.setString('user_token', userData.token ?? '');
-      await sharedPreferences.setString('user_id', userData.userId ?? '');
+      final tokenToStore = userData.token ?? '';
+      final userIdToStore = userData.userId ?? '';
+      
+      print('🔐 AuthRepository: About to store token: "$tokenToStore"');
+      print('🔐 AuthRepository: About to store userId: "$userIdToStore"');
+      
+      await sharedPreferences.setString('user_token', tokenToStore);
+      await sharedPreferences.setString('user_id', userIdToStore);
       await sharedPreferences.setString('user_first_name', userData.fname ?? '');
       await sharedPreferences.setString('user_last_name', userData.lname ?? '');
       await sharedPreferences.setString('user_email_id', userData.emailId ?? '');
@@ -178,7 +202,13 @@ class AuthRepositoryImpl implements AuthRepository {
       // Store devices count
       await sharedPreferences.setInt('user_devices_count', userData.devices.length);
       
+      // Verify what was actually stored
+      final storedToken = sharedPreferences.getString('user_token');
+      final storedUserId = sharedPreferences.getString('user_id');
+      
       print('🔐 AuthRepository: User data stored successfully');
+      print('🔐 AuthRepository: Verified stored token: "$storedToken"');
+      print('🔐 AuthRepository: Verified stored userId: "$storedUserId"');
       print('🔐 AuthRepository: Token: ${userData.token}');
       print('🔐 AuthRepository: User ID: ${userData.userId}');
       print('🔐 AuthRepository: First Name: ${userData.fname}');
