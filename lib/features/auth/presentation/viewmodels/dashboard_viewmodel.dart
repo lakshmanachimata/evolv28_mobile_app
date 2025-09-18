@@ -50,6 +50,7 @@ class DashboardViewModel extends ChangeNotifier {
   static void setMinimizedState(String programId) {
     _isMinimizedFromPlayer = true;
     _minimizedProgramId = programId;
+    print('🎵 Dashboard: setMinimizedState called with programId: $programId');
   }
 
   static void clearMinimizedState() {
@@ -105,6 +106,9 @@ class DashboardViewModel extends ChangeNotifier {
       _showPlayerCard = true;
       _isPlaying = true;
       _currentPlayingProgramId = _minimizedProgramId;
+      // Set the selected BCU file so the player card shows the correct program name
+      _bluetoothService.setSelectedBcuFile(_minimizedProgramId!);
+      print('🎵 Dashboard: Minimized player restored with programId: $_minimizedProgramId');
       clearMinimizedState(); // Clear the static state
     } else {
       print('🎵 Dashboard: Not coming from minimized player, will check player status');

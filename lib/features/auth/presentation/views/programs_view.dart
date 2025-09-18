@@ -524,7 +524,7 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
 
   Widget _buildPlayPauseButton(ProgramsViewModel viewModel) {
     return GestureDetector(
-      onTap: () => viewModel.togglePlayPause(),
+      onTap: () => viewModel.stopBluetoothProgram(context),
       child: SizedBox(
         width: 100,
         height: 100,

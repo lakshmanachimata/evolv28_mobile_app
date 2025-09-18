@@ -182,6 +182,66 @@ class ProgramsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Stop the currently playing program via Bluetooth
+  Future<void> stopBluetoothProgram(BuildContext context) async {
+    print('🎵 Programs: stopBluetoothProgram called');
+    
+    if (!_bluetoothService.isConnected) {
+      print('🎵 Programs: Bluetooth not connected, cannot stop program');
+      _showStopErrorSnackbar(context, 'Bluetooth not connected');
+      return;
+    }
+    
+    try {
+      print('🎵 Programs: Sending stop command to Bluetooth device...');
+      final success = await _bluetoothService.stopProgram();
+      
+      if (success) {
+        print('🎵 Programs: Program stopped successfully');
+        // Reset player state
+        _isPlaying = false;
+        _currentPlayingProgramId = null;
+        _currentPosition = Duration.zero;
+        _isPlaySuccessful = false;
+        _selectedBcuFile = null;
+        notifyListeners();
+        
+        // Show success snackbar
+        _showStopSuccessSnackbar(context, 'Player stopped');
+        
+        // Navigate back to programs list
+        await Future.delayed(const Duration(milliseconds: 500));
+        // The UI will automatically show the programs list since _isPlaying is now false
+      } else {
+        print('🎵 Programs: Failed to stop program');
+        _showStopErrorSnackbar(context, 'Failed to stop program');
+      }
+    } catch (e) {
+      print('🎵 Programs: Error stopping program: $e');
+      _showStopErrorSnackbar(context, 'Error stopping program: $e');
+    }
+  }
+
+  void _showStopSuccessSnackbar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _showStopErrorSnackbar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   void stopProgram() {
     _currentPlayingProgramId = null;
     _isPlaying = false;
@@ -241,10 +301,35 @@ class ProgramsViewModel extends ChangeNotifier {
     context.go(AppRoutes.dashboard);
   }
 
-  void minimizeToDashboard(BuildContext context) {
-    // Set the minimized state in dashboard viewmodel
-    if (_currentPlayingProgramId != null) {
-      DashboardViewModel.setMinimizedState(_currentPlayingProgramId!);
+  void minimizeToDashboard(BuildContext context) async {
+    print('🎵 Programs: minimizeToDashboard called');
+    
+    // Check actual player status from Bluetooth device
+    if (_bluetoothService.isConnected) {
+      print('🎵 Programs: Checking player status before minimizing...');
+      try {
+        final playingFile = await _bluetoothService.checkPlayerCommand();
+        if (playingFile != null) {
+          print('🎵 Programs: Program is playing: $playingFile, setting minimized state');
+          // Set the minimized state with the actual playing file
+          DashboardViewModel.setMinimizedState(playingFile);
+        } else {
+          print('🎵 Programs: No program currently playing, clearing minimized state');
+          DashboardViewModel.clearMinimizedState();
+        }
+      } catch (e) {
+        print('🎵 Programs: Error checking player status: $e');
+        // Fallback to current program ID if available
+        if (_currentPlayingProgramId != null) {
+          DashboardViewModel.setMinimizedState(_currentPlayingProgramId!);
+        }
+      }
+    } else {
+      print('🎵 Programs: Bluetooth not connected, using current program ID');
+      // Fallback to current program ID if Bluetooth not connected
+      if (_currentPlayingProgramId != null) {
+        DashboardViewModel.setMinimizedState(_currentPlayingProgramId!);
+      }
     }
     
     // Navigate to dashboard

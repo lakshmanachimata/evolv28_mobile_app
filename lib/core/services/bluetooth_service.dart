@@ -39,6 +39,7 @@ class BluetoothService extends ChangeNotifier {
   List<String> _fifthCommandResponses = [];
   bool _isWaitingForFifthCommand = false;
   Completer<String?>? _playerStatusCompleter;
+  Completer<bool>? _stopCommandCompleter;
 
   // Nordic UART Service UUIDs
   static const String nordicUartServiceUUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
@@ -440,6 +441,14 @@ class BluetoothService extends ChangeNotifier {
       return;
     }
 
+    // Check if this is a stop command response
+    if (_stopCommandCompleter != null && !_stopCommandCompleter!.isCompleted && stringValue.contains('#ACK!')) {
+      print('🎵 BluetoothService: Stop command response received: $stringValue');
+      _stopCommandCompleter!.complete(true);
+      _stopCommandCompleter = null;
+      return;
+    }
+
     // If we're waiting for the 5th command, accumulate the response
     if (_isWaitingForFifthCommand) {
       _fifthCommandResponses.add(stringValue);
@@ -760,6 +769,52 @@ class BluetoothService extends ChangeNotifier {
   void setSelectedBcuFile(String bcuFileName) {
     _selectedBcuFile = bcuFileName;
     print('🎵 BluetoothService: Selected BCU file set to: $bcuFileName');
+  }
+
+  // Stop the currently playing program
+  Future<bool> stopProgram() async {
+    print('🎵 BluetoothService: stopProgram called');
+    
+    if (_connectedDevice == null || _connectionState != BluetoothConnectionState.connected) {
+      print('🎵 BluetoothService: Device not connected, cannot stop program');
+      return false;
+    }
+    
+    if (_writeCharacteristic == null || _notifyCharacteristic == null) {
+      print('🎵 BluetoothService: UART characteristics not available');
+      return false;
+    }
+    
+    try {
+      print('🎵 BluetoothService: Sending #STP! to stop program...');
+      
+      // Create a completer to wait for the response
+      final completer = Completer<bool>();
+      Timer? timeoutTimer;
+      
+      // Set timeout
+      timeoutTimer = Timer(Duration(seconds: 5), () {
+        if (!completer.isCompleted) {
+          print('🎵 BluetoothService: Stop command timeout');
+          completer.complete(false);
+        }
+      });
+      
+      // Store the completer so _handleNotification can complete it
+      _stopCommandCompleter = completer;
+      
+      // Send the #STP! command
+      await writeCommand('#STP!');
+      
+      // Wait for response
+      final success = await completer.future;
+      print('🎵 BluetoothService: Stop command result: $success');
+      
+      return success;
+    } catch (e) {
+      print('🎵 BluetoothService: Error stopping program: $e');
+      return false;
+    }
   }
 
   // Check if a program is currently playing by sending 5#SPL! command
