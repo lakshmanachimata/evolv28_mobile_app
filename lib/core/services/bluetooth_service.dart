@@ -626,7 +626,12 @@ class BluetoothService extends ChangeNotifier {
 
   // Play command methods
   Future<void> playProgram(String bcuFileName) async {
+    print('🎵 BluetoothService: playProgram called with: $bcuFileName');
+    print('🎵 BluetoothService: _connectedDevice: $_connectedDevice');
+    print('🎵 BluetoothService: _connectionState: $_connectionState');
+    
     if (_connectedDevice == null || _connectionState != BluetoothConnectionState.connected) {
+      print('🎵 BluetoothService: Device not connected, cannot play program');
       _setError('Device not connected');
       return;
     }

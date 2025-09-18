@@ -30,8 +30,10 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
   void initState() {
     super.initState();
     // Initialize the programs view
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final viewModel = Provider.of<ProgramsViewModel>(context, listen: false);
+      // Initialize Bluetooth listener
+      await viewModel.initialize();
       // Check if we should show player screen (coming from dashboard player card)
       if (ProgramsViewModel.programIdFromDashboard != null) {
         viewModel.navigateFromDashboardPlayer(
@@ -40,6 +42,104 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
         ProgramsViewModel.clearProgramIdFromDashboard();
       }
     });
+  }
+  
+  String _formatProgramName(String fileName) {
+    // Remove .bcu extension and convert to title case
+    String name = fileName.replaceAll('.bcu', '');
+    // Replace underscores with spaces
+    name = name.replaceAll('_', ' ');
+    // Convert to title case (first letter of each word capitalized)
+    return name.split(' ').map((word) {
+      if (word.isEmpty) return word;
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
+  }
+  
+  String _getIconPathForProgram(String programName) {
+    // Map program names to icon paths (same as ProgramsViewModel)
+    switch (programName) {
+      case 'Sleep Better':
+        return 'assets/images/sleep_better.svg';
+      case 'Improve Mood':
+        return 'assets/images/improve_mood.svg';
+      case 'Focus Better':
+        return 'assets/images/focus_better.svg';
+      case 'Remove Stress':
+        return 'assets/images/remove_stress.svg';
+      case 'Calm Mind':
+        return 'assets/images/calm_mind.svg';
+      case 'Reduce Anxiety':
+        return 'assets/images/reduce_anxiety.svg';
+      default:
+        return 'assets/images/sleep_better.svg';
+    }
+  }
+  
+  Widget _buildLoadingOverlay(BuildContext context, ProgramsViewModel viewModel) {
+    // Show the actual program name being played
+    final programName = viewModel.selectedBcuFile != null 
+        ? _formatProgramName(viewModel.selectedBcuFile!)
+        : 'Program';
+    
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      color: Colors.black.withOpacity(0.3), // Semi-transparent overlay
+      child: Center(
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.8, // 80% of screen width
+          padding: EdgeInsets.symmetric(horizontal: 40, vertical: 30),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Loading indicator
+              SizedBox(
+                width: 50,
+                height: 50,
+                child: CircularProgressIndicator(
+                  strokeWidth: 4,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    Color(0xFF4CAF50), // Green color
+                  ),
+                ),
+              ),
+              SizedBox(height: 20),
+              // Loading text
+              Text(
+                'Playing $programName',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Starting your wellness program',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -55,6 +155,16 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
 
               // Main Content
               _buildMainContent(context),
+              
+              // Loading Overlay
+              Consumer<ProgramsViewModel>(
+                builder: (context, viewModel, child) {
+                  if (viewModel.isSendingPlayCommands) {
+                    return _buildLoadingOverlay(context, viewModel);
+                  }
+                  return SizedBox.shrink();
+                },
+              ),
             ],
           );
         },
@@ -274,7 +384,10 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
 
                     // Play button
                     GestureDetector(
-                      onTap: () => viewModel.playProgram(program.id),
+                      onTap: () {
+                        print('🎵 Programs: Play button tapped for program: ${program.id}');
+                        viewModel.playBluetoothProgram(program.id);
+                      },
                       child: Container(
                         width: 40,
                         height: 40,
@@ -303,9 +416,26 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
     BuildContext context,
     ProgramsViewModel viewModel,
   ) {
-    final currentProgram = viewModel.programs.firstWhere(
-      (program) => program.id == viewModel.currentPlayingProgramId,
-    );
+    ProgramData currentProgram;
+    
+    // Handle Bluetooth programs
+    if (viewModel.isPlaySuccessful && viewModel.selectedBcuFile != null) {
+      // Create a program data for the Bluetooth program
+      final programName = _formatProgramName(viewModel.selectedBcuFile!);
+      currentProgram = ProgramData(
+        id: viewModel.selectedBcuFile!,
+        title: programName,
+        recommendedTime: '2 hrs',
+        iconPath: _getIconPathForProgram(programName),
+        isLocked: false,
+        isFavorite: false,
+      );
+    } else {
+      // Handle regular programs
+      currentProgram = viewModel.programs.firstWhere(
+        (program) => program.id == viewModel.currentPlayingProgramId,
+      );
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 36.0),

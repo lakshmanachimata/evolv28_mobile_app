@@ -14,6 +14,9 @@ class ProgramsViewModel extends ChangeNotifier {
   
   // Bluetooth service
   final BluetoothService _bluetoothService = BluetoothService();
+  
+  // Bluetooth listener
+  late VoidCallback _bluetoothListener;
 
   String? _selectedProgramId;
   int _selectedTabIndex = 1; // Programs tab is selected by default
@@ -24,6 +27,11 @@ class ProgramsViewModel extends ChangeNotifier {
   String? _currentPlayingProgramId;
   Duration _currentPosition = Duration.zero;
   Duration _totalDuration = const Duration(minutes: 3);
+  
+  // Bluetooth play state
+  bool _isSendingPlayCommands = false;
+  bool _isPlaySuccessful = false;
+  String? _selectedBcuFile;
   
   // Feedback state
   bool _isInFeedbackMode = false;
@@ -140,7 +148,12 @@ class ProgramsViewModel extends ChangeNotifier {
   String? get currentPlayingProgramId => _currentPlayingProgramId;
   Duration get currentPosition => _currentPosition;
   Duration get totalDuration => _totalDuration;
-  bool get isInPlayerMode => _currentPlayingProgramId != null;
+  bool get isInPlayerMode => _currentPlayingProgramId != null || _isPlaySuccessful;
+  
+  // Bluetooth play getters
+  bool get isSendingPlayCommands => _isSendingPlayCommands;
+  bool get isPlaySuccessful => _isPlaySuccessful;
+  String? get selectedBcuFile => _selectedBcuFile;
   
   // Feedback getters
   bool get isInFeedbackMode => _isInFeedbackMode;
@@ -279,6 +292,62 @@ class ProgramsViewModel extends ChangeNotifier {
   bool isFavorite(String programId) {
     return _favorites[programId] ?? false;
   }
+  
+  // Initialize Bluetooth listener
+  Future<void> initialize() async {
+    print('🎵 Programs: Initializing Bluetooth service...');
+    
+    // Initialize Bluetooth service
+    await _bluetoothService.initialize();
+    
+    _bluetoothListener = () {
+      // Update Bluetooth play state from service
+      _isSendingPlayCommands = _bluetoothService.isSendingPlayCommands;
+      _isPlaySuccessful = _bluetoothService.isPlaySuccessful;
+      _selectedBcuFile = _bluetoothService.selectedBcuFile;
+      notifyListeners();
+    };
+    
+    // Add listener to Bluetooth service
+    _bluetoothService.addListener(_bluetoothListener);
+    
+    print('🎵 Programs: Bluetooth service initialized. Connected: ${_bluetoothService.isConnected}');
+  }
+  
+  // Dispose method to remove listener
+  @override
+  void dispose() {
+    _bluetoothService.removeListener(_bluetoothListener);
+    super.dispose();
+  }
+  
+  // Play program with Bluetooth commands
+  void playBluetoothProgram(String programId) {
+    print('🎵 Programs: playBluetoothProgram called with ID: $programId');
+    
+    // Check if Bluetooth is connected
+    print('🎵 Programs: Bluetooth connected: ${_bluetoothService.isConnected}');
+    if (!_bluetoothService.isConnected) {
+      print('🎵 Programs: Bluetooth not connected, falling back to regular play');
+      // Fallback to regular play
+      playProgram(programId);
+      return;
+    }
+    
+    // Get the program and use its ID directly (it's already the BCU filename)
+    print('🎵 Programs: Available programs: ${programs.map((p) => '${p.id}: ${p.title}').join(', ')}');
+    final program = programs.firstWhere((p) => p.id == programId);
+    final programName = program.title;
+    print('🎵 Programs: Found program: $programName');
+    
+    // Use the program ID directly as it's already the BCU filename
+    final bcuFileId = programId; // programId is already the BCU filename like "Alleviate_Stress.bcu"
+    print('🎵 Programs: Using BCU file ID: $bcuFileId');
+    
+    print('🎵 Programs: Starting play program: $bcuFileId');
+    _bluetoothService.playProgram(bcuFileId);
+  }
+  
 }
 
 class ProgramData {
