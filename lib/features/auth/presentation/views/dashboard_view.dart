@@ -30,12 +30,14 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
   @override
   void initState() {
     super.initState();
+    print('🎵 Dashboard View: initState() called');
     // Initialize the dashboard
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      print('🎵 Dashboard View: PostFrameCallback executing...');
       final viewModel = Provider.of<DashboardViewModel>(context, listen: false);
+      print('🎵 Dashboard View: Calling viewModel.initialize()...');
       await viewModel.initialize();
-      // Check if a program is currently playing when navigating to dashboard
-      await viewModel.checkPlayerStatus();
+      print('🎵 Dashboard View: viewModel.initialize() completed');
     });
   }
 
@@ -677,7 +679,9 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
             // Program Icon
             viewModel.isSendingPlayCommands 
                 ? _buildProgramIconForBluetooth(viewModel.selectedBcuFile)
-                : _buildProgramIcon(viewModel.currentPlayingProgramId),
+                : viewModel.selectedBcuFile != null && viewModel.selectedBcuFile.isNotEmpty
+                    ? _buildProgramIconForBluetooth(viewModel.selectedBcuFile)
+                    : _buildProgramIcon(viewModel.currentPlayingProgramId),
             const SizedBox(width: 16),
             
             // Now Playing Text
@@ -697,7 +701,9 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                         ? _formatProgramName(viewModel.selectedBcuFile)
                         : viewModel.isSendingPlayCommands 
                             ? _formatProgramName(viewModel.selectedBcuFile)
-                            : _getProgramTitle(viewModel.currentPlayingProgramId),
+                            : viewModel.selectedBcuFile != null && viewModel.selectedBcuFile.isNotEmpty
+                                ? _formatProgramName(viewModel.selectedBcuFile)
+                                : _getProgramTitle(viewModel.currentPlayingProgramId),
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,

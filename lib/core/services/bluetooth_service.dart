@@ -38,6 +38,7 @@ class BluetoothService extends ChangeNotifier {
   StreamSubscription<List<int>>? _notificationSubscription;
   List<String> _fifthCommandResponses = [];
   bool _isWaitingForFifthCommand = false;
+  Completer<String?>? _playerStatusCompleter;
 
   // Nordic UART Service UUIDs
   static const String nordicUartServiceUUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
@@ -431,6 +432,14 @@ class BluetoothService extends ChangeNotifier {
     print('Length: ${value.length}');
     print('=============================');
 
+    // Check if this is a player status response
+    if (_playerStatusCompleter != null && !_playerStatusCompleter!.isCompleted && stringValue.contains('#SPL,')) {
+      print('🎵 BluetoothService: Player status response received: $stringValue');
+      _playerStatusCompleter!.complete(stringValue);
+      _playerStatusCompleter = null;
+      return;
+    }
+
     // If we're waiting for the 5th command, accumulate the response
     if (_isWaitingForFifthCommand) {
       _fifthCommandResponses.add(stringValue);
@@ -747,6 +756,12 @@ class BluetoothService extends ChangeNotifier {
     return 'Response handled by existing notification system';
   }
 
+  // Set the selected BCU file (used when checking player status)
+  void setSelectedBcuFile(String bcuFileName) {
+    _selectedBcuFile = bcuFileName;
+    print('🎵 BluetoothService: Selected BCU file set to: $bcuFileName');
+  }
+
   // Check if a program is currently playing by sending 5#SPL! command
   Future<String?> checkPlayerCommand() async {
     print('🎵 BluetoothService: checkPlayerCommand called');
@@ -764,11 +779,26 @@ class BluetoothService extends ChangeNotifier {
     try {
       print('🎵 BluetoothService: Sending 5#SPL! to check player status...');
       
+      // Create a completer to wait for the response
+      final completer = Completer<String?>();
+      Timer? timeoutTimer;
+      
+      // Set timeout
+      timeoutTimer = Timer(Duration(seconds: 5), () {
+        if (!completer.isCompleted) {
+          print('🎵 BluetoothService: Player status check timeout');
+          completer.complete(null);
+        }
+      });
+      
+      // Store the completer so _handleNotification can complete it
+      _playerStatusCompleter = completer;
+      
       // Send the 5#SPL! command
       await writeCommand('5#SPL!');
       
       // Wait for response
-      final response = await _waitForResponse(timeout: Duration(seconds: 5));
+      final response = await completer.future;
       print('🎵 BluetoothService: Player check response: $response');
       
       if (response != null && response.contains('#SPL,')) {

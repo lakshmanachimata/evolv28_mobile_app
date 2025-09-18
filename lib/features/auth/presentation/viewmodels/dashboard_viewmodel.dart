@@ -59,38 +59,65 @@ class DashboardViewModel extends ChangeNotifier {
 
   // Initialize the dashboard
   Future<void> initialize() async {
+    print('🎵 Dashboard: initialize() called');
     _isLoading = true;
     notifyListeners();
 
     // Initialize Bluetooth service
+    print('🎵 Dashboard: Initializing Bluetooth service...');
     await _bluetoothService.initialize();
+    print('🎵 Dashboard: Bluetooth service initialized');
     
     // Listen to Bluetooth service changes
     _bluetoothListener = () {
+      // Check if command sequence just completed and we haven't checked player status yet
+      if (!_bluetoothService.isExecutingCommands && 
+          _bluetoothService.isConnected && 
+          !_showPlayerCard && 
+          !_isMinimizedFromPlayer) {
+        print('🎵 Dashboard: Command sequence completed, checking player status...');
+        checkPlayerStatus();
+      }
       notifyListeners();
     };
     _bluetoothService.addListener(_bluetoothListener);
 
     // Start scanning automatically if not already connected
+    print('🎵 Dashboard: Checking Bluetooth connection status...');
+    print('🎵 Dashboard: isConnected: ${_bluetoothService.isConnected}');
+    
     if (!_bluetoothService.isConnected) {
       print('🚀 Auto-starting Bluetooth scan on dashboard load...');
       // Small delay to ensure UI is fully loaded
       await Future.delayed(const Duration(milliseconds: 500));
       await _bluetoothService.startScanning();
+      print('🎵 Dashboard: Bluetooth scanning completed');
+    } else {
+      print('🎵 Dashboard: Already connected to Bluetooth device');
     }
 
     // Check if we're coming from a minimized player
+    print('🎵 Dashboard: Checking minimized player state...');
+    print('🎵 Dashboard: _isMinimizedFromPlayer: $_isMinimizedFromPlayer, _minimizedProgramId: $_minimizedProgramId');
+    
     if (_isMinimizedFromPlayer && _minimizedProgramId != null) {
+      print('🎵 Dashboard: Restoring minimized player state');
       _showPlayerCard = true;
       _isPlaying = true;
       _currentPlayingProgramId = _minimizedProgramId;
       clearMinimizedState(); // Clear the static state
+    } else {
+      print('🎵 Dashboard: Not coming from minimized player, will check player status');
     }
+    
+    // Player status check will be handled automatically by the Bluetooth listener
+    // when the command sequence completes
 
     // Simulate loading time
     await Future.delayed(const Duration(milliseconds: 500));
 
     _isLoading = false;
+    print('🎵 Dashboard: initialize() completed');
     notifyListeners();
   }
 
@@ -194,11 +221,15 @@ class DashboardViewModel extends ChangeNotifier {
         print('🎵 Dashboard: Program is playing: $playingFile');
         _showPlayerCard = true;
         _isPlaying = true;
+        // Set the selected BCU file so the player card shows the correct program name
+        _bluetoothService.setSelectedBcuFile(playingFile);
+        print('🎵 Dashboard: Player card state set to: showPlayerCard=$_showPlayerCard, isPlaying=$_isPlaying, selectedBcuFile=$playingFile');
         notifyListeners();
       } else {
         print('🎵 Dashboard: No program currently playing');
         _showPlayerCard = false;
         _isPlaying = false;
+        print('🎵 Dashboard: Player card state set to: showPlayerCard=$_showPlayerCard, isPlaying=$_isPlaying');
         notifyListeners();
       }
     } catch (e) {
