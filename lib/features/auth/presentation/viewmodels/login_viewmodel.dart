@@ -32,6 +32,7 @@ class LoginViewModel extends ChangeNotifier {
   // State
   bool _isLoading = false;
   String? _errorMessage;
+  bool _userDoesNotExist = false;
 
   // Getters
   String get email => _email;
@@ -42,11 +43,13 @@ class LoginViewModel extends ChangeNotifier {
   bool get isPasswordVisible => _isPasswordVisible;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  bool get userDoesNotExist => _userDoesNotExist;
 
   // Setters
   void setEmail(String value) {
     _email = value;
     _clearError();
+    _userDoesNotExist = false; // Reset user existence flag when email changes
     notifyListeners();
   }
 
@@ -204,10 +207,15 @@ class LoginViewModel extends ChangeNotifier {
       return result.fold(
         (error) {
           _setError(error);
+          // Check if the error indicates user doesn't exist
+          if (error.contains('User does not exist') || error.contains('Please register')) {
+            _userDoesNotExist = true;
+          }
           return null;
         },
         (otpValidationResponse) {
           _setLoading(false);
+          _userDoesNotExist = false; // Reset flag on success
           return otpValidationResponse;
         },
       );
@@ -251,6 +259,7 @@ class LoginViewModel extends ChangeNotifier {
     _termsAndConditions = false;
     _isPasswordVisible = false;
     _errorMessage = null;
+    _userDoesNotExist = false;
     notifyListeners();
   }
 }

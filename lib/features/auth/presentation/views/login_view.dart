@@ -702,59 +702,113 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
               ),
               const SizedBox(height: 24),
 
-              // OTP Input Fields
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: List.generate(
-                  4,
-                  (index) =>
-                      _buildOtpField(index, _otpControllers, _otpFocusNodes),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Resend OTP Button (only shown after 3 failed attempts)
-              if (_showResendOtp && !_resendOtpUsed) ...[
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton(
-                    onPressed: () => _handleResendOtp(context),
-                    style: TextButton.styleFrom(
-                      foregroundColor: const Color(0xFFF17961),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    child: const Text(
-                      'Resend OTP',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        decoration: TextDecoration.underline,
+              // OTP Input Fields (only show if user exists)
+              Consumer<LoginViewModel>(
+                builder: (context, viewModel, child) {
+                  if (viewModel.userDoesNotExist) {
+                    return Column(
+                      children: [
+                        const SizedBox(height: 24),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.red.shade200),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.error_outline, color: Colors.red.shade600, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'User does not exist. Please register first.',
+                                  style: TextStyle(
+                                    color: Colors.red.shade700,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    );
+                  }
+                  
+                  return Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: List.generate(
+                          4,
+                          (index) =>
+                              _buildOtpField(index, _otpControllers, _otpFocusNodes),
+                        ),
                       ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-              ],
+                      const SizedBox(height: 24),
+                    ],
+                  );
+                },
+              ),
 
-              // Continue Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => _handleOtpContinue(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFF17961),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'Continue',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                ),
+              // Resend OTP Button and Continue Button (only show if user exists)
+              Consumer<LoginViewModel>(
+                builder: (context, viewModel, child) {
+                  if (viewModel.userDoesNotExist) {
+                    return const SizedBox.shrink(); // Hide buttons when user doesn't exist
+                  }
+                  
+                  return Column(
+                    children: [
+                      // Resend OTP Button (only shown after 3 failed attempts)
+                      if (_showResendOtp && !_resendOtpUsed) ...[
+                        SizedBox(
+                          width: double.infinity,
+                          child: TextButton(
+                            onPressed: () => _handleResendOtp(context),
+                            style: TextButton.styleFrom(
+                              foregroundColor: const Color(0xFFF17961),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            child: const Text(
+                              'Resend OTP',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+
+                      // Continue Button
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () => _handleOtpContinue(context),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFF17961),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            'Continue',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           ),

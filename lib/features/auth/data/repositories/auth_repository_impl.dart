@@ -140,6 +140,12 @@ class AuthRepositoryImpl implements AuthRepository {
         if (!otpValidationResponse.error) {
           print('🔐 AuthRepository: OTP validated successfully');
           
+          // Check if userId and token are null (user doesn't exist)
+          if (otpValidationResponse.data.userId == null || otpValidationResponse.data.token == null) {
+            print('🔐 AuthRepository: User does not exist - userId and token are null');
+            return Left('User does not exist. Please register first.');
+          }
+          
           // Store user data in SharedPreferences
           await _storeUserData(otpValidationResponse.data);
           
@@ -181,14 +187,8 @@ class AuthRepositoryImpl implements AuthRepository {
       await sharedPreferences.setString('user_data_json', jsonEncode(userData.toJson()));
       
       // Store individual fields for easy access
-      final tokenToStore = userData.token ?? '';
-      final userIdToStore = userData.userId ?? '';
-      
-      print('🔐 AuthRepository: About to store token: "$tokenToStore"');
-      print('🔐 AuthRepository: About to store userId: "$userIdToStore"');
-      
-      await sharedPreferences.setString('user_token', tokenToStore);
-      await sharedPreferences.setString('user_id', userIdToStore);
+      await sharedPreferences.setString('user_token', userData.token ?? '');
+      await sharedPreferences.setString('user_id', userData.userId ?? '');
       await sharedPreferences.setString('user_first_name', userData.fname ?? '');
       await sharedPreferences.setString('user_last_name', userData.lname ?? '');
       await sharedPreferences.setString('user_email_id', userData.emailId ?? '');
