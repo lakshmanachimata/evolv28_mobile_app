@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../domain/usecases/delete_user_usecase.dart';
 import '../viewmodels/settings_viewmodel.dart';
 
 class SettingsView extends StatelessWidget {
@@ -10,7 +11,9 @@ class SettingsView extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (context) {
-        final viewModel = SettingsViewModel();
+        final viewModel = SettingsViewModel(
+          deleteUserUseCase: context.read<DeleteUserUseCase>(),
+        );
         viewModel.initialize();
         return viewModel;
       },
@@ -42,6 +45,10 @@ class _SettingsViewBody extends StatelessWidget {
               // Logout confirmation popup
               if (viewModel.showLogoutPopup)
                 _buildLogoutPopup(context, viewModel),
+
+              // Logout loader overlay
+              if (viewModel.isLoggingOut)
+                _buildLogoutLoader(context, viewModel),
             ],
           ),
         );
@@ -618,7 +625,7 @@ class _SettingsViewBody extends StatelessWidget {
                       child: SizedBox(
                         height: 40,
                         child: ElevatedButton(
-                          onPressed: () => viewModel.confirmLogout(context),
+                          onPressed: viewModel.isLoggingOut ? null : () => viewModel.confirmLogout(context),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFF07A60),
                             foregroundColor: Colors.white,
@@ -627,18 +634,89 @@ class _SettingsViewBody extends StatelessWidget {
                             ),
                             elevation: 0,
                           ),
-                          child: const Text(
-                            'Continue',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
+                          child: viewModel.isLoggingOut
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : const Text(
+                                  'Continue',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
                         ),
                       ),
                     ),
                   ],
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLogoutLoader(BuildContext context, SettingsViewModel viewModel) {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      color: Colors.black.withOpacity(0.7), // Darker overlay for loader
+      child: Center(
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.8, // 80% of screen width
+          padding: EdgeInsets.symmetric(horizontal: 40, vertical: 30),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Logout loading indicator
+              SizedBox(
+                width: 50,
+                height: 50,
+                child: CircularProgressIndicator(
+                  strokeWidth: 4,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    Color(0xFFF07A60), // Coral color matching the app theme
+                  ),
+                ),
+              ),
+              SizedBox(height: 20),
+              // Logout text with username
+              Text(
+                'Logging out ${viewModel.userName}',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 8),
+              // Subtitle
+              Text(
+                'Please wait while we process your request',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
               ),
             ],
           ),

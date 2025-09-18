@@ -32,6 +32,7 @@ class DashboardViewModel extends ChangeNotifier {
   // Bluetooth getters
   BluetoothService get bluetoothService => _bluetoothService;
   bool get isBluetoothConnected => _bluetoothService.isConnected;
+  bool get isBluetoothScanning => _bluetoothService.isScanning;
   String get bluetoothStatusMessage => _bluetoothService.statusMessage;
   String get bluetoothErrorMessage => _bluetoothService.errorMessage;
   int get bluetoothScanCountdown => _bluetoothService.scanCountdown;

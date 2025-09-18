@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import '../../core/routing/app_router_config.dart';
+import '../../features/auth/domain/repositories/auth_repository.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -47,12 +49,48 @@ class _SplashScreenState extends State<SplashScreen>
   void _startSplashSequence() async {
     _animationController.forward();
 
-    // Wait for 3 seconds then navigate to onboarding screen
+    // Wait for splash animation to complete
     await Future.delayed(const Duration(seconds: 1));
 
-    // Navigate to onboarding screen
     if (mounted) {
-      context.go(AppRoutes.login);
+      await _checkAuthenticationAndNavigate();
+    }
+  }
+
+  Future<void> _checkAuthenticationAndNavigate() async {
+    try {
+      // Get AuthRepository from context
+      final authRepository = Provider.of<AuthRepository>(context, listen: false);
+      
+      // Check if user is logged in (has valid token and user ID)
+      final isLoggedIn = await authRepository.isLoggedIn();
+      print('🚀 SplashScreen: User logged in: $isLoggedIn');
+      
+      if (isLoggedIn) {
+        // User is logged in, check if they have complete profile
+        final hasCompleteProfile = await authRepository.hasCompleteProfile();
+        print('🚀 SplashScreen: Has complete profile: $hasCompleteProfile');
+        
+        if (hasCompleteProfile) {
+          // User has complete profile, go to dashboard
+          print('🚀 SplashScreen: Navigating to dashboard');
+          context.go(AppRoutes.dashboard);
+        } else {
+          // User is logged in but profile incomplete, go to onboarding
+          print('🚀 SplashScreen: Navigating to onboarding');
+          context.go(AppRoutes.onboarding);
+        }
+      } else {
+        // User not logged in, go to login screen
+        print('🚀 SplashScreen: Navigating to login');
+        context.go(AppRoutes.login);
+      }
+    } catch (e) {
+      print('🚀 SplashScreen: Error checking authentication: $e');
+      // On error, default to login screen
+      if (mounted) {
+        context.go(AppRoutes.login);
+      }
     }
   }
 

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class OtpValidationResponse {
   final bool error;
   final String message;
@@ -106,7 +108,7 @@ class OtpValidationData {
         lname: json['lname']?.toString(),
         profilepicpath: json['profilepicpath']?.toString(),
         loginSource: json['login_source']?.toString(),
-        devices: json['devices'] is List ? json['devices'] : [],
+        devices: _parseDevices(json['devices']),
         token: json['token']?.toString(),
       );
     } catch (e) {
@@ -141,5 +143,37 @@ class OtpValidationData {
       'devices': devices,
       'token': token,
     };
+  }
+
+  // Helper method to safely parse devices field
+  static List<dynamic> _parseDevices(dynamic devicesData) {
+    try {
+      if (devicesData == null) {
+        return [];
+      }
+      
+      if (devicesData is List) {
+        return List.from(devicesData);
+      }
+      
+      if (devicesData is String) {
+        // If devices is a string, try to parse it as JSON
+        try {
+          final parsed = jsonDecode(devicesData);
+          if (parsed is List) {
+            return List.from(parsed);
+          }
+        } catch (e) {
+          print('🔐 OtpValidationData: Error parsing devices string: $e');
+        }
+        return [];
+      }
+      
+      // If it's any other type, return empty list
+      return [];
+    } catch (e) {
+      print('🔐 OtpValidationData: Error parsing devices: $e');
+      return [];
+    }
   }
 }

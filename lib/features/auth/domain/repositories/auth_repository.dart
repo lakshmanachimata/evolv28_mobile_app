@@ -8,5 +8,8 @@ abstract class AuthRepository {
   Future<Either<String, OtpResponse>> sendOtp(String email);
   Future<Either<String, OtpValidationResponse>> validateOtp(String email, String otp);
   Future<void> logout();
+  Future<Either<String, bool>> deleteUserAccount();
   Future<bool> isLoggedIn();
+  Future<bool> hasCompleteProfile();
+  Future<Map<String, String>> getStoredUserData();
 }

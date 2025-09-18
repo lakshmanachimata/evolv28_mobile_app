@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/routing/app_router_config.dart';
+import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/send_otp_usecase.dart';
 import '../../domain/usecases/validate_otp_usecase.dart';
@@ -22,6 +23,7 @@ class LoginView extends StatelessWidget {
         loginUseCase: context.read<LoginUseCase>(),
         sendOtpUseCase: context.read<SendOtpUseCase>(),
         validateOtpUseCase: context.read<ValidateOtpUseCase>(),
+        authRepository: context.read<AuthRepository>(),
       ),
       child: const _LoginViewBody(),
     );
@@ -49,7 +51,7 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
     // Initialize OTP controllers and focus nodes
     _otpControllers = List.generate(4, (index) => TextEditingController());
     _otpFocusNodes = List.generate(4, (index) => FocusNode());
-    
+
     // Hide keyboard when login screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FocusScope.of(context).unfocus();
@@ -90,7 +92,8 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
               },
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24.0),
-                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
                 child: ConstrainedBox(
                   constraints: BoxConstraints(
                     minHeight:
@@ -142,7 +145,7 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
       builder: (context, viewModel, child) {
         // Check if email field has been touched and has validation error
         final hasError = viewModel.email.isNotEmpty && !viewModel.isEmailValid;
-        
+
         return Container(
           decoration: BoxDecoration(
             color: Colors.white,
@@ -153,14 +156,11 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
             ),
           ),
           child: TextFormField(
-            initialValue: 'lakshman.chimata@gmail.com',
+            initialValue: 'lakshmana.chimata@gmail.com',
             onChanged: viewModel.setEmail,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
-            style: const TextStyle(
-              color: Colors.black,
-              fontSize: 16,
-            ),
+            style: const TextStyle(color: Colors.black, fontSize: 16),
             decoration: InputDecoration(
               hintText: 'john@doe.com',
               hintStyle: TextStyle(color: Colors.grey.shade400),
@@ -225,90 +225,100 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
             width: double.infinity,
             height: 50,
             child: ElevatedButton(
-            onPressed: viewModel.isLoading
-                ? null
-                : () async {
-                    // Validate email before proceeding
-                    final emailError = viewModel.validateEmail();
-                    if (emailError != null) {
-                      // Show error message
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(emailError),
-                          backgroundColor: Colors.red,
-                          duration: const Duration(seconds: 3),
-                        ),
+              onPressed: viewModel.isLoading
+                  ? null
+                  : () async {
+                      // Validate email before proceeding
+                      final emailError = viewModel.validateEmail();
+                      if (emailError != null) {
+                        // Show error message
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(emailError),
+                            backgroundColor: Colors.red,
+                            duration: const Duration(seconds: 3),
+                          ),
+                        );
+                        return;
+                      }
+
+                      // Show full-screen loading indicator
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (BuildContext context) {
+                          return _buildFullScreenLoader('Sending OTP...');
+                        },
                       );
-                      return;
-                    }
 
-                    // Show full-screen loading indicator
-                    showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (BuildContext context) {
-                        return _buildFullScreenLoader('Sending OTP...');
-                      },
-                    );
+                      try {
+                        // Call the OTP API
+                        final otpResponse = await viewModel.sendOtp();
 
-                    try {
-                      // Call the OTP API
-                      final otpResponse = await viewModel.sendOtp();
-                      
-                      if (context.mounted) {
-                        Navigator.of(context).pop(); // Close loading dialog
-                        
-                        if (otpResponse != null) {
-                          // Success - show OTP card
-                          print('📧 LoginView: OTP sent successfully: ${otpResponse.data.otp}');
-                          setState(() {
-                            _showOtpCard = true;
-                          });
-                        } else {
-                          // Error - show error message
-                          final errorMessage = viewModel.errorMessage ?? 'Failed to send OTP';
+                        if (context.mounted) {
+                          Navigator.of(context).pop(); // Close loading dialog
+
+                          if (otpResponse != null) {
+                            // Success - show OTP card
+                            print(
+                              '📧 LoginView: OTP sent successfully: ${otpResponse.data.otp}',
+                            );
+                            setState(() {
+                              _showOtpCard = true;
+                            });
+                          } else {
+                            // Error - show error message
+                            final errorMessage =
+                                viewModel.errorMessage ?? 'Failed to send OTP';
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(errorMessage),
+                                backgroundColor: Colors.red,
+                                duration: const Duration(seconds: 3),
+                              ),
+                            );
+                          }
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          Navigator.of(context).pop(); // Close loading dialog
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(errorMessage),
+                              content: Text(
+                                'An error occurred: ${e.toString()}',
+                              ),
                               backgroundColor: Colors.red,
                               duration: const Duration(seconds: 3),
                             ),
                           );
                         }
                       }
-                    } catch (e) {
-                      if (context.mounted) {
-                        Navigator.of(context).pop(); // Close loading dialog
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('An error occurred: ${e.toString()}'),
-                            backgroundColor: Colors.red,
-                            duration: const Duration(seconds: 3),
-                          ),
-                        );
-                      }
-                    }
-                  },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFF17961), // Always burnt orange color
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(
+                  0xFFF17961,
+                ), // Always burnt orange color
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-            ),
-            child: viewModel.isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              child: viewModel.isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text(
+                      'Continue',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  )
-                : const Text(
-                    'Continue',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
             ),
           ),
         );
@@ -622,7 +632,6 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
   }
 
   Widget _buildOtpCard() {
-
     return ClipRRect(
       borderRadius: BorderRadius.circular(8.0),
       child: BackdropFilter(
@@ -675,12 +684,11 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
                       border: Border.all(color: Colors.grey.shade300),
                     ),
                     child: TextFormField(
-                      initialValue: viewModel.email.isNotEmpty ? viewModel.email : 'john@doe.com',
+                      initialValue: viewModel.email.isNotEmpty
+                          ? viewModel.email
+                          : 'john@doe.com',
                       readOnly: true,
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 16,
-                      ),
+                      style: const TextStyle(color: Colors.black, fontSize: 16),
                       decoration: InputDecoration(
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -878,7 +886,7 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
     // Get OTP from the input fields
     final otpControllers = _getOtpControllers();
     final otp = otpControllers.map((controller) => controller.text).join();
-    
+
     if (otp.length != 4) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -903,10 +911,10 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
       // Call the OTP validation API
       final viewModel = Provider.of<LoginViewModel>(context, listen: false);
       final otpValidationResponse = await viewModel.validateOtp(otp);
-      
+
       if (context.mounted) {
         Navigator.of(context).pop(); // Close loading dialog
-        
+
         if (otpValidationResponse != null) {
           // Success - OTP validated
           print('🔐 LoginView: OTP validated successfully');
@@ -917,16 +925,28 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
               duration: Duration(seconds: 3),
             ),
           );
-          
-          // Navigate to onboarding screen
-          context.go(AppRoutes.onboarding);
+
+          // Check if user should go to onboarding or dashboard
+          final viewModel = Provider.of<LoginViewModel>(context, listen: false);
+          final shouldShowOnboarding = await viewModel.shouldShowOnboarding();
+
+          if (shouldShowOnboarding) {
+            print('🔐 LoginView: Navigating to onboarding screen');
+            context.go(AppRoutes.onboarding);
+          } else {
+            print('🔐 LoginView: Navigating to dashboard screen');
+            context.go(AppRoutes.dashboard);
+          }
         } else {
           // Error - increment failed attempts
           _failedAttempts++;
-          print('🔐 LoginView: OTP validation failed. Attempt $_failedAttempts');
-          
+          print(
+            '🔐 LoginView: OTP validation failed. Attempt $_failedAttempts',
+          );
+
           // Show error message
-          final errorMessage = viewModel.errorMessage ?? 'Failed to validate OTP';
+          final errorMessage =
+              viewModel.errorMessage ?? 'Failed to validate OTP';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(errorMessage),
@@ -934,7 +954,7 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
               duration: const Duration(seconds: 3),
             ),
           );
-          
+
           // Show resend OTP button after 3 failed attempts
           if (_failedAttempts >= 3 && !_resendOtpUsed) {
             setState(() {
@@ -983,13 +1003,15 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
       // Call the OTP API
       final viewModel = Provider.of<LoginViewModel>(context, listen: false);
       final otpResponse = await viewModel.sendOtp();
-      
+
       if (context.mounted) {
         Navigator.of(context).pop(); // Close loading dialog
-        
+
         if (otpResponse != null) {
           // Success - OTP resent
-          print('📧 LoginView: OTP resent successfully: ${otpResponse.data.otp}');
+          print(
+            '📧 LoginView: OTP resent successfully: ${otpResponse.data.otp}',
+          );
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('OTP resent successfully!'),
@@ -997,12 +1019,12 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
               duration: Duration(seconds: 3),
             ),
           );
-          
+
           // Clear OTP fields for new entry
           for (var controller in _otpControllers) {
             controller.clear();
           }
-          
+
           // Reset failed attempts counter
           _failedAttempts = 0;
         } else {
@@ -1015,7 +1037,7 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
               duration: const Duration(seconds: 3),
             ),
           );
-          
+
           // Show resend button again if it failed
           setState(() {
             _resendOtpUsed = false;
@@ -1033,7 +1055,7 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
             duration: const Duration(seconds: 3),
           ),
         );
-        
+
         // Show resend button again if it failed
         setState(() {
           _resendOtpUsed = false;

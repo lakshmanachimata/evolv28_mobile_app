@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+
 import '../../domain/entities/auth_result.dart';
 import '../../domain/entities/otp_response.dart';
 import '../../domain/entities/otp_validation_response.dart';
+import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/send_otp_usecase.dart';
 import '../../domain/usecases/validate_otp_usecase.dart';
@@ -10,15 +12,17 @@ class LoginViewModel extends ChangeNotifier {
   final LoginUseCase loginUseCase;
   final SendOtpUseCase sendOtpUseCase;
   final ValidateOtpUseCase validateOtpUseCase;
+  final AuthRepository authRepository;
 
   LoginViewModel({
     required this.loginUseCase,
     required this.sendOtpUseCase,
     required this.validateOtpUseCase,
+    required this.authRepository,
   });
 
   // Form fields
-  String _email = 'lakshman.chimata@gmail.com';
+  String _email = 'lakshmana.chimata@gmail.com';
   String _password = '';
   bool _rememberMe = false;
   bool _transactionalAlerts = false;
@@ -104,7 +108,7 @@ class LoginViewModel extends ChangeNotifier {
 
     try {
       final result = await loginUseCase(_email, _password, _rememberMe);
-      
+
       return result.fold(
         (error) {
           _setError(error);
@@ -132,11 +136,11 @@ class LoginViewModel extends ChangeNotifier {
     if (_email.isEmpty) {
       return 'Please enter your email address';
     }
-    
+
     if (!_isValidEmail(_email)) {
       return 'Please enter a valid email address';
     }
-    
+
     return null; // No error
   }
 
@@ -151,7 +155,7 @@ class LoginViewModel extends ChangeNotifier {
       _setError('Please enter your email address');
       return null;
     }
-    
+
     if (!_isValidEmail(_email)) {
       _setError('Please enter a valid email address');
       return null;
@@ -161,7 +165,7 @@ class LoginViewModel extends ChangeNotifier {
 
     try {
       final result = await sendOtpUseCase(_email);
-      
+
       return result.fold(
         (error) {
           _setError(error);
@@ -186,7 +190,7 @@ class LoginViewModel extends ChangeNotifier {
       _setError('Email is required for OTP validation');
       return null;
     }
-    
+
     if (otp.isEmpty) {
       _setError('Please enter the OTP');
       return null;
@@ -196,7 +200,7 @@ class LoginViewModel extends ChangeNotifier {
 
     try {
       final result = await validateOtpUseCase(_email, otp);
-      
+
       return result.fold(
         (error) {
           _setError(error);
@@ -212,6 +216,30 @@ class LoginViewModel extends ChangeNotifier {
       return null;
     } finally {
       _setLoading(false);
+    }
+  }
+
+  // Check if user should go to onboarding or dashboard
+  Future<bool> shouldShowOnboarding() async {
+    try {
+      final hasCompleteProfile = await authRepository.hasCompleteProfile();
+      print(
+        '🔐 LoginViewModel: Should show onboarding: ${!hasCompleteProfile}',
+      );
+      return !hasCompleteProfile; // Show onboarding if profile is incomplete
+    } catch (e) {
+      print('🔐 LoginViewModel: Error checking profile: $e');
+      return true; // Default to onboarding if there's an error
+    }
+  }
+
+  // Get stored user data
+  Future<Map<String, String>> getStoredUserData() async {
+    try {
+      return await authRepository.getStoredUserData();
+    } catch (e) {
+      print('🔐 LoginViewModel: Error getting stored user data: $e');
+      return {};
     }
   }
 

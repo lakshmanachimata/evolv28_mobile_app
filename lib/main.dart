@@ -5,9 +5,11 @@ import 'core/di/injection_container.dart';
 import 'core/network/api_client.dart';
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'features/auth/domain/repositories/auth_repository.dart';
 import 'features/auth/domain/usecases/login_usecase.dart';
 import 'features/auth/domain/usecases/send_otp_usecase.dart';
 import 'features/auth/domain/usecases/validate_otp_usecase.dart';
+import 'features/auth/domain/usecases/delete_user_usecase.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,6 +39,12 @@ class Evolv28App extends StatelessWidget {
         ),
         Provider<ValidateOtpUseCase>(
           create: (_) => sl<ValidateOtpUseCase>(),
+        ),
+        Provider<AuthRepository>(
+          create: (_) => sl<AuthRepository>(),
+        ),
+        Provider<DeleteUserUseCase>(
+          create: (_) => sl<DeleteUserUseCase>(),
         ),
       ],
       child: MaterialApp.router(

@@ -62,6 +62,16 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
               return SizedBox.shrink();
             },
           ),
+
+          // Scanning Overlay
+          Consumer<DashboardViewModel>(
+            builder: (context, viewModel, child) {
+              if (viewModel.isBluetoothScanning) {
+                return _buildScanningOverlay(context, viewModel);
+              }
+              return SizedBox.shrink();
+            },
+          ),
         ],
       ),
     );
@@ -874,6 +884,84 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildScanningOverlay(BuildContext context, DashboardViewModel viewModel) {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      color: Colors.black.withOpacity(0.3), // Semi-transparent overlay
+      child: Center(
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.8, // 80% of screen width
+          padding: EdgeInsets.symmetric(horizontal: 40, vertical: 30),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Bluetooth scanning icon with animation
+              SizedBox(
+                width: 50,
+                height: 50,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Outer pulsing circle
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.blue.withOpacity(0.2),
+                      ),
+                    ),
+                    // Inner Bluetooth icon
+                    Icon(
+                      Icons.bluetooth_searching,
+                      size: 30,
+                      color: Colors.blue,
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 20),
+              // Scanning text
+              Text(
+                'Scanning for evolv28 devices',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 8),
+              // Countdown text
+              Text(
+                viewModel.bluetoothScanCountdown > 0 
+                    ? '${viewModel.bluetoothScanCountdown} seconds remaining'
+                    : 'Searching for devices...',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -1,27 +1,58 @@
 import 'dart:io';
+import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/routing/app_router_config.dart';
+import '../../domain/usecases/delete_user_usecase.dart';
 
 class SettingsViewModel extends ChangeNotifier {
+  final DeleteUserUseCase deleteUserUseCase;
+
+  SettingsViewModel({required this.deleteUserUseCase});
+
   // State variables
   bool _isLoading = false;
   String _selectedLanguage = 'English (English)';
   bool _showLanguagePopup = false;
   bool _showLogoutPopup = false;
+  bool _isLoggingOut = false;
+  String _userName = 'User';
 
   // Getters
   bool get isLoading => _isLoading;
   String get selectedLanguage => _selectedLanguage;
   bool get showLanguagePopup => _showLanguagePopup;
   bool get showLogoutPopup => _showLogoutPopup;
+  bool get isLoggingOut => _isLoggingOut;
+  String get userName => _userName;
 
   // Initialize the settings
   Future<void> initialize() async {
     _isLoading = true;
     notifyListeners();
+
+    try {
+      // Load user name from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final firstName = prefs.getString('user_first_name') ?? '';
+      final lastName = prefs.getString('user_last_name') ?? '';
+      
+      if (firstName.isNotEmpty && lastName.isNotEmpty) {
+        _userName = '$firstName $lastName';
+      } else if (firstName.isNotEmpty) {
+        _userName = firstName;
+      } else {
+        _userName = 'User';
+      }
+      
+      print('🔐 SettingsViewModel: Loaded user name: $_userName');
+    } catch (e) {
+      print('🔐 SettingsViewModel: Error loading user name: $e');
+      _userName = 'User';
+    }
 
     // Simulate loading time
     await Future.delayed(const Duration(milliseconds: 500));
@@ -127,11 +158,90 @@ class SettingsViewModel extends ChangeNotifier {
   }
 
   // Handle logout confirmation
-  void confirmLogout(BuildContext context) {
+  Future<void> confirmLogout(BuildContext context) async {
+    _isLoggingOut = true;
     _showLogoutPopup = false;
     notifyListeners();
-    // Navigate to login screen
-    context.go(AppRoutes.login);
+
+    try {
+      print('🔐 SettingsViewModel: Starting logout process');
+      
+      // Call the delete user API with timeout
+      final result = await deleteUserUseCase().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          print('🔐 SettingsViewModel: API timeout, proceeding with local logout');
+          return const Left('Request timeout, proceeding with local logout');
+        },
+      );
+      
+      result.fold(
+        (error) {
+          // Error occurred - still proceed with logout
+          print('🔐 SettingsViewModel: Logout failed: $error');
+          _isLoggingOut = false;
+          notifyListeners();
+          
+          // Show error message but still logout
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Server error: $error. Proceeding with local logout.'),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+          
+          // Navigate to login screen after showing message
+          Future.delayed(const Duration(milliseconds: 1000), () {
+            if (context.mounted) {
+              context.go(AppRoutes.login);
+            }
+          });
+        },
+        (success) {
+          // Success
+          print('🔐 SettingsViewModel: Logout successful');
+          _isLoggingOut = false;
+          notifyListeners();
+          
+          // Show success message
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Account deleted successfully'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          
+          // Navigate to login screen after a short delay
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (context.mounted) {
+              context.go(AppRoutes.login);
+            }
+          });
+        },
+      );
+    } catch (e) {
+      print('🔐 SettingsViewModel: Logout error: $e');
+      _isLoggingOut = false;
+      notifyListeners();
+      
+      // Show error message but still logout
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error occurred: ${e.toString()}. Proceeding with local logout.'),
+          backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      
+      // Navigate to login screen after showing message
+      Future.delayed(const Duration(milliseconds: 1000), () {
+        if (context.mounted) {
+          context.go(AppRoutes.login);
+        }
+      });
+    }
   }
 
   // Handle logout (now shows popup)

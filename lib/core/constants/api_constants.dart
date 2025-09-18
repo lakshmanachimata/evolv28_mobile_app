@@ -1,6 +1,6 @@
 class ApiConstants {
   static const String baseUrl = 'https://democurie-api.becurie.com';
-  
+
   // Auth endpoints
   static const String login = '/auth/login';
   static const String register = '/auth/register';
@@ -10,16 +10,17 @@ class ApiConstants {
   static const String logout = '/auth/logout';
   static const String sendOtp = '/api/login/via_email_otp';
   static const String validateOtp = '/api/login/validate_otp';
-  
+  static const String deleteUser = '/api/users/delete';
+
   // User endpoints
   static const String profile = '/user/profile';
   static const String updateProfile = '/user/profile';
   static const String changePassword = '/user/change-password';
-  
+
   // Dashboard endpoints
   static const String dashboard = '/dashboard';
   static const String notifications = '/notifications';
-  
+
   // Settings endpoints
   static const String settings = '/settings';
   static const String preferences = '/user/preferences';

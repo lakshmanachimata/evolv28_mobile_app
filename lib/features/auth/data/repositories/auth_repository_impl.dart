@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -124,6 +125,10 @@ class AuthRepositoryImpl implements AuthRepository {
         
         if (!otpValidationResponse.error) {
           print('🔐 AuthRepository: OTP validated successfully');
+          
+          // Store user data in SharedPreferences
+          await _storeUserData(otpValidationResponse.data);
+          
           return Right(otpValidationResponse);
         } else {
           print('🔐 AuthRepository: OTP validation failed: ${otpValidationResponse.message}');
@@ -149,15 +154,175 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
+  // Store user data in SharedPreferences
+  Future<void> _storeUserData(OtpValidationData userData) async {
+    try {
+      print('🔐 AuthRepository: Storing user data in SharedPreferences');
+      
+      // Store complete user data as JSON
+      await sharedPreferences.setString('user_data_json', jsonEncode(userData.toJson()));
+      
+      // Store individual fields for easy access
+      await sharedPreferences.setString('user_token', userData.token ?? '');
+      await sharedPreferences.setString('user_id', userData.userId ?? '');
+      await sharedPreferences.setString('user_first_name', userData.fname ?? '');
+      await sharedPreferences.setString('user_last_name', userData.lname ?? '');
+      await sharedPreferences.setString('user_email_id', userData.emailId ?? '');
+      await sharedPreferences.setString('user_name', userData.userName ?? '');
+      await sharedPreferences.setString('user_gender', userData.gender ?? '');
+      await sharedPreferences.setString('user_country', userData.country ?? '');
+      await sharedPreferences.setString('user_age', userData.age ?? '');
+      await sharedPreferences.setString('user_image_path', userData.imagePath ?? '');
+      await sharedPreferences.setString('user_profile_pic_path', userData.profilepicpath ?? '');
+      
+      // Store devices count
+      await sharedPreferences.setInt('user_devices_count', userData.devices.length);
+      
+      print('🔐 AuthRepository: User data stored successfully');
+      print('🔐 AuthRepository: Token: ${userData.token}');
+      print('🔐 AuthRepository: User ID: ${userData.userId}');
+      print('🔐 AuthRepository: First Name: ${userData.fname}');
+      print('🔐 AuthRepository: Last Name: ${userData.lname}');
+      print('🔐 AuthRepository: Email: ${userData.emailId}');
+      print('🔐 AuthRepository: Devices Count: ${userData.devices.length}');
+    } catch (e) {
+      print('🔐 AuthRepository: Error storing user data: $e');
+    }
+  }
+
   @override
   Future<void> logout() async {
     await sharedPreferences.remove('auth_token');
     await sharedPreferences.remove('user_email');
+    await sharedPreferences.remove('user_data_json');
+    await sharedPreferences.remove('user_token');
+    await sharedPreferences.remove('user_id');
+    await sharedPreferences.remove('user_first_name');
+    await sharedPreferences.remove('user_last_name');
+    await sharedPreferences.remove('user_email_id');
+    await sharedPreferences.remove('user_name');
+    await sharedPreferences.remove('user_gender');
+    await sharedPreferences.remove('user_country');
+    await sharedPreferences.remove('user_age');
+    await sharedPreferences.remove('user_image_path');
+    await sharedPreferences.remove('user_profile_pic_path');
+    await sharedPreferences.remove('user_devices_count');
+  }
+
+  @override
+  Future<Either<String, bool>> deleteUserAccount() async {
+    try {
+      // Get stored user data
+      print('🔐 AuthRepository: Getting user data from SharedPreferences...');
+      
+      // Debug: List all stored keys
+      final allKeys = sharedPreferences.getKeys();
+      print('🔐 AuthRepository: All stored keys: $allKeys');
+      
+      // Debug: Check what type of data is stored
+      final userIdValue = sharedPreferences.get('user_id');
+      final tokenValue = sharedPreferences.get('user_token');
+      
+      print('🔐 AuthRepository: Raw userId type: ${userIdValue.runtimeType}, value: $userIdValue');
+      print('🔐 AuthRepository: Raw token type: ${tokenValue.runtimeType}, value: $tokenValue');
+      
+      // Convert to string safely
+      final userId = userIdValue?.toString() ?? '';
+      final token = tokenValue?.toString() ?? '';
+      
+      print('🔐 AuthRepository: Converted userId: $userId');
+      print('🔐 AuthRepository: Converted token: ${token.isNotEmpty ? 'present' : 'empty'}');
+      
+      if (userId.isEmpty || token.isEmpty) {
+        print('🔐 AuthRepository: No user ID or token found for deletion');
+        print('🔐 AuthRepository: Proceeding with local data cleanup only');
+        
+        // Clear any remaining local data
+        await logout();
+        
+        return Right(true); // Return success since local cleanup is done
+      }
+
+      print('🔐 AuthRepository: Deleting user account for ID: $userId');
+      
+      final response = await _dio.delete(
+        '${ApiConstants.baseUrl}${ApiConstants.deleteUser}/$userId',
+        options: Options(
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': token,
+          },
+        ),
+      );
+
+      print('🔐 AuthRepository: Delete user API response: ${response.statusCode}');
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        print('🔐 AuthRepository: User account deleted successfully');
+        
+        // Clear all user data from SharedPreferences
+        await logout();
+        
+        return Right(true);
+      } else {
+        print('🔐 AuthRepository: Delete user API failed with status: ${response.statusCode}');
+        return Left('Failed to delete account. Please try again.');
+      }
+    } catch (e) {
+      print('🔐 AuthRepository: Delete user API error: $e');
+      if (e is DioException) {
+        if (e.response != null) {
+          // Server responded with error status
+          final errorMessage = e.response?.data?['message'] ?? 'Failed to delete account. Please try again.';
+          return Left(errorMessage);
+        } else {
+          // Network error
+          return Left('Network error. Please check your connection and try again.');
+        }
+      }
+      return Left('Failed to delete account. Please try again.');
+    }
   }
 
   @override
   Future<bool> isLoggedIn() async {
-    final token = sharedPreferences.getString('auth_token');
+    final token = sharedPreferences.getString('user_token');
     return token != null && token.isNotEmpty;
+  }
+
+  // Check if user has complete profile (firstname, lastname, and devices)
+  @override
+  Future<bool> hasCompleteProfile() async {
+    final firstName = sharedPreferences.getString('user_first_name') ?? '';
+    final lastName = sharedPreferences.getString('user_last_name') ?? '';
+    final devicesCount = sharedPreferences.getInt('user_devices_count') ?? 0;
+    
+    print('🔐 AuthRepository: Profile check - FirstName: "$firstName", LastName: "$lastName", Devices: $devicesCount');
+    
+    // User has complete profile if they have both first and last name AND have devices
+    final hasCompleteProfile = firstName.isNotEmpty && lastName.isNotEmpty && devicesCount > 0;
+    
+    print('🔐 AuthRepository: Has complete profile: $hasCompleteProfile');
+    return hasCompleteProfile;
+  }
+
+  // Get stored user data
+  @override
+  Future<Map<String, String>> getStoredUserData() async {
+    return {
+      'token': sharedPreferences.getString('user_token') ?? '',
+      'userId': sharedPreferences.getString('user_id') ?? '',
+      'firstName': sharedPreferences.getString('user_first_name') ?? '',
+      'lastName': sharedPreferences.getString('user_last_name') ?? '',
+      'emailId': sharedPreferences.getString('user_email_id') ?? '',
+      'userName': sharedPreferences.getString('user_name') ?? '',
+      'gender': sharedPreferences.getString('user_gender') ?? '',
+      'country': sharedPreferences.getString('user_country') ?? '',
+      'age': sharedPreferences.getString('user_age') ?? '',
+      'imagePath': sharedPreferences.getString('user_image_path') ?? '',
+      'profilePicPath': sharedPreferences.getString('user_profile_pic_path') ?? '',
+      'devicesCount': sharedPreferences.getInt('user_devices_count').toString(),
+    };
   }
 }
