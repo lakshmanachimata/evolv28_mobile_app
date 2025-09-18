@@ -116,6 +116,8 @@ class AuthRepositoryImpl implements AuthRepository {
       );
 
       print('🔐 AuthRepository: OTP validation API response: ${response.data}');
+      print('🔐 AuthRepository: Response type: ${response.data.runtimeType}');
+      print('🔐 AuthRepository: Response keys: ${response.data is Map ? (response.data as Map).keys.toList() : 'Not a Map'}');
 
       if (response.statusCode == 200) {
         final otpValidationResponse = OtpValidationResponse.fromJson(response.data);

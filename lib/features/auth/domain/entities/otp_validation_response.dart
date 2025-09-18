@@ -10,11 +10,22 @@ class OtpValidationResponse {
   });
 
   factory OtpValidationResponse.fromJson(Map<String, dynamic> json) {
-    return OtpValidationResponse(
-      error: json['error'] ?? false,
-      message: json['message'] ?? '',
-      data: OtpValidationData.fromJson(json['data'] ?? {}),
-    );
+    try {
+      return OtpValidationResponse(
+        error: json['error'] ?? false,
+        message: json['message'] ?? '',
+        data: OtpValidationData.fromJson(json['data'] ?? {}),
+      );
+    } catch (e) {
+      print('🔐 OtpValidationResponse: Error parsing JSON: $e');
+      print('🔐 OtpValidationResponse: JSON data: $json');
+      // Return a default response if parsing fails
+      return OtpValidationResponse(
+        error: true,
+        message: 'Failed to parse response',
+        data: OtpValidationData(),
+      );
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -74,29 +85,36 @@ class OtpValidationData {
   });
 
   factory OtpValidationData.fromJson(Map<String, dynamic> json) {
-    return OtpValidationData(
-      userId: json['UserId'],
-      logId: json['LogId'],
-      emailId: json['EmailId'],
-      roleId: json['RoleId'],
-      contactno: json['contactno'],
-      delaytime: json['delaytime'],
-      sessid: json['sessid'],
-      allowDevice: json['allowDevice'],
-      category: json['category'],
-      subCategory: json['subCategory'],
-      userName: json['UserName'],
-      gender: json['gender'],
-      country: json['country'],
-      age: json['age'],
-      imagePath: json['image_path'],
-      fname: json['fname'],
-      lname: json['lname'],
-      profilepicpath: json['profilepicpath'],
-      loginSource: json['login_source'],
-      devices: json['devices'] ?? [],
-      token: json['token'],
-    );
+    try {
+      return OtpValidationData(
+        userId: json['UserId']?.toString(),
+        logId: json['LogId']?.toString(),
+        emailId: json['EmailId']?.toString(),
+        roleId: json['RoleId']?.toString(),
+        contactno: json['contactno']?.toString(),
+        delaytime: json['delaytime']?.toString(),
+        sessid: json['sessid']?.toString(),
+        allowDevice: json['allowDevice']?.toString(),
+        category: json['category']?.toString(),
+        subCategory: json['subCategory']?.toString(),
+        userName: json['UserName']?.toString(),
+        gender: json['gender']?.toString(),
+        country: json['country']?.toString(),
+        age: json['age']?.toString(),
+        imagePath: json['image_path']?.toString(),
+        fname: json['fname']?.toString(),
+        lname: json['lname']?.toString(),
+        profilepicpath: json['profilepicpath']?.toString(),
+        loginSource: json['login_source']?.toString(),
+        devices: json['devices'] is List ? json['devices'] : [],
+        token: json['token']?.toString(),
+      );
+    } catch (e) {
+      print('🔐 OtpValidationData: Error parsing JSON: $e');
+      print('🔐 OtpValidationData: JSON data: $json');
+      // Return default data if parsing fails
+      return OtpValidationData();
+    }
   }
 
   Map<String, dynamic> toJson() {

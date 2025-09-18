@@ -39,6 +39,9 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
   bool _showOtpCard = false;
   late List<TextEditingController> _otpControllers;
   late List<FocusNode> _otpFocusNodes;
+  int _failedAttempts = 0;
+  bool _showResendOtp = false;
+  bool _resendOtpUsed = false;
 
   @override
   void initState() {
@@ -702,6 +705,29 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
               ),
               const SizedBox(height: 24),
 
+              // Resend OTP Button (only shown after 3 failed attempts)
+              if (_showResendOtp && !_resendOtpUsed) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () => _handleResendOtp(context),
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFFF17961),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: const Text(
+                      'Resend OTP',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+
               // Continue Button
               SizedBox(
                 width: double.infinity,
@@ -769,7 +795,31 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
         ),
         onChanged: (value) {
           if (value.isNotEmpty && index < 3) {
+            // Move to next field when digit is entered
             focusNodes[index + 1].requestFocus();
+          } else if (value.isEmpty && index > 0) {
+            // Move to previous field when current field becomes empty (backspace)
+            Future.delayed(const Duration(milliseconds: 50), () {
+              if (controllers[index].text.isEmpty) {
+                focusNodes[index - 1].requestFocus();
+              }
+            });
+          }
+        },
+        onTap: () {
+          // Select all text when field is tapped
+          controllers[index].selection = TextSelection(
+            baseOffset: 0,
+            extentOffset: controllers[index].text.length,
+          );
+        },
+        onSubmitted: (value) {
+          // Handle enter key - move to next field or submit
+          if (index < 3) {
+            focusNodes[index + 1].requestFocus();
+          } else {
+            // Last field - trigger validation
+            _handleOtpContinue(context);
           }
         },
       ),
@@ -871,7 +921,11 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
           // Navigate to onboarding screen
           context.go(AppRoutes.onboarding);
         } else {
-          // Error - show error message
+          // Error - increment failed attempts
+          _failedAttempts++;
+          print('🔐 LoginView: OTP validation failed. Attempt $_failedAttempts');
+          
+          // Show error message
           final errorMessage = viewModel.errorMessage ?? 'Failed to validate OTP';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -880,6 +934,13 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
               duration: const Duration(seconds: 3),
             ),
           );
+          
+          // Show resend OTP button after 3 failed attempts
+          if (_failedAttempts >= 3 && !_resendOtpUsed) {
+            setState(() {
+              _showResendOtp = true;
+            });
+          }
         }
       }
     } catch (e) {
@@ -899,6 +960,87 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
   // Helper method to get OTP controllers
   List<TextEditingController> _getOtpControllers() {
     return _otpControllers;
+  }
+
+  // Handle resend OTP
+  void _handleResendOtp(BuildContext context) async {
+    // Mark resend OTP as used
+    setState(() {
+      _resendOtpUsed = true;
+      _showResendOtp = false;
+    });
+
+    // Show full-screen loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return _buildFullScreenLoader('Resending OTP...');
+      },
+    );
+
+    try {
+      // Call the OTP API
+      final viewModel = Provider.of<LoginViewModel>(context, listen: false);
+      final otpResponse = await viewModel.sendOtp();
+      
+      if (context.mounted) {
+        Navigator.of(context).pop(); // Close loading dialog
+        
+        if (otpResponse != null) {
+          // Success - OTP resent
+          print('📧 LoginView: OTP resent successfully: ${otpResponse.data.otp}');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('OTP resent successfully!'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 3),
+            ),
+          );
+          
+          // Clear OTP fields for new entry
+          for (var controller in _otpControllers) {
+            controller.clear();
+          }
+          
+          // Reset failed attempts counter
+          _failedAttempts = 0;
+        } else {
+          // Error - show error message
+          final errorMessage = viewModel.errorMessage ?? 'Failed to resend OTP';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+          
+          // Show resend button again if it failed
+          setState(() {
+            _resendOtpUsed = false;
+            _showResendOtp = true;
+          });
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context).pop(); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('An error occurred: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        
+        // Show resend button again if it failed
+        setState(() {
+          _resendOtpUsed = false;
+          _showResendOtp = true;
+        });
+      }
+    }
   }
 
   // Full-screen loading overlay
