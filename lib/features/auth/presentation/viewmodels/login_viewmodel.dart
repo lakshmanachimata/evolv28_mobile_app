@@ -227,14 +227,35 @@ class LoginViewModel extends ChangeNotifier {
     }
   }
 
-  // Check if user should go to onboarding or dashboard
-  Future<bool> shouldShowOnboarding() async {
+  // Determine navigation based on user profile state
+  Future<String> getNavigationRoute() async {
     try {
       final hasCompleteProfile = await authRepository.hasCompleteProfile();
-      print(
-        '🔐 LoginViewModel: Should show onboarding: ${!hasCompleteProfile}',
-      );
-      return !hasCompleteProfile; // Show onboarding if profile is incomplete
+      final hasBasicProfileButNoDevices = await authRepository.hasBasicProfileButNoDevices();
+      
+      print('🔐 LoginViewModel: Profile check - Complete: $hasCompleteProfile, Basic but no devices: $hasBasicProfileButNoDevices');
+      
+      if (hasCompleteProfile) {
+        print('🔐 LoginViewModel: User has complete profile - navigating to dashboard');
+        return 'dashboard';
+      } else if (hasBasicProfileButNoDevices) {
+        print('🔐 LoginViewModel: User has basic profile but no devices - navigating to onboarding');
+        return 'onboarding';
+      } else {
+        print('🔐 LoginViewModel: User has incomplete profile - navigating to onboarding');
+        return 'onboarding';
+      }
+    } catch (e) {
+      print('🔐 LoginViewModel: Error checking profile: $e');
+      return 'onboarding'; // Default to onboarding if there's an error
+    }
+  }
+
+  // Check if user should go to onboarding or dashboard (legacy method for compatibility)
+  Future<bool> shouldShowOnboarding() async {
+    try {
+      final route = await getNavigationRoute();
+      return route == 'onboarding';
     } catch (e) {
       print('🔐 LoginViewModel: Error checking profile: $e');
       return true; // Default to onboarding if there's an error

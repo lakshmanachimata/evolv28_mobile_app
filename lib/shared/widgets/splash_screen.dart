@@ -67,14 +67,20 @@ class _SplashScreenState extends State<SplashScreen>
       print('🚀 SplashScreen: User logged in: $isLoggedIn');
       
       if (isLoggedIn) {
-        // User is logged in, check if they have complete profile
+        // User is logged in, check profile state
         final hasCompleteProfile = await authRepository.hasCompleteProfile();
-        print('🚀 SplashScreen: Has complete profile: $hasCompleteProfile');
+        final hasBasicProfileButNoDevices = await authRepository.hasBasicProfileButNoDevices();
+        
+        print('🚀 SplashScreen: Profile check - Complete: $hasCompleteProfile, Basic but no devices: $hasBasicProfileButNoDevices');
         
         if (hasCompleteProfile) {
-          // User has complete profile, go to dashboard
+          // User has complete profile (fname, lname, and devices), go to dashboard
           print('🚀 SplashScreen: Navigating to dashboard');
           context.go(AppRoutes.dashboard);
+        } else if (hasBasicProfileButNoDevices) {
+          // User has basic profile (fname, lname) but no devices, go to onboarding for device setup
+          print('🚀 SplashScreen: Navigating to onboarding for device setup');
+          context.go(AppRoutes.onboarding);
         } else {
           // User is logged in but profile incomplete, go to onboarding
           print('🚀 SplashScreen: Navigating to onboarding');

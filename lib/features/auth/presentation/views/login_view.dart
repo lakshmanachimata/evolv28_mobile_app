@@ -980,16 +980,16 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
             ),
           );
 
-          // Check if user should go to onboarding or dashboard
+          // Determine navigation based on user profile state
           final viewModel = Provider.of<LoginViewModel>(context, listen: false);
-          final shouldShowOnboarding = await viewModel.shouldShowOnboarding();
+          final navigationRoute = await viewModel.getNavigationRoute();
 
-          if (shouldShowOnboarding) {
-            print('🔐 LoginView: Navigating to onboarding screen');
-            context.go(AppRoutes.onboarding);
-          } else {
+          if (navigationRoute == 'dashboard') {
             print('🔐 LoginView: Navigating to dashboard screen');
             context.go(AppRoutes.dashboard);
+          } else {
+            print('🔐 LoginView: Navigating to onboarding screen');
+            context.go(AppRoutes.onboarding);
           }
         } else {
           // Error - increment failed attempts

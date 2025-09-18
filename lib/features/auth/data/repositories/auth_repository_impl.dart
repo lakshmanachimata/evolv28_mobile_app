@@ -337,6 +337,21 @@ class AuthRepositoryImpl implements AuthRepository {
     return hasCompleteProfile;
   }
 
+  // Check if user has basic profile (firstname and lastname) but no devices
+  Future<bool> hasBasicProfileButNoDevices() async {
+    final firstName = sharedPreferences.getString('user_first_name') ?? '';
+    final lastName = sharedPreferences.getString('user_last_name') ?? '';
+    final devicesCount = sharedPreferences.getInt('user_devices_count') ?? 0;
+    
+    print('🔐 AuthRepository: Basic profile check - FirstName: "$firstName", LastName: "$lastName", Devices: $devicesCount');
+    
+    // User has basic profile but no devices if they have both first and last name BUT no devices
+    final hasBasicProfileButNoDevices = firstName.isNotEmpty && lastName.isNotEmpty && devicesCount == 0;
+    
+    print('🔐 AuthRepository: Has basic profile but no devices: $hasBasicProfileButNoDevices');
+    return hasBasicProfileButNoDevices;
+  }
+
   // Get stored user data
   @override
   Future<Map<String, String>> getStoredUserData() async {

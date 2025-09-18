@@ -11,5 +11,6 @@ abstract class AuthRepository {
   Future<Either<String, bool>> deleteUserAccount();
   Future<bool> isLoggedIn();
   Future<bool> hasCompleteProfile();
+  Future<bool> hasBasicProfileButNoDevices();
   Future<Map<String, String>> getStoredUserData();
 }
