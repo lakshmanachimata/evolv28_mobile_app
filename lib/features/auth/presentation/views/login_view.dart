@@ -53,9 +53,11 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  minHeight: MediaQuery.of(context).size.height - 
-                             MediaQuery.of(context).padding.top - 
-                             MediaQuery.of(context).padding.bottom - 48,
+                  minHeight:
+                      MediaQuery.of(context).size.height -
+                      MediaQuery.of(context).padding.top -
+                      MediaQuery.of(context).padding.bottom -
+                      48,
                 ),
                 child: Column(
                   children: [
@@ -82,7 +84,7 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
                             ],
                           )
                         : _buildLoginCard(),
-                    
+
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -485,7 +487,7 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
                 children: [
                   // Title
                   Text(
-                    'Continue with',
+                    'Continue with email id',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -499,9 +501,9 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
                   _buildEmailField(context),
                   const SizedBox(height: 16),
 
-                  // Password field
-                  _buildPasswordField(context),
-                  const SizedBox(height: 24),
+                  // // Password field
+                  // _buildPasswordField(context),
+                  // const SizedBox(height: 24),
 
                   // Continue button
                   _buildContinueButton(context),
