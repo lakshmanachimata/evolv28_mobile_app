@@ -771,6 +771,12 @@ class BluetoothService extends ChangeNotifier {
     print('🎵 BluetoothService: Selected BCU file set to: $bcuFileName');
   }
 
+  // Set the play success state (used when stopping programs)
+  void setPlaySuccessState(bool success) {
+    _isPlaySuccessful = success;
+    print('🎵 BluetoothService: Play success state set to: $success');
+  }
+
   // Stop the currently playing program
   Future<bool> stopProgram() async {
     print('🎵 BluetoothService: stopProgram called');

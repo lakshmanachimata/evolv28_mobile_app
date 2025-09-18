@@ -105,9 +105,13 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                   // Show player card if:
                   // 1. Bluetooth play was successful (isPlaySuccessful = true)
                   // 2. Non-Bluetooth program is playing (showPlayerCard = true)
-                  if (viewModel.isPlaySuccessful || viewModel.showPlayerCard) {
+                  final shouldShowPlayerCard = viewModel.isPlaySuccessful || viewModel.showPlayerCard;
+                  print('DEBUG: shouldShowPlayerCard: $shouldShowPlayerCard');
+                  if (shouldShowPlayerCard) {
+                    print('DEBUG: Building player card');
                     return _buildPlayerCard(context, viewModel);
                   }
+                  print('DEBUG: Hiding player card');
                   return SizedBox.shrink();
                 },
               ),

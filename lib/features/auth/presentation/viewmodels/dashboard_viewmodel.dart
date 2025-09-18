@@ -269,6 +269,13 @@ class DashboardViewModel extends ChangeNotifier {
         _showPlayerCard = false;
         _isPlaying = false;
         _currentPlayingProgramId = null;
+        // Also reset Bluetooth service play success state
+        _bluetoothService.setPlaySuccessState(false);
+        print('🎵 Dashboard: Player state reset - showPlayerCard: $_showPlayerCard, isPlaySuccessful: ${_bluetoothService.isPlaySuccessful}');
+        notifyListeners();
+        
+        // Force UI refresh on iOS with a small delay
+        await Future.delayed(const Duration(milliseconds: 100));
         notifyListeners();
         
         // Show success snackbar
