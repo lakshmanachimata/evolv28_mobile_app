@@ -223,10 +223,19 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
                     return _buildTransition(child, animation);
                   },
                   child: viewModel.isInFeedbackMode
-                      ? _buildFeedbackInterface(context, viewModel)
+                      ? Container(
+                          key: const ValueKey('feedback'),
+                          child: _buildFeedbackInterface(context, viewModel),
+                        )
                       : viewModel.isInPlayerMode
-                      ? _buildPlayerInterface(context, viewModel)
-                      : _buildProgramsList(context, viewModel),
+                      ? Container(
+                          key: const ValueKey('player'),
+                          child: _buildPlayerInterface(context, viewModel),
+                        )
+                      : Container(
+                          key: const ValueKey('programs'),
+                          child: _buildProgramsList(context, viewModel),
+                        ),
                 ),
               ),
 
@@ -650,40 +659,20 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
 
   // Custom transition builder for different view changes
   Widget _buildTransition(Widget child, Animation<double> animation) {
-    return Consumer<ProgramsViewModel>(
-      builder: (context, viewModel, _) {
-        // Determine animation direction based on current view
-        Offset beginOffset;
-        switch (viewModel.currentView) {
-          case 'player':
-            // Coming from programs list, slide in from right
-            beginOffset = const Offset(1.0, 0.0);
-            break;
-          case 'feedback':
-            // Coming from player, slide in from right
-            beginOffset = const Offset(1.0, 0.0);
-            break;
-          case 'programs':
-          default:
-            // Coming back to programs list, slide in from left
-            beginOffset = const Offset(-1.0, 0.0);
-            break;
-        }
-        
-        return SlideTransition(
-          position: Tween<Offset>(
-            begin: beginOffset,
-            end: Offset.zero,
-          ).animate(CurvedAnimation(
-            parent: animation,
-            curve: Curves.easeInOut,
-          )),
-          child: FadeTransition(
-            opacity: animation,
-            child: child,
-          ),
-        );
-      },
+    print('🎬 Animation triggered for child: ${child.key}');
+    // Simple slide transition from right to left
+    return SlideTransition(
+      position: Tween<Offset>(
+        begin: const Offset(1.0, 0.0), // Slide in from right
+        end: Offset.zero,
+      ).animate(CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeInOut,
+      )),
+      child: FadeTransition(
+        opacity: animation,
+        child: child,
+      ),
     );
   }
 

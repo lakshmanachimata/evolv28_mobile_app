@@ -181,6 +181,7 @@ class ProgramsViewModel extends ChangeNotifier {
     _isPlaying = true;
     _currentPosition = Duration.zero;
     _currentView = 'player'; // Update view state for animation
+    print('🎬 View changed to: $_currentView');
     notifyListeners();
   }
 
@@ -212,6 +213,7 @@ class ProgramsViewModel extends ChangeNotifier {
         _isPlaySuccessful = false;
         _selectedBcuFile = null;
         _currentView = 'programs'; // Update view state for animation
+        print('🎬 View changed to: $_currentView');
         notifyListeners();
         
         // Show success snackbar
@@ -267,6 +269,7 @@ class ProgramsViewModel extends ChangeNotifier {
     _isInFeedbackMode = true;
     _isPlaying = false;
     _currentView = 'feedback'; // Update view state for animation
+    print('🎬 View changed to: $_currentView');
     notifyListeners();
   }
 
