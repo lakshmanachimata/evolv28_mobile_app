@@ -239,8 +239,8 @@ class LoginViewModel extends ChangeNotifier {
         print('🔐 LoginViewModel: User has complete profile - navigating to dashboard');
         return 'dashboard';
       } else if (hasBasicProfileButNoDevices) {
-        print('🔐 LoginViewModel: User has basic profile but no devices - navigating to onboarding');
-        return 'onboarding';
+        print('🔐 LoginViewModel: User has basic profile but no devices - navigating to onboard device');
+        return 'onboardDevice';
       } else {
         print('🔐 LoginViewModel: User has incomplete profile - navigating to onboarding');
         return 'onboarding';

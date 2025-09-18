@@ -987,6 +987,9 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
           if (navigationRoute == 'dashboard') {
             print('🔐 LoginView: Navigating to dashboard screen');
             context.go(AppRoutes.dashboard);
+          } else if (navigationRoute == 'onboardDevice') {
+            print('🔐 LoginView: Navigating to onboard device screen');
+            context.go(AppRoutes.onboardDevice);
           } else {
             print('🔐 LoginView: Navigating to onboarding screen');
             context.go(AppRoutes.onboarding);

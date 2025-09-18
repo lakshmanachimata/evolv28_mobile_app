@@ -13,6 +13,43 @@ class OnboardDeviceView extends StatefulWidget {
 class _OnboardDeviceViewState extends State<OnboardDeviceView> {
   bool _showOtpScreen = false;
   bool _showDeviceActivatedDialog = false;
+  late TextEditingController _otpController;
+  late FocusNode _otpFocusNode;
+  late ScrollController _scrollController;
+  final GlobalKey _textFieldKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    _otpController = TextEditingController(text: 'ABC1234567');
+    _otpFocusNode = FocusNode();
+    _scrollController = ScrollController();
+    
+    // Listen to focus changes to scroll to text field
+    _otpFocusNode.addListener(() {
+      if (_otpFocusNode.hasFocus) {
+        // Delay to ensure keyboard is shown
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (_scrollController.hasClients) {
+            // Scroll to the bottom to show the text field
+            _scrollController.animateTo(
+              _scrollController.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          }
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _otpController.dispose();
+    _otpFocusNode.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   void _showDeviceActivatedSuccessDialog() {
     showDialog(
@@ -42,7 +79,7 @@ class _OnboardDeviceViewState extends State<OnboardDeviceView> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                
+
                 // Success Icon
                 Container(
                   width: 80,
@@ -51,14 +88,10 @@ class _OnboardDeviceViewState extends State<OnboardDeviceView> {
                     color: Colors.black,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.check,
-                    color: Colors.white,
-                    size: 40,
-                  ),
+                  child: const Icon(Icons.check, color: Colors.white, size: 40),
                 ),
                 const SizedBox(height: 24),
-                
+
                 // OK Button
                 SizedBox(
                   width: double.infinity,
@@ -69,7 +102,9 @@ class _OnboardDeviceViewState extends State<OnboardDeviceView> {
                       context.go(AppRoutes.devices); // Navigate to devices view
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFF17961), // Coral/light orange
+                      backgroundColor: const Color(
+                        0xFFF17961,
+                      ), // Coral/light orange
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -95,42 +130,42 @@ class _OnboardDeviceViewState extends State<OnboardDeviceView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          // Background Image
-          Image.asset(
-            'assets/images/term-background.png',
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
-          ),
+      body: GestureDetector(
+        onTap: () {
+          // Hide keyboard when tapping outside input fields
+          FocusScope.of(context).unfocus();
+        },
+        child: Stack(
+          children: [
+            // Background Image
+            Image.asset(
+              'assets/images/term-background.png',
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+            ),
 
-          // Header Section with evolv28 logo
-          SafeArea(
-            child: Column(children: [_buildHeader(context), const Spacer()]),
-          ),
+            // Header Section with evolv28 logo
+            SafeArea(
+              child: Column(children: [_buildHeader(context), const Spacer()]),
+            ),
 
-          // Main overlay with rounded top corners
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: MediaQuery.of(context).size.height * 0.75,
-              decoration: BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage('assets/images/modal-background.png'),
-                  fit: BoxFit.cover,
-                  opacity: 0.9,
+            // Main overlay with rounded top corners
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.75,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(30),
+                    topRight: Radius.circular(30),
+                  ),
                 ),
-                color: Colors.black.withOpacity(0.6),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(32),
-                  topRight: Radius.circular(32),
-                ),
-              ),
-              child: SafeArea(
                 child: SingleChildScrollView(
+                  controller: _scrollController,
                   padding: const EdgeInsets.symmetric(horizontal: 24.0),
                   keyboardDismissBehavior:
                       ScrollViewKeyboardDismissBehavior.onDrag,
@@ -147,19 +182,20 @@ class _OnboardDeviceViewState extends State<OnboardDeviceView> {
                         const SizedBox(height: 24),
 
                         // Conditional Content (Connect Device or OTP)
-                        _showOtpScreen
-                            ? _buildOtpVerificationContent(context)
-                            : _buildConnectDeviceContent(context),
+                        _showOtpScreen ? _buildOtpVerificationContent(context) : _buildConnectDeviceContent(context),
 
                         const SizedBox(height: 24),
+                        
+                        // Add extra space for keyboard
+                        SizedBox(height: MediaQuery.of(context).viewInsets.bottom + 50),
                       ],
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -296,7 +332,7 @@ class _OnboardDeviceViewState extends State<OnboardDeviceView> {
       children: [
         // Instruction Text
         Text(
-          'Enter the 10 Digits code sent on your registered Mobile Number',
+          'Enter the 10 Digits code sent on your registered Email Id',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
@@ -309,20 +345,30 @@ class _OnboardDeviceViewState extends State<OnboardDeviceView> {
 
         // OTP Input Field
         Container(
+          key: _textFieldKey,
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           decoration: BoxDecoration(
-            color: Colors.transparent,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade300),
           ),
           child: TextFormField(
-            initialValue: '9876543210',
-            readOnly: true,
-            style: TextStyle(fontSize: 16, color: Colors.black87),
-            decoration: InputDecoration(
+            controller: _otpController,
+            focusNode: _otpFocusNode,
+            keyboardType: TextInputType.text,
+            textInputAction: TextInputAction.done,
+            style: const TextStyle(fontSize: 16, color: Colors.black87),
+            decoration: const InputDecoration(
               border: InputBorder.none,
-              contentPadding: EdgeInsets.zero,
+              contentPadding: EdgeInsets.symmetric(vertical: 12),
+              hintText: 'Enter alphanumeric code',
+              hintStyle: TextStyle(color: Colors.grey),
             ),
+            onChanged: (value) {
+              // Handle OTP input changes
+              print('OTP entered: $value');
+            },
           ),
         ),
 

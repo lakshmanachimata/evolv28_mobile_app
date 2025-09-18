@@ -78,9 +78,9 @@ class _SplashScreenState extends State<SplashScreen>
           print('🚀 SplashScreen: Navigating to dashboard');
           context.go(AppRoutes.dashboard);
         } else if (hasBasicProfileButNoDevices) {
-          // User has basic profile (fname, lname) but no devices, go to onboarding for device setup
-          print('🚀 SplashScreen: Navigating to onboarding for device setup');
-          context.go(AppRoutes.onboarding);
+          // User has basic profile (fname, lname) but no devices, go to onboard device
+          print('🚀 SplashScreen: Navigating to onboard device');
+          context.go(AppRoutes.onboardDevice);
         } else {
           // User is logged in but profile incomplete, go to onboarding
           print('🚀 SplashScreen: Navigating to onboarding');
