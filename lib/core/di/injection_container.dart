@@ -4,6 +4,8 @@ import '../network/api_client.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/domain/usecases/login_usecase.dart';
+import '../../features/auth/domain/usecases/send_otp_usecase.dart';
+import '../../features/auth/domain/usecases/validate_otp_usecase.dart';
 
 final sl = GetIt.instance;
 
@@ -22,4 +24,6 @@ Future<void> initializeDependencies() async {
   
   // Auth Use Cases
   sl.registerLazySingleton(() => LoginUseCase(sl()));
+  sl.registerLazySingleton(() => SendOtpUseCase(sl()));
+  sl.registerLazySingleton(() => ValidateOtpUseCase(sl()));
 }

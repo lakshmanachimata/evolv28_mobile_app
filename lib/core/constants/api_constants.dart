@@ -1,5 +1,5 @@
 class ApiConstants {
-  static const String baseUrl = 'https://api.evolv28.com/v1';
+  static const String baseUrl = 'https://democurie-api.becurie.com';
   
   // Auth endpoints
   static const String login = '/auth/login';
@@ -8,6 +8,8 @@ class ApiConstants {
   static const String resetPassword = '/auth/reset-password';
   static const String refreshToken = '/auth/refresh';
   static const String logout = '/auth/logout';
+  static const String sendOtp = '/api/login/via_email_otp';
+  static const String validateOtp = '/api/login/validate_otp';
   
   // User endpoints
   static const String profile = '/user/profile';

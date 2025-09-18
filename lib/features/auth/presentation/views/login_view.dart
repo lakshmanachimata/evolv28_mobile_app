@@ -8,6 +8,8 @@ import 'package:provider/provider.dart';
 
 import '../../../../core/routing/app_router_config.dart';
 import '../../domain/usecases/login_usecase.dart';
+import '../../domain/usecases/send_otp_usecase.dart';
+import '../../domain/usecases/validate_otp_usecase.dart';
 import '../viewmodels/login_viewmodel.dart';
 
 class LoginView extends StatelessWidget {
@@ -16,8 +18,11 @@ class LoginView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) =>
-          LoginViewModel(loginUseCase: context.read<LoginUseCase>()),
+      create: (context) => LoginViewModel(
+        loginUseCase: context.read<LoginUseCase>(),
+        sendOtpUseCase: context.read<SendOtpUseCase>(),
+        validateOtpUseCase: context.read<ValidateOtpUseCase>(),
+      ),
       child: const _LoginViewBody(),
     );
   }
@@ -32,6 +37,33 @@ class _LoginViewBody extends StatefulWidget {
 
 class _LoginViewBodyState extends State<_LoginViewBody> {
   bool _showOtpCard = false;
+  late List<TextEditingController> _otpControllers;
+  late List<FocusNode> _otpFocusNodes;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize OTP controllers and focus nodes
+    _otpControllers = List.generate(4, (index) => TextEditingController());
+    _otpFocusNodes = List.generate(4, (index) => FocusNode());
+    
+    // Hide keyboard when login screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FocusScope.of(context).unfocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    // Dispose controllers and focus nodes
+    for (var controller in _otpControllers) {
+      controller.dispose();
+    }
+    for (var focusNode in _otpFocusNodes) {
+      focusNode.dispose();
+    }
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,45 +80,51 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
 
           // Login content
           SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight:
-                      MediaQuery.of(context).size.height -
-                      MediaQuery.of(context).padding.top -
-                      MediaQuery.of(context).padding.bottom -
-                      48,
-                ),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 36),
+            child: GestureDetector(
+              onTap: () {
+                // Hide keyboard when tapping outside input fields
+                FocusScope.of(context).unfocus();
+              },
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight:
+                        MediaQuery.of(context).size.height -
+                        MediaQuery.of(context).padding.top -
+                        MediaQuery.of(context).padding.bottom -
+                        48,
+                  ),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 36),
 
-                    // Evolv28 Logo at top
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.25,
-                      child: Image.asset(
-                        'assets/images/evolv_text.png',
-                        fit: BoxFit.contain,
+                      // Evolv28 Logo at top
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.25,
+                        child: Image.asset(
+                          'assets/images/evolv_text.png',
+                          fit: BoxFit.contain,
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(height: 40),
+                      const SizedBox(height: 40),
 
-                    // Conditional Card (Login or OTP)
-                    _showOtpCard
-                        ? Column(
-                            children: [
-                              _buildOtpCard(),
-                              const SizedBox(height: 24),
-                              _buildTermsAndConditionsCheckbox(context),
-                            ],
-                          )
-                        : _buildLoginCard(),
+                      // Conditional Card (Login or OTP)
+                      _showOtpCard
+                          ? Column(
+                              children: [
+                                _buildOtpCard(),
+                                const SizedBox(height: 24),
+                                _buildTermsAndConditionsCheckbox(context),
+                              ],
+                            )
+                          : _buildLoginCard(),
 
-                    const SizedBox(height: 24),
-                  ],
+                      const SizedBox(height: 24),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -99,16 +137,27 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
   Widget _buildEmailField(BuildContext context) {
     return Consumer<LoginViewModel>(
       builder: (context, viewModel, child) {
+        // Check if email field has been touched and has validation error
+        final hasError = viewModel.email.isNotEmpty && !viewModel.isEmailValid;
+        
         return Container(
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade300),
+            border: Border.all(
+              color: hasError ? Colors.red.shade400 : Colors.grey.shade300,
+              width: hasError ? 2 : 1,
+            ),
           ),
           child: TextFormField(
+            initialValue: 'lakshman.chimata@gmail.com',
             onChanged: viewModel.setEmail,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
+            style: const TextStyle(
+              color: Colors.black,
+              fontSize: 16,
+            ),
             decoration: InputDecoration(
               hintText: 'john@doe.com',
               hintStyle: TextStyle(color: Colors.grey.shade400),
@@ -117,6 +166,8 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
                 vertical: 16,
               ),
               border: InputBorder.none,
+              errorText: hasError ? 'Please enter a valid email address' : null,
+              errorStyle: const TextStyle(fontSize: 12),
             ),
           ),
         );
@@ -165,40 +216,78 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
   Widget _buildContinueButton(BuildContext context) {
     return Consumer<LoginViewModel>(
       builder: (context, viewModel, child) {
-        return SizedBox(
-          width: double.infinity,
-          height: 50,
-          child: ElevatedButton(
+        return Opacity(
+          opacity: viewModel.isEmailValid ? 1.0 : 0.6,
+          child: SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
             onPressed: viewModel.isLoading
                 ? null
                 : () async {
-                    // Show loading indicator
+                    // Validate email before proceeding
+                    final emailError = viewModel.validateEmail();
+                    if (emailError != null) {
+                      // Show error message
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(emailError),
+                          backgroundColor: Colors.red,
+                          duration: const Duration(seconds: 3),
+                        ),
+                      );
+                      return;
+                    }
+
+                    // Show full-screen loading indicator
                     showDialog(
                       context: context,
                       barrierDismissible: false,
                       builder: (BuildContext context) {
-                        return const Center(
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
-                          ),
-                        );
+                        return _buildFullScreenLoader('Sending OTP...');
                       },
                     );
 
-                    // Wait for 2 seconds then show OTP card
-                    Future.delayed(const Duration(seconds: 1), () {
+                    try {
+                      // Call the OTP API
+                      final otpResponse = await viewModel.sendOtp();
+                      
                       if (context.mounted) {
                         Navigator.of(context).pop(); // Close loading dialog
-                        setState(() {
-                          _showOtpCard = true;
-                        });
+                        
+                        if (otpResponse != null) {
+                          // Success - show OTP card
+                          print('📧 LoginView: OTP sent successfully: ${otpResponse.data.otp}');
+                          setState(() {
+                            _showOtpCard = true;
+                          });
+                        } else {
+                          // Error - show error message
+                          final errorMessage = viewModel.errorMessage ?? 'Failed to send OTP';
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(errorMessage),
+                              backgroundColor: Colors.red,
+                              duration: const Duration(seconds: 3),
+                            ),
+                          );
+                        }
                       }
-                    });
+                    } catch (e) {
+                      if (context.mounted) {
+                        Navigator.of(context).pop(); // Close loading dialog
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('An error occurred: ${e.toString()}'),
+                            backgroundColor: Colors.red,
+                            duration: const Duration(seconds: 3),
+                          ),
+                        );
+                      }
+                    }
                   },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFF17961), // Burnt orange color
+              backgroundColor: const Color(0xFFF17961), // Always burnt orange color
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -217,6 +306,7 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
                     'Continue',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
+            ),
           ),
         );
       },
@@ -529,20 +619,6 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
   }
 
   Widget _buildOtpCard() {
-    final List<TextEditingController> _otpControllers = List.generate(
-      4,
-      (index) => TextEditingController(),
-    );
-    final List<FocusNode> _focusNodes = List.generate(
-      4,
-      (index) => FocusNode(),
-    );
-
-    // Pre-fill with sample OTP: 1059
-    _otpControllers[0].text = '1';
-    _otpControllers[1].text = '0';
-    _otpControllers[2].text = '5';
-    _otpControllers[3].text = '9';
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(8.0),
@@ -587,23 +663,31 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
               const SizedBox(height: 24),
 
               // Email field
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                child: TextFormField(
-                  initialValue: 'john@doe.com',
-                  readOnly: true,
-                  decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 16,
+              Consumer<LoginViewModel>(
+                builder: (context, viewModel, child) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade300),
                     ),
-                    border: InputBorder.none,
-                  ),
-                ),
+                    child: TextFormField(
+                      initialValue: viewModel.email.isNotEmpty ? viewModel.email : 'john@doe.com',
+                      readOnly: true,
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontSize: 16,
+                      ),
+                      decoration: InputDecoration(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 24),
 
@@ -613,7 +697,7 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
                 children: List.generate(
                   4,
                   (index) =>
-                      _buildOtpField(index, _otpControllers, _focusNodes),
+                      _buildOtpField(index, _otpControllers, _otpFocusNodes),
                 ),
               ),
               const SizedBox(height: 24),
@@ -740,36 +824,122 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
     );
   }
 
-  void _handleOtpContinue(BuildContext context) {
-    // Show loading indicator
+  void _handleOtpContinue(BuildContext context) async {
+    // Get OTP from the input fields
+    final otpControllers = _getOtpControllers();
+    final otp = otpControllers.map((controller) => controller.text).join();
+    
+    if (otp.length != 4) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a complete 4-digit OTP'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    // Show full-screen loading indicator
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return const Center(
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-          ),
-        );
+        return _buildFullScreenLoader('Validating OTP...');
       },
     );
 
-    // Simulate OTP verification process
-    Future.delayed(const Duration(seconds: 1), () {
+    try {
+      // Call the OTP validation API
+      final viewModel = Provider.of<LoginViewModel>(context, listen: false);
+      final otpValidationResponse = await viewModel.validateOtp(otp);
+      
       if (context.mounted) {
         Navigator.of(context).pop(); // Close loading dialog
-
-        // Simulate successful OTP verification
+        
+        if (otpValidationResponse != null) {
+          // Success - OTP validated
+          print('🔐 LoginView: OTP validated successfully');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('OTP verified successfully!'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 3),
+            ),
+          );
+          
+          // Navigate to onboarding screen
+          context.go(AppRoutes.onboarding);
+        } else {
+          // Error - show error message
+          final errorMessage = viewModel.errorMessage ?? 'Failed to validate OTP';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context).pop(); // Close loading dialog
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('OTP verified successfully!'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: Text('An error occurred: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
           ),
         );
-
-        // Navigate to onboarding screen
-        context.go(AppRoutes.onboarding);
       }
-    });
+    }
+  }
+
+  // Helper method to get OTP controllers
+  List<TextEditingController> _getOtpControllers() {
+    return _otpControllers;
+  }
+
+  // Full-screen loading overlay
+  Widget _buildFullScreenLoader(String message) {
+    return Container(
+      color: Colors.black.withValues(alpha: 0.7),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 20,
+                spreadRadius: 5,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFF17961)),
+                strokeWidth: 3,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                message,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

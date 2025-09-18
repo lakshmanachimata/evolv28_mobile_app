@@ -1,14 +1,24 @@
 import 'package:flutter/material.dart';
 import '../../domain/entities/auth_result.dart';
+import '../../domain/entities/otp_response.dart';
+import '../../domain/entities/otp_validation_response.dart';
 import '../../domain/usecases/login_usecase.dart';
+import '../../domain/usecases/send_otp_usecase.dart';
+import '../../domain/usecases/validate_otp_usecase.dart';
 
 class LoginViewModel extends ChangeNotifier {
   final LoginUseCase loginUseCase;
+  final SendOtpUseCase sendOtpUseCase;
+  final ValidateOtpUseCase validateOtpUseCase;
 
-  LoginViewModel({required this.loginUseCase});
+  LoginViewModel({
+    required this.loginUseCase,
+    required this.sendOtpUseCase,
+    required this.validateOtpUseCase,
+  });
 
   // Form fields
-  String _email = '';
+  String _email = 'lakshman.chimata@gmail.com';
   String _password = '';
   bool _rememberMe = false;
   bool _transactionalAlerts = false;
@@ -115,6 +125,94 @@ class LoginViewModel extends ChangeNotifier {
 
   bool _isValidEmail(String email) {
     return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
+  }
+
+  // Validate email and return validation result
+  String? validateEmail() {
+    if (_email.isEmpty) {
+      return 'Please enter your email address';
+    }
+    
+    if (!_isValidEmail(_email)) {
+      return 'Please enter a valid email address';
+    }
+    
+    return null; // No error
+  }
+
+  // Check if email is valid for enabling continue button
+  bool get isEmailValid {
+    return _email.isNotEmpty && _isValidEmail(_email);
+  }
+
+  // Send OTP to email
+  Future<OtpResponse?> sendOtp() async {
+    if (_email.isEmpty) {
+      _setError('Please enter your email address');
+      return null;
+    }
+    
+    if (!_isValidEmail(_email)) {
+      _setError('Please enter a valid email address');
+      return null;
+    }
+
+    _setLoading(true);
+
+    try {
+      final result = await sendOtpUseCase(_email);
+      
+      return result.fold(
+        (error) {
+          _setError(error);
+          return null;
+        },
+        (otpResponse) {
+          _setLoading(false);
+          return otpResponse;
+        },
+      );
+    } catch (e) {
+      _setError('An unexpected error occurred');
+      return null;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Validate OTP
+  Future<OtpValidationResponse?> validateOtp(String otp) async {
+    if (_email.isEmpty) {
+      _setError('Email is required for OTP validation');
+      return null;
+    }
+    
+    if (otp.isEmpty) {
+      _setError('Please enter the OTP');
+      return null;
+    }
+
+    _setLoading(true);
+
+    try {
+      final result = await validateOtpUseCase(_email, otp);
+      
+      return result.fold(
+        (error) {
+          _setError(error);
+          return null;
+        },
+        (otpValidationResponse) {
+          _setLoading(false);
+          return otpValidationResponse;
+        },
+      );
+    } catch (e) {
+      _setError('An unexpected error occurred');
+      return null;
+    } finally {
+      _setLoading(false);
+    }
   }
 
   void clearForm() {
