@@ -24,23 +24,8 @@ class _OnboardDeviceViewState extends State<OnboardDeviceView> {
     _otpController = TextEditingController(text: 'ABC1234567');
     _otpFocusNode = FocusNode();
     _scrollController = ScrollController();
-    
-    // Listen to focus changes to scroll to text field
-    _otpFocusNode.addListener(() {
-      if (_otpFocusNode.hasFocus) {
-        // Delay to ensure keyboard is shown
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (_scrollController.hasClients) {
-            // Scroll to the bottom to show the text field
-            _scrollController.animateTo(
-              _scrollController.position.maxScrollExtent,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            );
-          }
-        });
-      }
-    });
+
+    // No automatic scrolling - let the user manually scroll if needed
   }
 
   @override
@@ -130,6 +115,7 @@ class _OnboardDeviceViewState extends State<OnboardDeviceView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false, // Prevent automatic scrolling when keyboard appears
       body: GestureDetector(
         onTap: () {
           // Hide keyboard when tapping outside input fields
@@ -157,9 +143,14 @@ class _OnboardDeviceViewState extends State<OnboardDeviceView> {
               right: 0,
               child: Container(
                 height: MediaQuery.of(context).size.height * 0.75,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
+                decoration: BoxDecoration(
+                  image: DecorationImage(
+                    image: AssetImage('assets/images/modal-background.png'),
+                    fit: BoxFit.cover,
+                    opacity: 0.9,
+                  ),
+                  color: Colors.black.withOpacity(0.6),
+                  borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(30),
                     topRight: Radius.circular(30),
                   ),
@@ -182,12 +173,16 @@ class _OnboardDeviceViewState extends State<OnboardDeviceView> {
                         const SizedBox(height: 24),
 
                         // Conditional Content (Connect Device or OTP)
-                        _showOtpScreen ? _buildOtpVerificationContent(context) : _buildConnectDeviceContent(context),
+                        _showOtpScreen
+                            ? _buildOtpVerificationContent(context)
+                            : _buildConnectDeviceContent(context),
 
                         const SizedBox(height: 24),
-                        
+
                         // Add extra space for keyboard
-                        SizedBox(height: MediaQuery.of(context).viewInsets.bottom + 50),
+                        SizedBox(
+                          height: MediaQuery.of(context).viewInsets.bottom + 50,
+                        ),
                       ],
                     ),
                   ),
