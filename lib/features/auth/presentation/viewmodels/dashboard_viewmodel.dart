@@ -1,5 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart' as ble;
 
 import '../../../../core/routing/app_router_config.dart';
 import '../../../../core/services/bluetooth_service.dart';
@@ -20,6 +25,26 @@ class DashboardViewModel extends ChangeNotifier {
   // Bluetooth service
   final BluetoothService _bluetoothService = BluetoothService();
   late VoidCallback _bluetoothListener;
+
+  // Permission state variables
+  bool _isBluetoothEnabled = false;
+  bool _isBluetoothScanPermissionGranted = false;
+  bool _isLocationPermissionGranted = false;
+  
+  // Permission dialog state
+  bool _showBluetoothEnableDialog = false;
+  bool _showBluetoothScanPermissionDialog = false;
+  bool _showLocationPermissionDialog = false;
+  bool _showLocationPermissionErrorDialog = false;
+  bool _showBluetoothPermissionErrorDialog = false;
+  
+  // Permission dialog flags to prevent multiple dialogs
+  bool _bluetoothDialogShown = false;
+  bool _bluetoothScanPermissionDialogShown = false;
+  bool _locationPermissionDialogShown = false;
+  bool _permissionFlowInitiated = false;
+  bool _bluetoothPermissionPermanentlyDenied = false;
+  bool _bluetoothStatusChecked = false;
 
   // Getters
   bool get isLoading => _isLoading;
@@ -46,6 +71,18 @@ class DashboardViewModel extends ChangeNotifier {
   List<String> get bluetoothProgramNames => _bluetoothService.programNames;
   List<String> get bluetoothProgramIds => _bluetoothService.programIds;
   List<String> get bluetoothAvailablePrograms => _bluetoothService.availablePrograms;
+
+  // Permission getters
+  bool get isBluetoothEnabled => _isBluetoothEnabled;
+  bool get isBluetoothScanPermissionGranted => _isBluetoothScanPermissionGranted;
+  bool get isLocationPermissionGranted => _isLocationPermissionGranted;
+  
+  // Permission dialog getters
+  bool get showBluetoothEnableDialog => _showBluetoothEnableDialog;
+  bool get showBluetoothScanPermissionDialog => _showBluetoothScanPermissionDialog;
+  bool get showLocationPermissionDialog => _showLocationPermissionDialog;
+  bool get showLocationPermissionErrorDialog => _showLocationPermissionErrorDialog;
+  bool get showBluetoothPermissionErrorDialog => _showBluetoothPermissionErrorDialog;
 
   // Static methods to manage minimized state
   static void setMinimizedState(String programId) {
@@ -84,19 +121,9 @@ class DashboardViewModel extends ChangeNotifier {
     };
     _bluetoothService.addListener(_bluetoothListener);
 
-    // Start scanning automatically if not already connected
-    print('🎵 Dashboard: Checking Bluetooth connection status...');
-    print('🎵 Dashboard: isConnected: ${_bluetoothService.isConnected}');
-    
-    if (!_bluetoothService.isConnected) {
-      print('🚀 Auto-starting Bluetooth scan on dashboard load...');
-      // Small delay to ensure UI is fully loaded
-      await Future.delayed(const Duration(milliseconds: 500));
-      await _bluetoothService.startScanning();
-      print('🎵 Dashboard: Bluetooth scanning completed');
-    } else {
-      print('🎵 Dashboard: Already connected to Bluetooth device');
-    }
+    // Check permissions before starting Bluetooth operations
+    print('🎵 Dashboard: Checking permissions before Bluetooth operations...');
+    await _checkPermissionsAndStartBluetooth();
 
     // Check if we're coming from a minimized player
     print('🎵 Dashboard: Checking minimized player state...');
@@ -365,6 +392,222 @@ class DashboardViewModel extends ChangeNotifier {
       await _bluetoothService.playProgram(programId);
     } else {
       print('Program ID not found for: $programName');
+    }
+  }
+
+  // Permission checking methods
+  Future<void> _checkPermissionsAndStartBluetooth() async {
+    print('🎵 Dashboard: Starting permission check flow...');
+    print('🎵 Dashboard: isBluetoothEnabled=$_isBluetoothEnabled, dialogShown=$_bluetoothDialogShown, scanPermissionGranted=$_isBluetoothScanPermissionGranted, statusChecked=$_bluetoothStatusChecked, permissionFlowInitiated=$_permissionFlowInitiated');
+    
+    // Prevent multiple permission flow calls
+    if (_permissionFlowInitiated) {
+      print('🎵 Dashboard: Permission flow already initiated, skipping');
+      return;
+    }
+
+    // Check Bluetooth status first
+    await _checkBluetoothStatus();
+    
+    // Only show Bluetooth enable dialog if we've checked the status and confirmed it's disabled
+    if (!_isBluetoothEnabled &&
+        !_bluetoothDialogShown &&
+        _bluetoothStatusChecked) {
+      print('🎵 Dashboard: Showing Bluetooth enable dialog');
+      _showBluetoothEnableDialog = true;
+      _bluetoothDialogShown = true; // Prevent multiple dialogs
+      _permissionFlowInitiated = true; // Mark permission flow as initiated
+    } else if (_isBluetoothEnabled && _bluetoothStatusChecked) {
+      _permissionFlowInitiated = true; // Mark permission flow as initiated
+
+      // Check if location permission is already granted first
+      bool hasLocationPermission = await _checkLocationPermission();
+      print('🎵 Dashboard: Location permission check result: $hasLocationPermission, dialogShown: $_locationPermissionDialogShown');
+      if (!hasLocationPermission && !_locationPermissionDialogShown) {
+        print('🎵 Dashboard: Showing location permission dialog first');
+        _locationPermissionDialogShown = true; // Prevent multiple requests
+        _showLocationPermissionDialog = true; // Show custom dialog first
+      } else if (hasLocationPermission) {
+        // Location permission granted, check BLE scan permission
+        bool hasBluetoothPermission = await _checkBluetoothScanPermission();
+        print('🎵 Dashboard: Bluetooth permission check result: $hasBluetoothPermission, dialogShown: $_bluetoothScanPermissionDialogShown');
+
+        if (hasBluetoothPermission) {
+          print('🎵 Dashboard: All permissions already granted, starting Bluetooth operations directly');
+          _isBluetoothScanPermissionGranted = true;
+          await _startBluetoothOperations();
+        } else if (!_bluetoothScanPermissionDialogShown) {
+          print('🎵 Dashboard: Location permission granted, showing Bluetooth permission dialog');
+          _bluetoothScanPermissionDialogShown = true; // Prevent multiple requests
+          _showBluetoothScanPermissionDialog = true; // Show custom dialog first
+        }
+      }
+    } else if (!_bluetoothStatusChecked) {
+      print('🎵 Dashboard: Bluetooth status not yet checked, waiting for status check to complete...');
+      // Don't recursively call - let the status check complete
+    } else {
+      print('🎵 Dashboard: No action taken - conditions not met');
+    }
+    notifyListeners();
+  }
+
+  Future<void> _checkBluetoothStatus() async {
+    try {
+      final adapterState = await ble.FlutterBluePlus.adapterState.first;
+      _isBluetoothEnabled = adapterState == ble.BluetoothAdapterState.on;
+      _bluetoothStatusChecked = true;
+      print('🎵 Dashboard: Bluetooth enabled: $_isBluetoothEnabled, status checked: $_bluetoothStatusChecked');
+    } catch (e) {
+      print('🎵 Dashboard: Error checking Bluetooth status: $e');
+      _isBluetoothEnabled = false;
+      _bluetoothStatusChecked = true;
+    }
+  }
+
+  Future<bool> _checkLocationPermission() async {
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      bool isGranted = permission == LocationPermission.whileInUse || 
+                      permission == LocationPermission.always;
+      _isLocationPermissionGranted = isGranted;
+      print('🎵 Dashboard: Location permission granted: $isGranted');
+      return isGranted;
+    } catch (e) {
+      print('🎵 Dashboard: Error checking location permission: $e');
+      return false;
+    }
+  }
+
+  Future<bool> _checkBluetoothScanPermission() async {
+    try {
+      if (Platform.isAndroid) {
+        // For Android 12+, check BLUETOOTH_SCAN permission
+        var status = await Permission.bluetoothScan.status;
+        bool isGranted = status == PermissionStatus.granted;
+        _isBluetoothScanPermissionGranted = isGranted;
+        print('🎵 Dashboard: Bluetooth scan permission granted: $isGranted');
+        return isGranted;
+      } else {
+        // For iOS, assume granted if we reach here
+        _isBluetoothScanPermissionGranted = true;
+        return true;
+      }
+    } catch (e) {
+      print('🎵 Dashboard: Error checking Bluetooth scan permission: $e');
+      return false;
+    }
+  }
+
+  Future<void> _startBluetoothOperations() async {
+    print('🎵 Dashboard: Starting Bluetooth operations after permissions granted...');
+    
+    // Initialize Bluetooth service with permissions
+    await _bluetoothService.initializeAfterPermissions();
+    
+    print('🎵 Dashboard: Checking Bluetooth connection status...');
+    print('🎵 Dashboard: isConnected: ${_bluetoothService.isConnected}');
+    
+    if (!_bluetoothService.isConnected) {
+      print('🚀 Auto-starting Bluetooth scan on dashboard load...');
+      // Small delay to ensure UI is fully loaded
+      await Future.delayed(const Duration(milliseconds: 500));
+      await _bluetoothService.startScanning();
+      print('🎵 Dashboard: Bluetooth scanning completed');
+    } else {
+      print('🎵 Dashboard: Already connected to Bluetooth device');
+    }
+  }
+
+  // Permission dialog handlers
+  Future<void> handleBluetoothEnableOk() async {
+    _showBluetoothEnableDialog = false;
+    notifyListeners();
+    
+    // Recheck Bluetooth status
+    await _checkBluetoothStatus();
+    if (_isBluetoothEnabled) {
+      // Reset permission flow flags to allow restart
+      _permissionFlowInitiated = false;
+      await _checkPermissionsAndStartBluetooth();
+    }
+  }
+
+  Future<void> allowLocationPermission() async {
+    _showLocationPermissionDialog = false;
+    print('🎵 Dashboard: User allowed location permission, requesting system permission');
+    
+    try {
+      LocationPermission permission = await Geolocator.requestPermission();
+      print('🎵 Dashboard: Location permission request result: $permission');
+      
+      if (permission == LocationPermission.whileInUse || 
+          permission == LocationPermission.always) {
+        print('🎵 Dashboard: Location permission granted');
+        _isLocationPermissionGranted = true;
+        
+        // Continue with Bluetooth scan permission check
+        bool hasBluetoothPermission = await _checkBluetoothScanPermission();
+        print('🎵 Dashboard: Bluetooth permission check result: $hasBluetoothPermission, dialogShown: $_bluetoothScanPermissionDialogShown');
+
+        if (hasBluetoothPermission) {
+          print('🎵 Dashboard: All permissions granted, starting Bluetooth operations');
+          _isBluetoothScanPermissionGranted = true;
+          await _startBluetoothOperations();
+        } else if (!_bluetoothScanPermissionDialogShown) {
+          print('🎵 Dashboard: Location permission granted, showing Bluetooth permission dialog');
+          _bluetoothScanPermissionDialogShown = true;
+          _showBluetoothScanPermissionDialog = true;
+        }
+      } else if (permission == LocationPermission.deniedForever) {
+        print('🎵 Dashboard: Location permission permanently denied');
+        _showLocationPermissionErrorDialog = true;
+      }
+    } catch (e) {
+      print('🎵 Dashboard: Error requesting location permission: $e');
+    }
+    notifyListeners();
+  }
+
+  Future<void> allowBluetoothScanPermission() async {
+    _showBluetoothScanPermissionDialog = false;
+    print('🎵 Dashboard: User allowed Bluetooth scan permission, requesting system permission');
+    
+    try {
+      if (Platform.isAndroid) {
+        var status = await Permission.bluetoothScan.request();
+        print('🎵 Dashboard: Bluetooth scan permission request result: $status');
+        
+        if (status == PermissionStatus.granted) {
+          print('🎵 Dashboard: Bluetooth scan permission granted');
+          _isBluetoothScanPermissionGranted = true;
+          await _startBluetoothOperations();
+        } else if (status == PermissionStatus.permanentlyDenied) {
+          print('🎵 Dashboard: Bluetooth scan permission permanently denied');
+          _showBluetoothPermissionErrorDialog = true;
+        }
+      }
+    } catch (e) {
+      print('🎵 Dashboard: Error requesting Bluetooth scan permission: $e');
+    }
+    notifyListeners();
+  }
+
+  void handleLocationPermissionErrorOk() {
+    _showLocationPermissionErrorDialog = false;
+    notifyListeners();
+  }
+
+  void handleBluetoothPermissionErrorOk() {
+    _showBluetoothPermissionErrorDialog = false;
+    notifyListeners();
+  }
+
+  Future<void> openDeviceSettings() async {
+    try {
+      await openAppSettings();
+      print('🎵 Dashboard: Opened app settings');
+    } catch (e) {
+      print('🎵 Dashboard: Error opening app settings: $e');
     }
   }
 

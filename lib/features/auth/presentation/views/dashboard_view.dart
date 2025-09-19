@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -70,6 +72,30 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                 return _buildScanningOverlay(context, viewModel);
               }
               return SizedBox.shrink();
+            },
+          ),
+
+          // Permission Dialogs
+          Consumer<DashboardViewModel>(
+            builder: (context, viewModel, child) {
+              return Stack(
+                children: [
+                  if (viewModel.showBluetoothEnableDialog)
+                    _buildBluetoothEnableDialog(context, viewModel),
+                  
+                  if (viewModel.showBluetoothScanPermissionDialog)
+                    _buildBluetoothScanPermissionDialog(context, viewModel),
+                  
+                  if (viewModel.showLocationPermissionDialog)
+                    _buildLocationPermissionDialog(context, viewModel),
+                  
+                  if (viewModel.showLocationPermissionErrorDialog)
+                    _buildLocationPermissionErrorDialog(context, viewModel),
+                  
+                  if (viewModel.showBluetoothPermissionErrorDialog)
+                    _buildBluetoothPermissionErrorDialog(context, viewModel),
+                ],
+              );
             },
           ),
         ],
@@ -963,6 +989,365 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
         ),
       ),
     );
+  }
+
+  // Permission Dialog Methods
+  Widget _buildBluetoothEnableDialog(BuildContext context, DashboardViewModel viewModel) {
+    return Container(
+      color: Colors.black.withOpacity(0.5),
+      child: Center(
+        child: Container(
+          width: 300,
+          margin: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Enable Bluetooth',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  _getBluetoothEnableMessage(),
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: viewModel.handleBluetoothEnableOk,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF07A60),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'OK',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBluetoothScanPermissionDialog(BuildContext context, DashboardViewModel viewModel) {
+    return Container(
+      color: Colors.black.withOpacity(0.5),
+      child: Center(
+        child: Container(
+          width: 300,
+          margin: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Bluetooth Permission',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Allow Evolv28 to discover nearby Bluetooth devices',
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: viewModel.allowBluetoothScanPermission,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF07A60),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Allow',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocationPermissionDialog(BuildContext context, DashboardViewModel viewModel) {
+    return Container(
+      color: Colors.black.withOpacity(0.5),
+      child: Center(
+        child: Container(
+          width: 300,
+          margin: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Location Permission',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Location access is required for Bluetooth device scanning. This helps us find nearby Evolv28 devices.',
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: viewModel.allowLocationPermission,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF07A60),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Allow Location',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocationPermissionErrorDialog(BuildContext context, DashboardViewModel viewModel) {
+    return Container(
+      color: Colors.black.withOpacity(0.5),
+      child: Center(
+        child: Container(
+          width: 300,
+          margin: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Location Permission Required',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Location permission is required for Bluetooth scanning. Please enable it in your device settings.',
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: viewModel.handleLocationPermissionErrorOk,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey[600],
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: viewModel.openDeviceSettings,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF07A60),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Settings',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBluetoothPermissionErrorDialog(BuildContext context, DashboardViewModel viewModel) {
+    return Container(
+      color: Colors.black.withOpacity(0.5),
+      child: Center(
+        child: Container(
+          width: 300,
+          margin: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Bluetooth Permission Required',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Bluetooth permission is required for device scanning. Please enable it in your device settings.',
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: viewModel.handleBluetoothPermissionErrorOk,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey[600],
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: viewModel.openDeviceSettings,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF07A60),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Settings',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getBluetoothEnableMessage() {
+    if (Platform.isAndroid) {
+      return 'Please enable Bluetooth in your device settings to connect with Evolv28. Tap OK to open Bluetooth settings.';
+    } else if (Platform.isIOS) {
+      return 'Please enable Bluetooth in Settings > Bluetooth to connect with Evolv28. Tap OK to open Settings.';
+    } else {
+      return 'Please enable Bluetooth on your device to connect with Evolv28';
+    }
   }
 }
 

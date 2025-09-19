@@ -62,8 +62,8 @@ class BluetoothService extends ChangeNotifier {
   List<String> get playCommandResponses => _playCommandResponses;
 
   Future<void> initialize() async {
-    // Check permissions
-    await _requestPermissions();
+    // Don't request permissions automatically - let the calling view handle permission flow
+    // await _requestPermissions();
     
     // Listen to adapter state changes
     ble.FlutterBluePlus.adapterState.listen((state) {
@@ -86,6 +86,11 @@ class BluetoothService extends ChangeNotifier {
     } catch (e) {
       _setError('Error requesting permissions: $e');
     }
+  }
+
+  /// Call this method after permissions are granted to ensure proper initialization
+  Future<void> initializeAfterPermissions() async {
+    await _requestPermissions();
   }
 
   Future<void> startScanning() async {

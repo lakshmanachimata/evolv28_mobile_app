@@ -81,20 +81,13 @@ class _SplashScreenState extends State<SplashScreen>
           print('🚀 SplashScreen: Fetching all music for user...');
           final hasMusicData = await _fetchAllMusic(userDetails.data.userId ?? userDetails.data.id);
           
-          // Check if user has music data based on the getAllMusic API response
-          if (hasMusicData) {
-            // User has music data, go directly to dashboard
-            print('🚀 SplashScreen: User has music data, navigating to dashboard');
-            context.go(AppRoutes.dashboard);
-          } else {
-            // User has no music data, go to onboard device screen
-            print('🚀 SplashScreen: User has no music data, navigating to onboard device');
-            context.go(AppRoutes.onboardDevice);
-          }
+          // Always go to dashboard screen where permission dialogs are implemented
+          print('🚀 SplashScreen: Navigating to dashboard (permission dialogs will be shown there)');
+          context.go(AppRoutes.dashboard);
         } else {
-          // If user details fetch fails, go to onboard device screen
-          print('🚀 SplashScreen: Failed to fetch user details, navigating to onboard device');
-          context.go(AppRoutes.onboardDevice);
+          // If user details fetch fails, go to dashboard screen
+          print('🚀 SplashScreen: Failed to fetch user details, navigating to dashboard');
+          context.go(AppRoutes.dashboard);
         }
       } else {
         // User not logged in, go to login screen
