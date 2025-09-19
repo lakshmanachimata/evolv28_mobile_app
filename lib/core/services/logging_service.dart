@@ -1,10 +1,10 @@
 import 'dart:convert';
+
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../constants/api_constants.dart';
-import '../di/injection_container.dart';
 import 'bluetooth_service.dart';
 
 class LoggingService {
@@ -15,7 +15,7 @@ class LoggingService {
   final Dio _dio = Dio();
 
   /// Send logs to the server
-  /// 
+  ///
   /// [event] - The event name/type
   /// [status] - 'success' or 'failed'
   /// [notes] - Optional additional notes
@@ -26,12 +26,12 @@ class LoggingService {
   }) async {
     try {
       print('📝 LoggingService: Sending log - Event: $event, Status: $status');
-      
+
       // Get stored token and user ID for authorization
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('user_token') ?? '';
       final userId = prefs.getString('user_id') ?? '';
-      
+
       if (token.isEmpty || userId.isEmpty) {
         print('📝 LoggingService: No token or user ID found, skipping log');
         return;
@@ -52,13 +52,12 @@ class LoggingService {
             'authorization': token,
           },
         ),
-        data: {
-          'user_id': userId,
-          'data': payload,
-        },
+        data: {'user_id': userId, 'data': payload},
       );
 
-      print('📝 LoggingService: Log sent successfully - Status: ${response.statusCode}');
+      print(
+        '📝 LoggingService: Log sent successfully - Status: ${response.statusCode}',
+      );
     } catch (e) {
       print('📝 LoggingService: Error sending log: $e');
       // Don't throw error - logging should not break the app flow
@@ -66,27 +65,13 @@ class LoggingService {
   }
 
   /// Convenience method for success logs
-  Future<void> logSuccess({
-    required String event,
-    String? notes,
-  }) async {
-    await sendLogs(
-      event: event,
-      status: 'success',
-      notes: notes,
-    );
+  Future<void> logSuccess({required String event, String? notes}) async {
+    await sendLogs(event: event, status: 'success', notes: notes);
   }
 
   /// Convenience method for failed logs
-  Future<void> logFailed({
-    required String event,
-    String? notes,
-  }) async {
-    await sendLogs(
-      event: event,
-      status: 'failed',
-      notes: notes,
-    );
+  Future<void> logFailed({required String event, String? notes}) async {
+    await sendLogs(event: event, status: 'failed', notes: notes);
   }
 
   /// Log Bluetooth operations
@@ -99,9 +84,9 @@ class LoggingService {
     await sendLogs(
       event: 'bluetooth_$operation',
       status: success ? 'success' : 'failed',
-      notes: success 
-        ? (deviceName != null ? 'Device: $deviceName' : null)
-        : errorMessage,
+      notes: success
+          ? (deviceName != null ? 'Device: $deviceName' : null)
+          : errorMessage,
     );
   }
 
@@ -145,17 +130,17 @@ class LoggingService {
   }
 
   /// Add custom log with flexible body data
-  /// 
+  ///
   /// [body] - The data to send in the request body
   /// Returns the response from the server
   Future<dynamic> addLog(dynamic body) async {
     try {
       print('📝 LoggingService: Adding custom log');
-      
+
       // Get stored token for authorization
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('user_token') ?? '';
-      
+
       if (token.isEmpty) {
         print('📝 LoggingService: No token found, skipping log');
         return null;
@@ -163,17 +148,15 @@ class LoggingService {
 
       final response = await _dio.post(
         '${ApiConstants.baseUrl}${ApiConstants.logsNewInsert}',
-        options: Options(
-          headers: {
-            'authorization': token,
-          },
-        ),
+        options: Options(headers: {'authorization': token}),
         data: body,
       );
 
-      print('📝 LoggingService: Custom log added successfully - Status: ${response.statusCode}');
+      print(
+        '📝 LoggingService: Custom log added successfully - Status: ${response.statusCode}',
+      );
       print('📝 LoggingService: Response data: ${response.data}');
-      
+
       return response.data;
     } catch (e) {
       print('📝 LoggingService: Error adding custom log: $e');
@@ -189,7 +172,7 @@ class LoggingService {
   }
 
   /// Update log for BLE command interactions with location and device details
-  /// 
+  ///
   /// [command] - The BLE command that was sent
   /// [response] - The response received from the device
   /// [reqTime] - The timestamp when the request was made
@@ -202,12 +185,12 @@ class LoggingService {
   }) async {
     try {
       print('📝 LoggingService: Updating BLE command log');
-      
+
       // Get stored user data
       final prefs = await SharedPreferences.getInstance();
       final userDataString = prefs.getString('user_data');
       final token = prefs.getString('user_token') ?? '';
-      
+
       if (userDataString == null || token.isEmpty) {
         print('📝 LoggingService: No user data or token found, skipping log');
         return;
@@ -215,9 +198,13 @@ class LoggingService {
 
       final userData = jsonDecode(userDataString);
       final user = userData['data'];
-      
+
       if (user == null) {
         print('📝 LoggingService: Invalid user data, skipping log');
+        return;
+      }
+      if (user['LogId'] == null || user['LogId'] == '') {
+        print('📝 LoggingService: No LogId found, skipping log');
         return;
       }
 
@@ -231,7 +218,9 @@ class LoggingService {
             coords = await _getCurrentLocation().timeout(
               const Duration(seconds: 2), // Reduced timeout
               onTimeout: () {
-                print('📝 LoggingService: Location request timed out, continuing without location');
+                print(
+                  '📝 LoggingService: Location request timed out, continuing without location',
+                );
                 return null;
               },
             );
@@ -249,7 +238,7 @@ class LoggingService {
       // Get current timezone in proper format (e.g., Asia/Kolkata)
       // For now, defaulting to Asia/Kolkata as per the example
       final currentTimeZone = 'Asia/Kolkata';
-      
+
       // Calculate response time in milliseconds since epoch
       final responseTime = DateTime.now().millisecondsSinceEpoch;
 
@@ -261,21 +250,22 @@ class LoggingService {
           {
             'cmdrequest': command,
             'msg': command,
-            'sessionid': user['sessid'] ?? user['sessionId'] ?? '',
+            'sessionid':
+                user['LogId'] ?? user['sessid'] ?? user['sessionId'] ?? '',
             'devicemac': deviceMacId,
             'resptime': responseTime,
             'reqtime': reqTime,
             'cmdresponse': response,
-            'location': coords != null 
-              ? "{'latitude': ${coords['latitude']}, 'longitude': ${coords['longitude']}}"
-              : "{'latitude': undefined, 'longitude': undefined}",
+            'location': coords != null
+                ? "{'latitude': ${coords['latitude']}, 'longitude': ${coords['longitude']}}"
+                : "{'latitude': undefined, 'longitude': undefined}",
           },
         ],
       };
 
       // Send log using addLog method
       await addLog(body);
-      
+
       print('📝 LoggingService: BLE command log updated successfully');
     } catch (e) {
       print('📝 LoggingService: Error updating BLE command log: $e');
@@ -287,8 +277,8 @@ class LoggingService {
   Future<bool> _checkLocationPermission() async {
     try {
       final permission = await Geolocator.checkPermission();
-      return permission == LocationPermission.whileInUse || 
-             permission == LocationPermission.always;
+      return permission == LocationPermission.whileInUse ||
+          permission == LocationPermission.always;
     } catch (e) {
       print('📝 LoggingService: Error checking location permission: $e');
       return false;
@@ -309,14 +299,12 @@ class LoggingService {
 
       // If no last known position, try to get current position with shorter timeout
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.low, // Use low accuracy for faster response
+        desiredAccuracy:
+            LocationAccuracy.low, // Use low accuracy for faster response
         timeLimit: const Duration(seconds: 2), // Reduced timeout
       );
-      
-      return {
-        'latitude': position.latitude,
-        'longitude': position.longitude,
-      };
+
+      return {'latitude': position.latitude, 'longitude': position.longitude};
     } catch (e) {
       print('📝 LoggingService: Error getting current location: $e');
       return null;
@@ -328,13 +316,14 @@ class LoggingService {
     try {
       // Get BluetoothService instance to access device MAC ID
       final bluetoothService = BluetoothService();
-      
+
       // Check if device is connected and get MAC ID
-      if (bluetoothService.isConnected && bluetoothService.connectedDevice != null) {
+      if (bluetoothService.isConnected &&
+          bluetoothService.connectedDevice != null) {
         final device = bluetoothService.connectedDevice!;
         return device.remoteId.toString();
       }
-      
+
       return '';
     } catch (e) {
       print('📝 LoggingService: Error getting device MAC ID: $e');
