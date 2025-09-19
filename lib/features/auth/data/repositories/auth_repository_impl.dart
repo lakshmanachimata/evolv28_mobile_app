@@ -99,6 +99,99 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Either<String, bool>> verifyOtp(String email, String otp) async {
+    try {
+      print('🔐 AuthRepository: Verifying OTP for email: $email');
+      
+      // Get stored token for authorization
+      final token = sharedPreferences.getString('user_token') ?? '';
+      
+      if (token.isEmpty) {
+        print('🔐 AuthRepository: No token found for OTP verification');
+        return const Left('No authentication token found. Please login again.');
+      }
+      
+      final response = await _dio.post(
+        '${ApiConstants.baseUrl}${ApiConstants.verifyOtp}',
+        data: {
+          'email': email,
+          'otp': otp,
+        },
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': token,
+          },
+        ),
+      );
+
+      print('🔐 AuthRepository: Verify OTP API response: ${response.statusCode}');
+      print('🔐 AuthRepository: Verify OTP API data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        // Check if the response indicates success
+        final responseData = response.data;
+        print('🔐 AuthRepository: Response data type: ${responseData.runtimeType}');
+        print('🔐 AuthRepository: Response data: $responseData');
+        
+        if (responseData is Map<String, dynamic>) {
+          // Check the 'error' field - if error is false, it's success
+          final hasError = responseData['error'] ?? true; // Default to true (error) if field is missing
+          print('🔐 AuthRepository: Has error: $hasError');
+          
+          if (!hasError) {
+            print('🔐 AuthRepository: OTP verification successful');
+            return const Right(true);
+          } else {
+            final errorMessage = responseData['message'] ?? 'OTP verification failed';
+            print('🔐 AuthRepository: OTP verification failed: $errorMessage');
+            return Left(errorMessage);
+          }
+        } else if (responseData is String) {
+          // Try to parse JSON string
+          try {
+            final Map<String, dynamic> parsedData = jsonDecode(responseData);
+            final hasError = parsedData['error'] ?? true;
+            
+            if (!hasError) {
+              print('🔐 AuthRepository: OTP verification successful');
+              return const Right(true);
+            } else {
+              final errorMessage = parsedData['message'] ?? 'OTP verification failed';
+              print('🔐 AuthRepository: OTP verification failed: $errorMessage');
+              return Left(errorMessage);
+            }
+          } catch (e) {
+            print('🔐 AuthRepository: Failed to parse JSON string: $e');
+            return const Left('Invalid response format from server');
+          }
+        } else {
+          // If response is not a map or string, assume error for safety
+          print('🔐 AuthRepository: OTP verification failed - invalid response format');
+          return const Left('Invalid response format from server');
+        }
+      } else {
+        print('🔐 AuthRepository: Verify OTP API failed with status: ${response.statusCode}');
+        return Left('Failed to verify OTP. Please try again.');
+      }
+    } catch (e) {
+      print('🔐 AuthRepository: Verify OTP API error: $e');
+      if (e is DioException) {
+        if (e.response != null) {
+          // Server responded with error status
+          final errorMessage = e.response?.data?['message'] ?? 'Failed to verify OTP. Please try again.';
+          return Left(errorMessage);
+        } else {
+          // Network error
+          return Left('Network error. Please check your connection and try again.');
+        }
+      }
+      return Left('Failed to verify OTP. Please try again.');
+    }
+  }
+
+  @override
   Future<Either<String, OtpValidationResponse>> validateOtp(String email, String otp) async {
     try {
       print('🔐 AuthRepository: Validating OTP for email: $email');

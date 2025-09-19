@@ -6,6 +6,7 @@ import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/domain/usecases/login_usecase.dart';
 import '../../features/auth/domain/usecases/send_otp_usecase.dart';
 import '../../features/auth/domain/usecases/validate_otp_usecase.dart';
+import '../../features/auth/domain/usecases/verify_otp_usecase.dart';
 import '../../features/auth/domain/usecases/delete_user_usecase.dart';
 
 final sl = GetIt.instance;
@@ -27,5 +28,6 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => LoginUseCase(sl()));
   sl.registerLazySingleton(() => SendOtpUseCase(sl()));
   sl.registerLazySingleton(() => ValidateOtpUseCase(sl()));
+  sl.registerLazySingleton(() => VerifyOtpUseCase(sl()));
   sl.registerLazySingleton(() => DeleteUserUseCase(sl()));
 }

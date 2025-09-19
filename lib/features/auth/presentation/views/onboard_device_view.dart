@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/routing/app_router_config.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../domain/usecases/verify_otp_usecase.dart';
 
 class OnboardDeviceView extends StatefulWidget {
   const OnboardDeviceView({super.key});
@@ -13,10 +16,12 @@ class OnboardDeviceView extends StatefulWidget {
 class _OnboardDeviceViewState extends State<OnboardDeviceView> {
   bool _showOtpScreen = false;
   bool _showDeviceActivatedDialog = false;
+  bool _isVerifyingOtp = false;
   late TextEditingController _otpController;
   late FocusNode _otpFocusNode;
   late ScrollController _scrollController;
   final GlobalKey _textFieldKey = GlobalKey();
+  late VerifyOtpUseCase _verifyOtpUseCase;
 
   @override
   void initState() {
@@ -24,6 +29,7 @@ class _OnboardDeviceViewState extends State<OnboardDeviceView> {
     _otpController = TextEditingController(text: 'ABC1234567');
     _otpFocusNode = FocusNode();
     _scrollController = ScrollController();
+    _verifyOtpUseCase = sl<VerifyOtpUseCase>();
 
     // Clear text when focused
     _otpFocusNode.addListener(() {
@@ -41,6 +47,96 @@ class _OnboardDeviceViewState extends State<OnboardDeviceView> {
     _otpFocusNode.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  // Validate if the OTP is exactly 10 characters and alphanumeric
+  bool _isValidOtp(String otp) {
+    if (otp.length != 10) return false;
+    return RegExp(r'^[a-zA-Z0-9]+$').hasMatch(otp);
+  }
+
+  // Get user email from SharedPreferences
+  Future<String> _getUserEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('user_email_id') ?? '';
+  }
+
+  // Verify OTP with the API
+  Future<void> _verifyOtp() async {
+    // Hide keyboard when button is clicked
+    FocusScope.of(context).unfocus();
+    
+    final otp = _otpController.text.trim();
+    
+    // Validate OTP format
+    if (!_isValidOtp(otp)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a valid 10-character alphanumeric code'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isVerifyingOtp = true;
+    });
+
+    try {
+      // Get user email
+      final email = await _getUserEmail();
+      if (email.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No user email found. Please login again.'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+        return;
+      }
+
+      print('🔐 OnboardDeviceView: Verifying OTP for email: $email');
+      
+      // Call the verify OTP API
+      final result = await _verifyOtpUseCase(email, otp);
+      
+      result.fold(
+        (error) {
+          // Error occurred
+          print('🔐 OnboardDeviceView: OTP verification failed: $error');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Invalid OTP. Please try again.'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        },
+        (success) {
+          // Success
+          print('🔐 OnboardDeviceView: OTP verification successful');
+          
+          // Show device activated success dialog
+          _showDeviceActivatedSuccessDialog();
+        },
+      );
+    } catch (e) {
+      print('🔐 OnboardDeviceView: OTP verification error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('An error occurred: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } finally {
+      setState(() {
+        _isVerifyingOtp = false;
+      });
+    }
   }
 
   void _showDeviceActivatedSuccessDialog() {
@@ -349,23 +445,26 @@ class _OnboardDeviceViewState extends State<OnboardDeviceView> {
         Container(
           key: _textFieldKey,
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          margin: const EdgeInsets.symmetric(horizontal: 16.0),
+          // padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 2.0),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.grey.shade300),
           ),
-          child: TextFormField(
+          child: TextField(
             controller: _otpController,
             focusNode: _otpFocusNode,
             keyboardType: TextInputType.text,
             textInputAction: TextInputAction.done,
+            maxLength: 10,
             style: const TextStyle(fontSize: 16, color: Colors.black87),
             decoration: InputDecoration(
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(vertical: 12),
               hintText: _otpFocusNode.hasFocus ? '' : 'Enter alphanumeric code',
               hintStyle: const TextStyle(color: Colors.grey),
+              counterText: '', // Hide character counter
             ),
             onChanged: (value) {
               // Handle OTP input changes
@@ -374,50 +473,73 @@ class _OnboardDeviceViewState extends State<OnboardDeviceView> {
           ),
         ),
 
-        const SizedBox(height: 8),
+        const SizedBox(height: 16),
 
-        // Resend OTP Link
-        GestureDetector(
-          onTap: () {
-            print('Resend OTP tapped');
-          },
-          child: Text(
-            'Resend OTP',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
+        // // Resend OTP Link
+        // GestureDetector(
+        //   onTap: () {
+        //     print('Resend OTP tapped');
+        //   },
+        //   child: Text(
+        //     'Resend OTP',
+        //     style: TextStyle(
+        //       fontSize: 14,
+        //       color: Colors.white,
+        //       fontWeight: FontWeight.bold,
+        //     ),
+        //   ),
+        // ),
 
-        const SizedBox(height: 32),
+        // const SizedBox(height: 32),
 
         // Connect Button
-        SizedBox(
+        Container(
           width: double.infinity,
-          height: 56,
+          margin: const EdgeInsets.symmetric(horizontal: 16.0),
+          height: 40,
           child: ElevatedButton(
-            onPressed: () {
-              // Show device activated success dialog
-              _showDeviceActivatedSuccessDialog();
-            },
+            onPressed: _isVerifyingOtp ? null : _verifyOtp,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFF17961), // Coral/light orange
+              backgroundColor: _isVerifyingOtp 
+                  ? Colors.grey 
+                  : const Color(0xFFF17961), // Coral/light orange
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
               elevation: 0,
             ),
-            child: Text(
-              'Connect Evolv28 First Time',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
+            child: _isVerifyingOtp
+                ? Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Validating code...',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  )
+                : const Text(
+                    'Connect Evolv28 First Time',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
           ),
         ),
 

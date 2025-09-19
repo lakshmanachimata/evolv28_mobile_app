@@ -10,6 +10,7 @@ class ApiConstants {
   static const String logout = '/auth/logout';
   static const String sendOtp = '/api/login/via_email_otp';
   static const String validateOtp = '/api/login/validate_otp';
+  static const String verifyOtp = '/api/verifyotp';
   static const String deleteUser = '/api/users/delete';
 
   // User endpoints
