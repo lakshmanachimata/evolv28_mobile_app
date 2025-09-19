@@ -8,6 +8,8 @@ abstract class AuthRepository {
   Future<Either<String, OtpResponse>> sendOtp(String email);
   Future<Either<String, OtpValidationResponse>> validateOtp(String email, String otp);
   Future<Either<String, bool>> verifyOtp(String email, String otp);
+  Future<Either<String, OtpValidationResponse>> getUserDetails(int userId);
+  Future<Either<String, dynamic>> getAllMusic(int userId);
   Future<void> logout();
   Future<Either<String, bool>> deleteUserAccount();
   Future<bool> isLoggedIn();

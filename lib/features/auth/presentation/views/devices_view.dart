@@ -675,7 +675,7 @@ class _DevicesViewBodyState extends State<_DevicesViewBody>
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Colors.transparent,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.1),

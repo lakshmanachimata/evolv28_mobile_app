@@ -8,6 +8,8 @@ import '../../features/auth/domain/usecases/send_otp_usecase.dart';
 import '../../features/auth/domain/usecases/validate_otp_usecase.dart';
 import '../../features/auth/domain/usecases/verify_otp_usecase.dart';
 import '../../features/auth/domain/usecases/delete_user_usecase.dart';
+import '../../features/auth/domain/usecases/get_user_details_usecase.dart';
+import '../../features/auth/domain/usecases/get_all_music_usecase.dart';
 
 final sl = GetIt.instance;
 
@@ -30,4 +32,6 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => ValidateOtpUseCase(sl()));
   sl.registerLazySingleton(() => VerifyOtpUseCase(sl()));
   sl.registerLazySingleton(() => DeleteUserUseCase(sl()));
+  sl.registerLazySingleton(() => GetUserDetailsUseCase(sl()));
+  sl.registerLazySingleton(() => GetAllMusicUseCase(sl()));
 }

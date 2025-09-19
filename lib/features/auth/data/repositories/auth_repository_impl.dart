@@ -192,6 +192,149 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Either<String, OtpValidationResponse>> getUserDetails(int userId) async {
+    try {
+      print('🔐 AuthRepository: Getting user details for userId: $userId');
+      
+      // Get stored token for authorization
+      final token = sharedPreferences.getString('user_token') ?? '';
+      
+      if (token.isEmpty) {
+        print('🔐 AuthRepository: No token found for user details request');
+        return const Left('No authentication token found. Please login again.');
+      }
+      
+      final response = await _dio.get(
+        '${ApiConstants.baseUrl}${ApiConstants.userDetails}/$userId',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': token,
+          },
+        ),
+      );
+
+      print('🔐 AuthRepository: Get user details API response: ${response.statusCode}');
+      print('🔐 AuthRepository: Get user details API data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+        print('🔐 AuthRepository: Response data type: ${responseData.runtimeType}');
+        print('🔐 AuthRepository: Response data: $responseData');
+        
+        if (responseData is Map<String, dynamic>) {
+          // Check the 'error' field - if error is false, it's success
+          final hasError = responseData['error'] ?? true; // Default to true (error) if field is missing
+          print('🔐 AuthRepository: Has error: $hasError');
+          
+          if (!hasError) {
+            print('🔐 AuthRepository: User details retrieved successfully');
+            final otpValidationResponse = OtpValidationResponse.fromJson(responseData);
+            return Right(otpValidationResponse);
+          } else {
+            final errorMessage = responseData['message'] ?? 'Failed to get user details';
+            print('🔐 AuthRepository: Get user details failed: $errorMessage');
+            return Left(errorMessage);
+          }
+        } else if (responseData is String) {
+          // Try to parse JSON string
+          try {
+            final Map<String, dynamic> parsedData = jsonDecode(responseData);
+            final hasError = parsedData['error'] ?? true;
+            
+            if (!hasError) {
+              print('🔐 AuthRepository: User details retrieved successfully');
+              final otpValidationResponse = OtpValidationResponse.fromJson(parsedData);
+              return Right(otpValidationResponse);
+            } else {
+              final errorMessage = parsedData['message'] ?? 'Failed to get user details';
+              print('🔐 AuthRepository: Get user details failed: $errorMessage');
+              return Left(errorMessage);
+            }
+          } catch (e) {
+            print('🔐 AuthRepository: Failed to parse JSON string: $e');
+            return const Left('Invalid response format from server');
+          }
+        } else {
+          // If response is not a map or string, assume error for safety
+          print('🔐 AuthRepository: Get user details failed - invalid response format');
+          return const Left('Invalid response format from server');
+        }
+      } else {
+        print('🔐 AuthRepository: Get user details API failed with status: ${response.statusCode}');
+        return Left('Failed to get user details. Please try again.');
+      }
+    } catch (e) {
+      print('🔐 AuthRepository: Get user details API error: $e');
+      if (e is DioException) {
+        if (e.response != null) {
+          // Server responded with error status
+          final errorData = e.response!.data;
+          if (errorData is Map<String, dynamic> && errorData.containsKey('message')) {
+            return Left(errorData['message']);
+          }
+          return Left('Server error: ${e.response!.statusCode}');
+        }
+        return const Left('Network error. Please check your internet connection.');
+      }
+      return Left('An unexpected error occurred: $e');
+    }
+  }
+
+  @override
+  Future<Either<String, dynamic>> getAllMusic(int userId) async {
+    try {
+      print('🔐 AuthRepository: Getting all music for userId: $userId');
+      
+      // Get stored token for authorization
+      final token = sharedPreferences.getString('user_token') ?? '';
+      
+      if (token.isEmpty) {
+        print('🔐 AuthRepository: No token found for all music request');
+        return const Left('No authentication token found. Please login again.');
+      }
+      
+      final response = await _dio.get(
+        '${ApiConstants.baseUrl}${ApiConstants.allMusic}/$userId',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'authorization': token,
+          },
+        ),
+      );
+
+      print('🔐 AuthRepository: Get all music API response: ${response.statusCode}');
+      print('🔐 AuthRepository: Get all music API data: ${response.data}');
+      print('🔐 AuthRepository: Response data type: ${response.data.runtimeType}');
+
+      if (response.statusCode == 200) {
+        print('🔐 AuthRepository: All music retrieved successfully');
+        return Right(response.data);
+      } else {
+        print('🔐 AuthRepository: Get all music API failed with status: ${response.statusCode}');
+        return Left('Failed to retrieve music. Please try again.');
+      }
+    } catch (e) {
+      print('🔐 AuthRepository: Get all music API error: $e');
+      if (e is DioException) {
+        if (e.response != null) {
+          // Server responded with error status
+          final errorData = e.response!.data;
+          if (errorData is Map<String, dynamic> && errorData.containsKey('message')) {
+            return Left(errorData['message']);
+          }
+          return Left('Server error: ${e.response!.statusCode}');
+        }
+        return const Left('Network error. Please check your internet connection.');
+      }
+      return Left('An unexpected error occurred: $e');
+    }
+  }
+
+  @override
   Future<Either<String, OtpValidationResponse>> validateOtp(String email, String otp) async {
     try {
       print('🔐 AuthRepository: Validating OTP for email: $email');

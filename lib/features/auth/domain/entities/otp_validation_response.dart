@@ -61,6 +61,9 @@ class OtpValidationData {
   final String? loginSource;
   final List<dynamic> devices;
   final String? token;
+  final String? id;
+  final String? tokenid;
+  final String? emailid;
 
   OtpValidationData({
     this.userId,
@@ -84,15 +87,18 @@ class OtpValidationData {
     this.loginSource,
     this.devices = const [],
     this.token,
+    this.id,
+    this.tokenid,
+    this.emailid,
   });
 
   factory OtpValidationData.fromJson(Map<String, dynamic> json) {
     try {
       return OtpValidationData(
-        userId: json['UserId']?.toString(),
+        userId: json['UserId']?.toString() ?? json['id']?.toString(),
         logId: json['LogId']?.toString(),
-        emailId: json['EmailId']?.toString(),
-        roleId: json['RoleId']?.toString(),
+        emailId: json['EmailId']?.toString() ?? json['emailid']?.toString(),
+        roleId: json['RoleId']?.toString() ?? json['roleid']?.toString(),
         contactno: json['contactno']?.toString(),
         delaytime: json['delaytime']?.toString(),
         sessid: json['sessid']?.toString(),
@@ -109,7 +115,10 @@ class OtpValidationData {
         profilepicpath: json['profilepicpath']?.toString(),
         loginSource: json['login_source']?.toString(),
         devices: _parseDevices(json['devices']),
-        token: json['token']?.toString(),
+        token: json['token']?.toString() ?? json['tokenid']?.toString(),
+        id: json['id']?.toString(),
+        tokenid: json['tokenid']?.toString(),
+        emailid: json['emailid']?.toString(),
       );
     } catch (e) {
       print('🔐 OtpValidationData: Error parsing JSON: $e');
@@ -142,6 +151,9 @@ class OtpValidationData {
       'login_source': loginSource,
       'devices': devices,
       'token': token,
+      'id': id,
+      'tokenid': tokenid,
+      'emailid': emailid,
     };
   }
 

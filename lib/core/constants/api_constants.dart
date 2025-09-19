@@ -12,6 +12,8 @@ class ApiConstants {
   static const String validateOtp = '/api/login/validate_otp';
   static const String verifyOtp = '/api/verifyotp';
   static const String deleteUser = '/api/users/delete';
+  static const String userDetails = '/api/UserDetails';
+  static const String allMusic = '/api/user/device/all_music';
 
   // User endpoints
   static const String profile = '/user/profile';
