@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart' as ble;
 import 'package:permission_handler/permission_handler.dart';
+import 'logging_service.dart';
+import '../di/injection_container.dart';
 
 enum BluetoothConnectionState {
   disconnected,
@@ -15,6 +17,8 @@ class BluetoothService extends ChangeNotifier {
   static final BluetoothService _instance = BluetoothService._internal();
   factory BluetoothService() => _instance;
   BluetoothService._internal();
+
+  final LoggingService _loggingService = sl<LoggingService>();
 
   BluetoothConnectionState _connectionState = BluetoothConnectionState.disconnected;
   String _statusMessage = 'Connect';
@@ -179,6 +183,13 @@ class BluetoothService extends ChangeNotifier {
       _connectionState = BluetoothConnectionState.disconnected;
       _statusMessage = 'No Evolv28 devices found';
       _setError('No Evolv28 devices found nearby');
+      
+      // Log when no devices are found
+      _loggingService.sendLogs(
+        event: 'BLE Device Connect',
+        status: 'failed',
+        notes: 'unable to find device',
+      );
     } else if (_scannedDevices.length == 1) {
       // Auto-connect to the single device found
       print('✅ Single device found: ${_scannedDevices.first.platformName}');
@@ -208,6 +219,14 @@ class BluetoothService extends ChangeNotifier {
       _connectionState = BluetoothConnectionState.connected;
       _statusMessage = '${device.platformName} is connected';
       print('✅ Device connected: ${device.platformName}');
+      
+      // Log successful device connection
+      _loggingService.sendLogs(
+        event: 'BLE Device Connect',
+        status: 'success',
+        notes: 'success',
+      );
+      
       notifyListeners();
 
       // Start command sequence to get program list
@@ -218,6 +237,14 @@ class BluetoothService extends ChangeNotifier {
       _setError('Connection failed: $e');
       _connectionState = BluetoothConnectionState.disconnected;
       _statusMessage = 'Connect';
+      
+      // Log failed device connection
+      _loggingService.sendLogs(
+        event: 'BLE Device Connect',
+        status: 'failed',
+        notes: 'not able to connect',
+      );
+      
       notifyListeners();
     }
   }
@@ -308,6 +335,13 @@ class BluetoothService extends ChangeNotifier {
       );
 
       print('Response ${i + 1}: $response');
+      
+      // Log BLE command interaction
+      _loggingService.sendBleCommandLog(
+        command: command,
+        response: response,
+        reqTime: DateTime.now().millisecondsSinceEpoch,
+      );
       
       // Special handling for the 5th command (7#GFL,5!) to parse program list
       if (i == 4) {
@@ -721,6 +755,13 @@ class BluetoothService extends ChangeNotifier {
         _playCommandResponses.add('$command -> $response');
         print('Play command response: $command -> $response');
 
+        // Log BLE command interaction
+        _loggingService.sendBleCommandLog(
+          command: command,
+          response: response,
+          reqTime: DateTime.now().millisecondsSinceEpoch,
+        );
+
         notifyListeners();
 
         // Special delay for #ST command - wait 1 second before sending 24#PL
@@ -821,6 +862,13 @@ class BluetoothService extends ChangeNotifier {
       final success = await completer.future;
       print('🎵 BluetoothService: Stop command result: $success');
       
+      // Log BLE command interaction
+      _loggingService.sendBleCommandLog(
+        command: '#STP!',
+        response: success ? '#ACK!' : 'timeout',
+        reqTime: DateTime.now().millisecondsSinceEpoch,
+      );
+      
       return success;
     } catch (e) {
       print('🎵 BluetoothService: Error stopping program: $e');
@@ -866,6 +914,13 @@ class BluetoothService extends ChangeNotifier {
       // Wait for response
       final response = await completer.future;
       print('🎵 BluetoothService: Player check response: $response');
+      
+      // Log BLE command interaction
+      _loggingService.sendBleCommandLog(
+        command: '5#SPL!',
+        response: response ?? 'timeout',
+        reqTime: DateTime.now().millisecondsSinceEpoch,
+      );
       
       if (response != null && response.contains('#SPL,')) {
         // Parse the response to extract the filename

@@ -8,11 +8,17 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart' as ble;
 
 import '../../../../core/routing/app_router_config.dart';
 import '../../../../core/services/bluetooth_service.dart';
+import '../../../../core/services/logging_service.dart';
+import '../../../../core/di/injection_container.dart';
 
 class DashboardViewModel extends ChangeNotifier {
   // Static variables to track minimized state
   static bool _isMinimizedFromPlayer = false;
   static String? _minimizedProgramId;
+
+  // Services
+  final BluetoothService _bluetoothService = BluetoothService();
+  final LoggingService _loggingService = sl<LoggingService>();
 
   // State variables
   bool _isLoading = false;
@@ -21,9 +27,6 @@ class DashboardViewModel extends ChangeNotifier {
   bool _isPlaying = false; // Track if a program is currently playing
   bool _showPlayerCard = false; // Track if player card should be shown
   String? _currentPlayingProgramId; // Track which program is playing
-  
-  // Bluetooth service
-  final BluetoothService _bluetoothService = BluetoothService();
   late VoidCallback _bluetoothListener;
 
   // Permission state variables
@@ -457,10 +460,24 @@ class DashboardViewModel extends ChangeNotifier {
       _isBluetoothEnabled = adapterState == ble.BluetoothAdapterState.on;
       _bluetoothStatusChecked = true;
       print('🎵 Dashboard: Bluetooth enabled: $_isBluetoothEnabled, status checked: $_bluetoothStatusChecked');
+      
+      // Log Bluetooth status check
+      await _loggingService.logBluetoothOperation(
+        operation: 'status_check',
+        success: true,
+        deviceName: 'Bluetooth ${_isBluetoothEnabled ? 'enabled' : 'disabled'}',
+      );
     } catch (e) {
       print('🎵 Dashboard: Error checking Bluetooth status: $e');
       _isBluetoothEnabled = false;
       _bluetoothStatusChecked = true;
+      
+      // Log Bluetooth status check error
+      await _loggingService.logBluetoothOperation(
+        operation: 'status_check',
+        success: false,
+        errorMessage: e.toString(),
+      );
     }
   }
 
@@ -471,9 +488,25 @@ class DashboardViewModel extends ChangeNotifier {
                       permission == LocationPermission.always;
       _isLocationPermissionGranted = isGranted;
       print('🎵 Dashboard: Location permission granted: $isGranted');
+      
+      // Log location permission status in background
+      await _loggingService.sendLogs(
+        event: 'Location Permission',
+        status: isGranted ? 'success' : 'failed',
+        notes: isGranted ? 'success' : permission.name,
+      );
+      
       return isGranted;
     } catch (e) {
       print('🎵 Dashboard: Error checking location permission: $e');
+      
+      // Log location permission error
+      await _loggingService.sendLogs(
+        event: 'Location Permission',
+        status: 'failed',
+        notes: e.toString(),
+      );
+      
       return false;
     }
   }
@@ -486,14 +519,38 @@ class DashboardViewModel extends ChangeNotifier {
         bool isGranted = status == PermissionStatus.granted;
         _isBluetoothScanPermissionGranted = isGranted;
         print('🎵 Dashboard: Bluetooth scan permission granted: $isGranted');
+        
+        // Log BLE permission status in background
+        await _loggingService.sendLogs(
+          event: 'BLE Permission',
+          status: isGranted ? 'success' : 'failed',
+          notes: isGranted ? 'success' : status.name,
+        );
+        
         return isGranted;
       } else {
         // For iOS, assume granted if we reach here
         _isBluetoothScanPermissionGranted = true;
+        
+        // Log BLE permission status for iOS
+        await _loggingService.sendLogs(
+          event: 'BLE Permission',
+          status: 'success',
+          notes: 'iOS - assumed granted',
+        );
+        
         return true;
       }
     } catch (e) {
       print('🎵 Dashboard: Error checking Bluetooth scan permission: $e');
+      
+      // Log BLE permission error
+      await _loggingService.sendLogs(
+        event: 'BLE Permission',
+        status: 'failed',
+        notes: e.toString(),
+      );
+      
       return false;
     }
   }
@@ -545,6 +602,13 @@ class DashboardViewModel extends ChangeNotifier {
         print('🎵 Dashboard: Location permission granted');
         _isLocationPermissionGranted = true;
         
+        // Log successful location permission
+        await _loggingService.sendLogs(
+          event: 'Location Permission',
+          status: 'success',
+          notes: 'success',
+        );
+        
         // Continue with Bluetooth scan permission check
         bool hasBluetoothPermission = await _checkBluetoothScanPermission();
         print('🎵 Dashboard: Bluetooth permission check result: $hasBluetoothPermission, dialogShown: $_bluetoothScanPermissionDialogShown');
@@ -558,12 +622,31 @@ class DashboardViewModel extends ChangeNotifier {
           _bluetoothScanPermissionDialogShown = true;
           _showBluetoothScanPermissionDialog = true;
         }
-      } else if (permission == LocationPermission.deniedForever) {
-        print('🎵 Dashboard: Location permission permanently denied');
-        _showLocationPermissionErrorDialog = true;
+      } else {
+        // Location permission denied
+        print('🎵 Dashboard: Location permission denied: ${permission.name}');
+        
+        // Log denied location permission
+        await _loggingService.sendLogs(
+          event: 'Location Permission',
+          status: 'failed',
+          notes: permission.name,
+        );
+        
+        if (permission == LocationPermission.deniedForever) {
+          print('🎵 Dashboard: Location permission permanently denied');
+          _showLocationPermissionErrorDialog = true;
+        }
       }
     } catch (e) {
       print('🎵 Dashboard: Error requesting location permission: $e');
+      
+      // Log location permission error
+      await _loggingService.sendLogs(
+        event: 'Location Permission',
+        status: 'failed',
+        notes: e.toString(),
+      );
     }
     notifyListeners();
   }
@@ -577,6 +660,13 @@ class DashboardViewModel extends ChangeNotifier {
         var status = await Permission.bluetoothScan.request();
         print('🎵 Dashboard: Bluetooth scan permission request result: $status');
         
+        // Log BLE permission result in background
+        await _loggingService.sendLogs(
+          event: 'BLE Permission',
+          status: status == PermissionStatus.granted ? 'success' : 'failed',
+          notes: status == PermissionStatus.granted ? 'success' : status.name,
+        );
+        
         if (status == PermissionStatus.granted) {
           print('🎵 Dashboard: Bluetooth scan permission granted');
           _isBluetoothScanPermissionGranted = true;
@@ -588,6 +678,13 @@ class DashboardViewModel extends ChangeNotifier {
       }
     } catch (e) {
       print('🎵 Dashboard: Error requesting Bluetooth scan permission: $e');
+      
+      // Log BLE permission error
+      await _loggingService.sendLogs(
+        event: 'BLE Permission',
+        status: 'failed',
+        notes: e.toString(),
+      );
     }
     notifyListeners();
   }

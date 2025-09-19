@@ -14,6 +14,8 @@ class ApiConstants {
   static const String deleteUser = '/api/users/delete';
   static const String userDetails = '/api/UserDetails';
   static const String allMusic = '/api/user/device/all_music';
+  static const String deviceTroubleshotLog = '/api/devicetroubleshotlog';
+  static const String logsNewInsert = '/api/logs/newinsert';
 
   // User endpoints
   static const String profile = '/user/profile';
