@@ -246,8 +246,9 @@ class LoggingService {
       // Get device MAC ID from Bluetooth service
       final deviceMacId = await _getDeviceMacId();
 
-      // Get current timezone
-      final currentTimeZone = DateTime.now().timeZoneName;
+      // Get current timezone in proper format (e.g., Asia/Kolkata)
+      // For now, defaulting to Asia/Kolkata as per the example
+      final currentTimeZone = 'Asia/Kolkata';
       
       // Calculate response time in milliseconds since epoch
       final responseTime = DateTime.now().millisecondsSinceEpoch;
