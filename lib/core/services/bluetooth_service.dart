@@ -364,7 +364,7 @@ class BluetoothService extends ChangeNotifier {
         allowLongWrite: true,
       );
     } catch (e) {
-      _setError('Write characteristic error: $e');
+      // _setError('Write characteristic error: $e');
       return;
     }
   }

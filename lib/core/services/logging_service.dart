@@ -249,10 +249,10 @@ class LoggingService {
       // Get current timezone
       final currentTimeZone = DateTime.now().timeZoneName;
       
-      // Calculate response time
+      // Calculate response time in milliseconds since epoch
       final responseTime = DateTime.now().millisecondsSinceEpoch;
 
-      // Build log body
+      // Build log body matching the example structure
       final body = {
         'userid': user['id'] ?? user['userId'],
         'timezone': currentTimeZone,
@@ -267,7 +267,7 @@ class LoggingService {
             'cmdresponse': response,
             'location': coords != null 
               ? "{'latitude': ${coords['latitude']}, 'longitude': ${coords['longitude']}}"
-              : "{'latitude': null, 'longitude': null}",
+              : "{'latitude': undefined, 'longitude': undefined}",
           },
         ],
       };
