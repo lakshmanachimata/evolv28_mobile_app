@@ -73,6 +73,12 @@ dependencies:
   permission_handler: ^11.3.1
   geolocator: ^13.0.1
   
+  # Device information
+  device_info_plus: ^10.1.2
+  
+  # Social login
+  google_sign_in: ^6.2.1
+  
   # Sharing
   share_plus: ^7.2.2
 

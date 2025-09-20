@@ -10,6 +10,7 @@ import 'features/auth/domain/usecases/login_usecase.dart';
 import 'features/auth/domain/usecases/send_otp_usecase.dart';
 import 'features/auth/domain/usecases/validate_otp_usecase.dart';
 import 'features/auth/domain/usecases/delete_user_usecase.dart';
+import 'features/auth/domain/usecases/social_login_usecase.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,6 +46,9 @@ class Evolv28App extends StatelessWidget {
         ),
         Provider<DeleteUserUseCase>(
           create: (_) => sl<DeleteUserUseCase>(),
+        ),
+        Provider<SocialLoginUseCase>(
+          create: (_) => sl<SocialLoginUseCase>(),
         ),
       ],
       child: MaterialApp.router(

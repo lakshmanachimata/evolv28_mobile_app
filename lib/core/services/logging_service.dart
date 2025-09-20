@@ -188,8 +188,9 @@ class LoggingService {
 
       // Get stored user data
       final prefs = await SharedPreferences.getInstance();
-      final userDataString = prefs.getString('user_data');
+      final userDataString = prefs.getString('user_data_json');
       final token = prefs.getString('user_token') ?? '';
+      final logId = prefs.getString('user_log_id') ?? '';
 
       if (userDataString == null || token.isEmpty) {
         print('📝 LoggingService: No user data or token found, skipping log');
@@ -197,13 +198,8 @@ class LoggingService {
       }
 
       final userData = jsonDecode(userDataString);
-      final user = userData['data'];
-
-      if (user == null) {
-        print('📝 LoggingService: Invalid user data, skipping log');
-        return;
-      }
-      if (user['LogId'] == null || user['LogId'] == '') {
+      
+      if (logId.isEmpty) {
         print('📝 LoggingService: No LogId found, skipping log');
         return;
       }
@@ -244,14 +240,13 @@ class LoggingService {
 
       // Build log body matching the example structure
       final body = {
-        'userid': user['id'] ?? user['userId'],
+        'userid': userData['UserId'] ?? userData['id'],
         'timezone': currentTimeZone,
         'log': [
           {
             'cmdrequest': command,
             'msg': command,
-            'sessionid':
-                user['LogId'] ?? user['sessid'] ?? user['sessionId'] ?? '',
+            'sessionid': logId,
             'devicemac': deviceMacId,
             'resptime': responseTime,
             'reqtime': reqTime,

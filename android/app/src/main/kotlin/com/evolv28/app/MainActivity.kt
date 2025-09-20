@@ -1,4 +1,4 @@
-package com.evolv28.app.evolv28
+package com.evolv28.app
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -10,6 +10,7 @@ import '../../../../core/routing/app_router_config.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/send_otp_usecase.dart';
+import '../../domain/usecases/social_login_usecase.dart';
 import '../../domain/usecases/validate_otp_usecase.dart';
 import '../viewmodels/login_viewmodel.dart';
 
@@ -23,6 +24,7 @@ class LoginView extends StatelessWidget {
         loginUseCase: context.read<LoginUseCase>(),
         sendOtpUseCase: context.read<SendOtpUseCase>(),
         validateOtpUseCase: context.read<ValidateOtpUseCase>(),
+        socialLoginUseCase: context.read<SocialLoginUseCase>(),
         authRepository: context.read<AuthRepository>(),
       ),
       child: const _LoginViewBody(),
@@ -219,107 +221,103 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
   Widget _buildContinueButton(BuildContext context) {
     return Consumer<LoginViewModel>(
       builder: (context, viewModel, child) {
-        return Opacity(
-          opacity: viewModel.isEmailValid ? 1.0 : 0.6,
-          child: SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
-              onPressed: viewModel.isLoading
-                  ? null
-                  : () async {
-                      // Validate email before proceeding
-                      final emailError = viewModel.validateEmail();
-                      if (emailError != null) {
-                        // Show error message
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(emailError),
-                            backgroundColor: Colors.red,
-                            duration: const Duration(seconds: 3),
-                          ),
-                        );
-                        return;
-                      }
-
-                      // Show full-screen loading indicator
-                      showDialog(
-                        context: context,
-                        barrierDismissible: false,
-                        builder: (BuildContext context) {
-                          return _buildFullScreenLoader('Sending OTP...');
-                        },
+        final isButtonEnabled =
+            viewModel.isEmailValid && viewModel.transactionalAlerts;
+        return SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: ElevatedButton(
+            onPressed: viewModel.isLoading || !isButtonEnabled
+                ? null
+                : () async {
+                    // Validate email before proceeding
+                    final emailError = viewModel.validateEmail();
+                    if (emailError != null) {
+                      // Show error message
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(emailError),
+                          backgroundColor: Colors.red,
+                          duration: const Duration(seconds: 3),
+                        ),
                       );
+                      return;
+                    }
 
-                      try {
-                        // Call the OTP API
-                        final otpResponse = await viewModel.sendOtp();
+                    // Show full-screen loading indicator
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (BuildContext context) {
+                        return _buildFullScreenLoader('Sending OTP...');
+                      },
+                    );
 
-                        if (context.mounted) {
-                          Navigator.of(context).pop(); // Close loading dialog
+                    try {
+                      // Call the OTP API
+                      final otpResponse = await viewModel.sendOtp();
 
-                          if (otpResponse != null) {
-                            // Success - show OTP card
-                            print(
-                              '📧 LoginView: OTP sent successfully: ${otpResponse.data.otp}',
-                            );
-                            setState(() {
-                              _showOtpCard = true;
-                            });
-                          } else {
-                            // Error - show error message
-                            final errorMessage =
-                                viewModel.errorMessage ?? 'Failed to send OTP';
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(errorMessage),
-                                backgroundColor: Colors.red,
-                                duration: const Duration(seconds: 3),
-                              ),
-                            );
-                          }
-                        }
-                      } catch (e) {
-                        if (context.mounted) {
-                          Navigator.of(context).pop(); // Close loading dialog
+                      if (context.mounted) {
+                        Navigator.of(context).pop(); // Close loading dialog
+
+                        if (otpResponse != null) {
+                          // Success - show OTP card
+                          print(
+                            '📧 LoginView: OTP sent successfully: ${otpResponse.data.otp}',
+                          );
+                          setState(() {
+                            _showOtpCard = true;
+                          });
+                        } else {
+                          // Error - show error message
+                          final errorMessage =
+                              viewModel.errorMessage ?? 'Failed to send OTP';
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(
-                                'An error occurred: ${e.toString()}',
-                              ),
+                              content: Text(errorMessage),
                               backgroundColor: Colors.red,
                               duration: const Duration(seconds: 3),
                             ),
                           );
                         }
                       }
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(
-                  0xFFF17961,
-                ), // Always burnt orange color
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                    } catch (e) {
+                      if (context.mounted) {
+                        Navigator.of(context).pop(); // Close loading dialog
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('An error occurred: ${e.toString()}'),
+                            backgroundColor: Colors.red,
+                            duration: const Duration(seconds: 3),
+                          ),
+                        );
+                      }
+                    }
+                  },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isButtonEnabled
+                  ? const Color(0xFFF17961) // Burnt orange when enabled
+                  : const Color(0xFFF17961).withOpacity(0.3), // Dimmed orange when disabled
+              foregroundColor: isButtonEnabled
+                  ? Colors.white
+                  : Colors.white.withOpacity(0.7), // Dimmed white text when disabled
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: viewModel.isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : const Text(
-                      'Continue',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
             ),
+            child: viewModel.isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Text(
+                    'Continue',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
           ),
         );
       },
@@ -489,36 +487,8 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
   }
 
   void _handleGoogleLogin(BuildContext context) {
-    // Show loading indicator
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return const Center(
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-          ),
-        );
-      },
-    );
-
-    // Simulate Google login process
-    Future.delayed(const Duration(seconds: 2), () {
-      if (context.mounted) {
-        Navigator.of(context).pop(); // Close loading dialog
-
-        // Simulate successful login
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Google login successful!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        // Navigate to home screen
-        context.go(AppRoutes.home);
-      }
-    });
+    final viewModel = context.read<LoginViewModel>();
+    viewModel.signInWithGoogle(context);
   }
 
   void _handleAppleLogin(BuildContext context) {
@@ -718,7 +688,11 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.error_outline, color: Colors.red.shade600, size: 20),
+                              Icon(
+                                Icons.error_outline,
+                                color: Colors.red.shade600,
+                                size: 20,
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
@@ -737,15 +711,18 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
                       ],
                     );
                   }
-                  
+
                   return Column(
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: List.generate(
                           4,
-                          (index) =>
-                              _buildOtpField(index, _otpControllers, _otpFocusNodes),
+                          (index) => _buildOtpField(
+                            index,
+                            _otpControllers,
+                            _otpFocusNodes,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -760,7 +737,7 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
                   if (viewModel.userDoesNotExist) {
                     return const SizedBox.shrink(); // Hide buttons when user doesn't exist
                   }
-                  
+
                   return Column(
                     children: [
                       // Resend OTP Button (only shown after 3 failed attempts)
@@ -802,7 +779,10 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
                           ),
                           child: const Text(
                             'Continue',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),

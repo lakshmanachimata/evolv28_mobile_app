@@ -1,23 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/routing/app_router_config.dart';
+import '../../../../core/utils/device_helper.dart';
 import '../../domain/entities/auth_result.dart';
 import '../../domain/entities/otp_response.dart';
 import '../../domain/entities/otp_validation_response.dart';
+import '../../domain/entities/social_login_request.dart';
+import '../../domain/entities/social_login_response.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/send_otp_usecase.dart';
+import '../../domain/usecases/social_login_usecase.dart';
 import '../../domain/usecases/validate_otp_usecase.dart';
 
 class LoginViewModel extends ChangeNotifier {
   final LoginUseCase loginUseCase;
   final SendOtpUseCase sendOtpUseCase;
   final ValidateOtpUseCase validateOtpUseCase;
+  final SocialLoginUseCase socialLoginUseCase;
   final AuthRepository authRepository;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   LoginViewModel({
     required this.loginUseCase,
     required this.sendOtpUseCase,
     required this.validateOtpUseCase,
+    required this.socialLoginUseCase,
     required this.authRepository,
   });
 
@@ -25,7 +36,7 @@ class LoginViewModel extends ChangeNotifier {
   String _email = 'lakshmana.chimata@gmail.com';
   String _password = '';
   bool _rememberMe = false;
-  bool _transactionalAlerts = false;
+  bool _transactionalAlerts = true;
   bool _termsAndConditions = false;
   bool _isPasswordVisible = false;
 
@@ -282,5 +293,96 @@ class LoginViewModel extends ChangeNotifier {
     _errorMessage = null;
     _userDoesNotExist = false;
     notifyListeners();
+  }
+
+  Future<void> signInWithGoogle(BuildContext context) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      print('🔐 LoginViewModel: Starting Google Sign-In');
+
+      // Sign in with Google
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      
+      if (googleUser == null) {
+        print('🔐 LoginViewModel: Google Sign-In cancelled by user');
+        _isLoading = false;
+        notifyListeners();
+        return;
+      }
+
+      print('🔐 LoginViewModel: Google Sign-In successful for: ${googleUser.email}');
+
+      // Get device name
+      final deviceName = await DeviceHelper.getDeviceName();
+      
+      // Split user name
+      final nameParts = googleUser.displayName?.split(' ') ?? ['', ''];
+      final firstName = nameParts.isNotEmpty ? nameParts[0] : '';
+      final lastName = nameParts.length > 1 ? nameParts[1] : '';
+
+      // Create social login request
+      final socialLoginRequest = SocialLoginRequest(
+        deviceToken: deviceName,
+        emailId: googleUser.email,
+        fname: firstName,
+        lname: lastName,
+        loginSource: 'GOOGLE',
+        userKey: googleUser.id,
+      );
+
+      print('🔐 LoginViewModel: Calling social login API');
+
+      // Call social login API
+      final result = await socialLoginUseCase(socialLoginRequest);
+      
+      result.fold(
+        (error) {
+          print('🔐 LoginViewModel: Social login failed: $error');
+          _errorMessage = error;
+          _isLoading = false;
+          notifyListeners();
+          
+          // Show error snackbar
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(error),
+              backgroundColor: Colors.red,
+            ),
+          );
+        },
+        (socialLoginResponse) {
+          print('🔐 LoginViewModel: Social login successful');
+          _isLoading = false;
+          notifyListeners();
+          
+          // Navigate based on user status
+          if (socialLoginResponse.data != null) {
+            final userData = socialLoginResponse.data!;
+            if (userData.ustatus == '0') {
+              // User needs to complete profile/terms - go to onboarding
+              context.go(AppRoutes.onboarding);
+            } else {
+              // User is active, go to dashboard
+              context.go(AppRoutes.dashboard);
+            }
+          }
+        },
+      );
+    } catch (e) {
+      print('🔐 LoginViewModel: Google Sign-In error: $e');
+      _errorMessage = 'Google Sign-In failed: ${e.toString()}';
+      _isLoading = false;
+      notifyListeners();
+      
+      // Show error snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Google Sign-In failed: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }

@@ -8,6 +8,8 @@ import '../../../../core/constants/api_constants.dart';
 import '../../domain/entities/auth_result.dart';
 import '../../domain/entities/otp_response.dart';
 import '../../domain/entities/otp_validation_response.dart';
+import '../../domain/entities/social_login_request.dart';
+import '../../domain/entities/social_login_response.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 
@@ -479,6 +481,7 @@ class AuthRepositoryImpl implements AuthRepository {
       print('🔐 AuthRepository: Storing user data in SharedPreferences');
       print('🔐 AuthRepository: Raw userData.token: ${userData.token}');
       print('🔐 AuthRepository: Raw userData.userId: ${userData.userId}');
+      print('🔐 AuthRepository: Raw userData.logId: ${userData.logId}');
       print('🔐 AuthRepository: Raw userData.fname: ${userData.fname}');
       print('🔐 AuthRepository: Raw userData.lname: ${userData.lname}');
 
@@ -491,6 +494,7 @@ class AuthRepositoryImpl implements AuthRepository {
       // Store individual fields for easy access
       await sharedPreferences.setString('user_token', userData.token ?? '');
       await sharedPreferences.setString('user_id', userData.userId ?? '');
+      await sharedPreferences.setString('user_log_id', userData.logId ?? '');
       await sharedPreferences.setString(
         'user_first_name',
         userData.fname ?? '',
@@ -709,5 +713,65 @@ class AuthRepositoryImpl implements AuthRepository {
           sharedPreferences.getString('user_profile_pic_path') ?? '',
       'devicesCount': sharedPreferences.getInt('user_devices_count').toString(),
     };
+  }
+
+  @override
+  Future<Either<String, SocialLoginResponse>> socialLogin(SocialLoginRequest request) async {
+    try {
+      print('🔐 AuthRepository: Social login request for email: ${request.emailId}');
+      
+      final response = await _dio.post(
+        '${ApiConstants.baseUrl}${ApiConstants.socialLogin}',
+        data: request.toJson(),
+        options: Options(
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      print('🔐 AuthRepository: Social login API response: ${response.statusCode}');
+      print('🔐 AuthRepository: Social login API data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+        print('🔐 AuthRepository: Response data type: ${responseData.runtimeType}');
+        
+        final socialLoginResponse = SocialLoginResponse.fromJson(responseData);
+        print('🔐 AuthRepository: Has error: ${socialLoginResponse.error}');
+        
+        if (!socialLoginResponse.error && socialLoginResponse.data != null) {
+          // Store user data in SharedPreferences
+          final userData = socialLoginResponse.data!;
+          await sharedPreferences.setString('user_data_json', jsonEncode(responseData));
+          await sharedPreferences.setString('user_token', userData.tokenid);
+          await sharedPreferences.setString('user_id', userData.id);
+          await sharedPreferences.setString('user_log_id', userData.logId ?? '');
+          await sharedPreferences.setString('user_first_name', userData.fname);
+          await sharedPreferences.setString('user_last_name', userData.lname);
+          await sharedPreferences.setString('user_email_id', userData.emailid);
+          
+          print('🔐 AuthRepository: Social login successful');
+          return Right(socialLoginResponse);
+        } else {
+          print('🔐 AuthRepository: Social login failed: ${socialLoginResponse.message}');
+          return Left(socialLoginResponse.message);
+        }
+      } else {
+        print('🔐 AuthRepository: Social login failed with status: ${response.statusCode}');
+        return Left('Social login failed with status: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('🔐 AuthRepository: Social login error: $e');
+      if (e is DioException) {
+        if (e.response != null) {
+          print('🔐 AuthRepository: Server error: ${e.response!.statusCode}');
+          print('🔐 AuthRepository: Server response: ${e.response!.data}');
+          return Left('Server error: ${e.response!.statusCode}');
+        }
+      }
+      return Left('Social login failed: ${e.toString()}');
+    }
   }
 }
