@@ -13,3 +13,4 @@ build/
 key.properties
 **/*.keystore
 **/*.jks
+app/google-services.json
