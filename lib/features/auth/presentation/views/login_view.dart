@@ -262,8 +262,6 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
 
                         if (otpResponse != null) {
                           // Success - show OTP card
-                            '📧 LoginView: OTP sent successfully: ${otpResponse.data.otp}',
-                          );
                           setState(() {
                             _showOtpCard = true;
                           });
@@ -972,8 +970,6 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
         } else {
           // Error - increment failed attempts
           _failedAttempts++;
-            '🔐 LoginView: OTP validation failed. Attempt $_failedAttempts',
-          );
 
           // Show error message
           final errorMessage =
@@ -1040,8 +1036,6 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
 
         if (otpResponse != null) {
           // Success - OTP resent
-            '📧 LoginView: OTP resent successfully: ${otpResponse.data.otp}',
-          );
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('OTP resent successfully!'),

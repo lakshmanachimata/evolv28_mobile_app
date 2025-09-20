@@ -52,9 +52,6 @@ class LoggingService {
         ),
         data: {'user_id': userId, 'data': payload},
       );
-
-        '📝 LoggingService: Log sent successfully - Status: ${response.statusCode}',
-      );
     } catch (e) {
       // Don't throw error - logging should not break the app flow
     }
@@ -146,9 +143,6 @@ class LoggingService {
         data: body,
       );
 
-        '📝 LoggingService: Custom log added successfully - Status: ${response.statusCode}',
-      );
-
       return response.data;
     } catch (e) {
       if (e is DioException) {
@@ -200,8 +194,6 @@ class LoggingService {
             coords = await _getCurrentLocation().timeout(
               const Duration(seconds: 2), // Reduced timeout
               onTimeout: () {
-                  '📝 LoggingService: Location request timed out, continuing without location',
-                );
                 return null;
               },
             );

@@ -245,21 +245,13 @@ class DevicesViewModel extends ChangeNotifier {
             // For Android, use the standard approach
             await Future.delayed(const Duration(milliseconds: 200));
             _isBluetoothEnabled = await FlutterBluePlus.isOn;
-              'Android Bluetooth status check: isSupported=true, isOn=$_isBluetoothEnabled',
-            );
 
             if (!_isBluetoothEnabled) {
-                'Android Bluetooth appears off, waiting for adapter state...',
-              );
               await Future.delayed(const Duration(milliseconds: 500));
               _isBluetoothEnabled = await FlutterBluePlus.isOn;
-                'Android Bluetooth status recheck: isOn=$_isBluetoothEnabled',
-              );
             }
           } else if (Platform.isIOS) {
             // For iOS, handle unknown adapter state like the reference code
-              'iOS: Starting Bluetooth status check with unknown state handling',
-            );
 
             // Start listening to adapter state changes immediately
             _listenToBluetoothStateChanges();
@@ -267,14 +259,10 @@ class DevicesViewModel extends ChangeNotifier {
             // Try to get the current state
             await Future.delayed(const Duration(milliseconds: 200));
             _isBluetoothEnabled = await FlutterBluePlus.isOn;
-              'iOS Bluetooth status check: isSupported=true, isOn=$_isBluetoothEnabled',
-            );
 
             // If we can't determine the state, assume it's enabled and proceed
             // The scanning will reveal the actual state
             if (!_isBluetoothEnabled) {
-                'iOS: Bluetooth state unclear, proceeding with permission flow (scanning will reveal actual state)',
-              );
               _isBluetoothEnabled = true; // Assume enabled for now
             }
           }
@@ -323,31 +311,23 @@ class DevicesViewModel extends ChangeNotifier {
 
       // Check if location permission is already granted first
       bool hasLocationPermission = await _checkLocationPermission();
-        'Location permission check result: $hasLocationPermission, dialogShown: $_locationPermissionDialogShown',
-      );
       if (!hasLocationPermission && !_locationPermissionDialogShown) {
         _locationPermissionDialogShown = true; // Prevent multiple requests
         _showLocationPermissionDialog = true; // Show custom dialog first
       } else if (hasLocationPermission) {
         // Location permission granted, check BLE scan permission
         bool hasBluetoothPermission = await _checkBluetoothScanPermission();
-          'Bluetooth permission check result: $hasBluetoothPermission, dialogShown: $_bluetoothScanPermissionDialogShown',
-        );
 
         if (hasBluetoothPermission) {
           _isBluetoothScanPermissionGranted = true;
           _startScanning();
         } else if (!_bluetoothScanPermissionDialogShown) {
-            'Location permission granted, showing Bluetooth permission dialog',
-          );
           _bluetoothScanPermissionDialogShown =
               true; // Prevent multiple requests
           _showBluetoothScanPermissionDialog = true; // Show custom dialog first
         }
       }
     } else if (!_bluetoothStatusChecked) {
-        'Bluetooth status not yet checked, waiting for status check to complete...',
-      );
       // Don't recursively call startDeviceConnection - let the status check complete
       // The Bluetooth state listener will handle starting the flow when status is ready
     } else {
