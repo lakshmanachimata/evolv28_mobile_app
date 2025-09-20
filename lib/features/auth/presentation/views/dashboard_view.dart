@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/routing/app_router_config.dart';
+import '../../../../core/utils/location_permission_helper.dart';
+import '../../../../core/utils/bluetooth_permission_helper.dart';
 import '../viewmodels/dashboard_viewmodel.dart';
 import '../viewmodels/programs_viewmodel.dart';
 
@@ -40,6 +42,12 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
       print('🎵 Dashboard View: Calling viewModel.initialize()...');
       await viewModel.initialize();
       print('🎵 Dashboard View: viewModel.initialize() completed');
+      
+      // Check location permission
+      await LocationPermissionHelper.checkAndRequestLocationPermission(context);
+      
+      // Check Bluetooth permission
+      await BluetoothPermissionHelper.checkAndRequestBluetoothPermission(context);
     });
   }
 

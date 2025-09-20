@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/routing/app_router_config.dart';
+import '../../../../core/utils/location_permission_helper.dart';
+import '../../../../core/utils/bluetooth_permission_helper.dart';
 import '../viewmodels/devices_viewmodel.dart';
 
 class DevicesView extends StatelessWidget {
@@ -38,9 +40,15 @@ class _DevicesViewBodyState extends State<_DevicesViewBody>
     WidgetsBinding.instance.addObserver(this);
 
     // Check if we should show permission dialog on screen load
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final viewModel = Provider.of<DevicesViewModel>(context, listen: false);
       viewModel.checkPermissionOnLoad();
+      
+      // Check location permission
+      await LocationPermissionHelper.checkAndRequestLocationPermission(context);
+      
+      // Check Bluetooth permission
+      await BluetoothPermissionHelper.checkAndRequestBluetoothPermission(context);
     });
   }
 
