@@ -25,7 +25,6 @@ class LoggingService {
     String? notes,
   }) async {
     try {
-      print('📝 LoggingService: Sending log - Event: $event, Status: $status');
 
       // Get stored token and user ID for authorization
       final prefs = await SharedPreferences.getInstance();
@@ -33,7 +32,6 @@ class LoggingService {
       final userId = prefs.getString('user_id') ?? '';
 
       if (token.isEmpty || userId.isEmpty) {
-        print('📝 LoggingService: No token or user ID found, skipping log');
         return;
       }
 
@@ -55,11 +53,9 @@ class LoggingService {
         data: {'user_id': userId, 'data': payload},
       );
 
-      print(
         '📝 LoggingService: Log sent successfully - Status: ${response.statusCode}',
       );
     } catch (e) {
-      print('📝 LoggingService: Error sending log: $e');
       // Don't throw error - logging should not break the app flow
     }
   }
@@ -135,14 +131,12 @@ class LoggingService {
   /// Returns the response from the server
   Future<dynamic> addLog(dynamic body) async {
     try {
-      print('📝 LoggingService: Adding custom log');
 
       // Get stored token for authorization
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('user_token') ?? '';
 
       if (token.isEmpty) {
-        print('📝 LoggingService: No token found, skipping log');
         return null;
       }
 
@@ -152,18 +146,13 @@ class LoggingService {
         data: body,
       );
 
-      print(
         '📝 LoggingService: Custom log added successfully - Status: ${response.statusCode}',
       );
-      print('📝 LoggingService: Response data: ${response.data}');
 
       return response.data;
     } catch (e) {
-      print('📝 LoggingService: Error adding custom log: $e');
       if (e is DioException) {
         if (e.response != null) {
-          print('📝 LoggingService: Server error: ${e.response!.statusCode}');
-          print('📝 LoggingService: Server response: ${e.response!.data}');
           return e.response!.data;
         }
       }
@@ -184,7 +173,6 @@ class LoggingService {
     bool includeLocation = true,
   }) async {
     try {
-      print('📝 LoggingService: Updating BLE command log');
 
       // Get stored user data
       final prefs = await SharedPreferences.getInstance();
@@ -193,14 +181,12 @@ class LoggingService {
       final logId = prefs.getString('user_log_id') ?? '';
 
       if (userDataString == null || token.isEmpty) {
-        print('📝 LoggingService: No user data or token found, skipping log');
         return;
       }
 
       final userData = jsonDecode(userDataString);
       
       if (logId.isEmpty) {
-        print('📝 LoggingService: No LogId found, skipping log');
         return;
       }
 
@@ -214,7 +200,6 @@ class LoggingService {
             coords = await _getCurrentLocation().timeout(
               const Duration(seconds: 2), // Reduced timeout
               onTimeout: () {
-                print(
                   '📝 LoggingService: Location request timed out, continuing without location',
                 );
                 return null;
@@ -222,7 +207,6 @@ class LoggingService {
             );
           }
         } catch (e) {
-          print('📝 LoggingService: Error getting location: $e');
           // Continue without location data
           coords = null;
         }
@@ -261,9 +245,7 @@ class LoggingService {
       // Send log using addLog method
       await addLog(body);
 
-      print('📝 LoggingService: BLE command log updated successfully');
     } catch (e) {
-      print('📝 LoggingService: Error updating BLE command log: $e');
       // Don't rethrow - logging should not break the app flow
     }
   }
@@ -275,7 +257,6 @@ class LoggingService {
       return permission == LocationPermission.whileInUse ||
           permission == LocationPermission.always;
     } catch (e) {
-      print('📝 LoggingService: Error checking location permission: $e');
       return false;
     }
   }
@@ -301,7 +282,6 @@ class LoggingService {
 
       return {'latitude': position.latitude, 'longitude': position.longitude};
     } catch (e) {
-      print('📝 LoggingService: Error getting current location: $e');
       return null;
     }
   }
@@ -321,7 +301,6 @@ class LoggingService {
 
       return '';
     } catch (e) {
-      print('📝 LoggingService: Error getting device MAC ID: $e');
       return '';
     }
   }

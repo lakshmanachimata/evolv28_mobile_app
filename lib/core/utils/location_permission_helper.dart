@@ -9,7 +9,6 @@ class LocationPermissionHelper {
       final status = await Permission.location.status;
       return status.isGranted;
     } catch (e) {
-      print('❌ LocationPermissionHelper: Error checking location permission: $e');
       return false;
     }
   }
@@ -19,7 +18,6 @@ class LocationPermissionHelper {
     try {
       return await Geolocator.isLocationServiceEnabled();
     } catch (e) {
-      print('❌ LocationPermissionHelper: Error checking location service: $e');
       return false;
     }
   }
@@ -30,7 +28,6 @@ class LocationPermissionHelper {
       final status = await Permission.location.request();
       return status.isGranted;
     } catch (e) {
-      print('❌ LocationPermissionHelper: Error requesting location permission: $e');
       return false;
     }
   }
@@ -40,7 +37,6 @@ class LocationPermissionHelper {
     try {
       await openAppSettings();
     } catch (e) {
-      print('❌ LocationPermissionHelper: Error opening app settings: $e');
     }
   }
 
@@ -146,7 +142,6 @@ class LocationPermissionHelper {
 
       return true;
     } catch (e) {
-      print('❌ LocationPermissionHelper: Error in checkAndRequestLocationPermission: $e');
       await showLocationPermissionDialog(context);
       return false;
     }

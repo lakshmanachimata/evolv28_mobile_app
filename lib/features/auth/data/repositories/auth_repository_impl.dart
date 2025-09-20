@@ -53,7 +53,6 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<String, OtpResponse>> sendOtp(String email) async {
     try {
-      print('📧 AuthRepository: Sending OTP request for email: $email');
 
       final response = await _dio.post(
         '${ApiConstants.baseUrl}${ApiConstants.sendOtp}',
@@ -61,30 +60,25 @@ class AuthRepositoryImpl implements AuthRepository {
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
-      print('📧 AuthRepository: OTP API response: ${response.data}');
 
       if (response.statusCode == 200) {
         final otpResponse = OtpResponse.fromJson(response.data);
 
         if (!otpResponse.error) {
-          print(
             '📧 AuthRepository: OTP sent successfully: ${otpResponse.data.otp}',
           );
           return Right(otpResponse);
         } else {
-          print(
             '📧 AuthRepository: OTP API returned error: ${otpResponse.message}',
           );
           return Left(otpResponse.message);
         }
       } else {
-        print(
           '📧 AuthRepository: OTP API failed with status: ${response.statusCode}',
         );
         return Left('Failed to send OTP. Please try again.');
       }
     } catch (e) {
-      print('📧 AuthRepository: OTP API error: $e');
       if (e is DioException) {
         if (e.response != null) {
           // Server responded with error status
@@ -106,13 +100,11 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<String, bool>> verifyOtp(String email, String otp) async {
     try {
-      print('🔐 AuthRepository: Verifying OTP for email: $email');
 
       // Get stored token for authorization
       final token = sharedPreferences.getString('user_token') ?? '';
 
       if (token.isEmpty) {
-        print('🔐 AuthRepository: No token found for OTP verification');
         return const Left('No authentication token found. Please login again.');
       }
 
@@ -128,33 +120,26 @@ class AuthRepositoryImpl implements AuthRepository {
         ),
       );
 
-      print(
         '🔐 AuthRepository: Verify OTP API response: ${response.statusCode}',
       );
-      print('🔐 AuthRepository: Verify OTP API data: ${response.data}');
 
       if (response.statusCode == 200) {
         // Check if the response indicates success
         final responseData = response.data;
-        print(
           '🔐 AuthRepository: Response data type: ${responseData.runtimeType}',
         );
-        print('🔐 AuthRepository: Response data: $responseData');
 
         if (responseData is Map<String, dynamic>) {
           // Check the 'error' field - if error is false, it's success
           final hasError =
               responseData['error'] ??
               true; // Default to true (error) if field is missing
-          print('🔐 AuthRepository: Has error: $hasError');
 
           if (!hasError) {
-            print('🔐 AuthRepository: OTP verification successful');
             return const Right(true);
           } else {
             final errorMessage =
                 responseData['message'] ?? 'OTP verification failed';
-            print('🔐 AuthRepository: OTP verification failed: $errorMessage');
             return Left(errorMessage);
           }
         } else if (responseData is String) {
@@ -164,35 +149,29 @@ class AuthRepositoryImpl implements AuthRepository {
             final hasError = parsedData['error'] ?? true;
 
             if (!hasError) {
-              print('🔐 AuthRepository: OTP verification successful');
               return const Right(true);
             } else {
               final errorMessage =
                   parsedData['message'] ?? 'OTP verification failed';
-              print(
                 '🔐 AuthRepository: OTP verification failed: $errorMessage',
               );
               return Left(errorMessage);
             }
           } catch (e) {
-            print('🔐 AuthRepository: Failed to parse JSON string: $e');
             return const Left('Invalid response format from server');
           }
         } else {
           // If response is not a map or string, assume error for safety
-          print(
             '🔐 AuthRepository: OTP verification failed - invalid response format',
           );
           return const Left('Invalid response format from server');
         }
       } else {
-        print(
           '🔐 AuthRepository: Verify OTP API failed with status: ${response.statusCode}',
         );
         return Left('Failed to verify OTP. Please try again.');
       }
     } catch (e) {
-      print('🔐 AuthRepository: Verify OTP API error: $e');
       if (e is DioException) {
         if (e.response != null) {
           // Server responded with error status
@@ -216,13 +195,11 @@ class AuthRepositoryImpl implements AuthRepository {
     int userId,
   ) async {
     try {
-      print('🔐 AuthRepository: Getting user details for userId: $userId');
 
       // Get stored token for authorization
       final token = sharedPreferences.getString('user_token') ?? '';
 
       if (token.isEmpty) {
-        print('🔐 AuthRepository: No token found for user details request');
         return const Left('No authentication token found. Please login again.');
       }
 
@@ -237,27 +214,21 @@ class AuthRepositoryImpl implements AuthRepository {
         ),
       );
 
-      print(
         '🔐 AuthRepository: Get user details API response: ${response.statusCode}',
       );
-      print('🔐 AuthRepository: Get user details API data: ${response.data}');
 
       if (response.statusCode == 200) {
         final responseData = response.data;
-        print(
           '🔐 AuthRepository: Response data type: ${responseData.runtimeType}',
         );
-        print('🔐 AuthRepository: Response data: $responseData');
 
         if (responseData is Map<String, dynamic>) {
           // Check the 'error' field - if error is false, it's success
           final hasError =
               responseData['error'] ??
               true; // Default to true (error) if field is missing
-          print('🔐 AuthRepository: Has error: $hasError');
 
           if (!hasError) {
-            print('🔐 AuthRepository: User details retrieved successfully');
             final otpValidationResponse = OtpValidationResponse.fromJson(
               responseData,
             );
@@ -265,7 +236,6 @@ class AuthRepositoryImpl implements AuthRepository {
           } else {
             final errorMessage =
                 responseData['message'] ?? 'Failed to get user details';
-            print('🔐 AuthRepository: Get user details failed: $errorMessage');
             return Left(errorMessage);
           }
         } else if (responseData is String) {
@@ -275,7 +245,6 @@ class AuthRepositoryImpl implements AuthRepository {
             final hasError = parsedData['error'] ?? true;
 
             if (!hasError) {
-              print('🔐 AuthRepository: User details retrieved successfully');
               final otpValidationResponse = OtpValidationResponse.fromJson(
                 parsedData,
               );
@@ -283,30 +252,25 @@ class AuthRepositoryImpl implements AuthRepository {
             } else {
               final errorMessage =
                   parsedData['message'] ?? 'Failed to get user details';
-              print(
                 '🔐 AuthRepository: Get user details failed: $errorMessage',
               );
               return Left(errorMessage);
             }
           } catch (e) {
-            print('🔐 AuthRepository: Failed to parse JSON string: $e');
             return const Left('Invalid response format from server');
           }
         } else {
           // If response is not a map or string, assume error for safety
-          print(
             '🔐 AuthRepository: Get user details failed - invalid response format',
           );
           return const Left('Invalid response format from server');
         }
       } else {
-        print(
           '🔐 AuthRepository: Get user details API failed with status: ${response.statusCode}',
         );
         return Left('Failed to get user details. Please try again.');
       }
     } catch (e) {
-      print('🔐 AuthRepository: Get user details API error: $e');
       if (e is DioException) {
         if (e.response != null) {
           // Server responded with error status
@@ -328,13 +292,11 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<String, dynamic>> getAllMusic(int userId) async {
     try {
-      print('🔐 AuthRepository: Getting all music for userId: $userId');
 
       // Get stored token for authorization
       final token = sharedPreferences.getString('user_token') ?? '';
 
       if (token.isEmpty) {
-        print('🔐 AuthRepository: No token found for all music request');
         return const Left('No authentication token found. Please login again.');
       }
 
@@ -349,25 +311,19 @@ class AuthRepositoryImpl implements AuthRepository {
         ),
       );
 
-      print(
         '🔐 AuthRepository: Get all music API response: ${response.statusCode}',
       );
-      print('🔐 AuthRepository: Get all music API data: ${response.data}');
-      print(
         '🔐 AuthRepository: Response data type: ${response.data.runtimeType}',
       );
 
       if (response.statusCode == 200) {
-        print('🔐 AuthRepository: All music retrieved successfully');
         return Right(response.data);
       } else {
-        print(
           '🔐 AuthRepository: Get all music API failed with status: ${response.statusCode}',
         );
         return Left('Failed to retrieve music. Please try again.');
       }
     } catch (e) {
-      print('🔐 AuthRepository: Get all music API error: $e');
       if (e is DioException) {
         if (e.response != null) {
           // Server responded with error status
@@ -392,7 +348,6 @@ class AuthRepositoryImpl implements AuthRepository {
     String otp,
   ) async {
     try {
-      print('🔐 AuthRepository: Validating OTP for email: $email');
 
       final response = await _dio.post(
         '${ApiConstants.baseUrl}${ApiConstants.validateOtp}',
@@ -400,25 +355,17 @@ class AuthRepositoryImpl implements AuthRepository {
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
-      print('🔐 AuthRepository: OTP validation API response: ${response.data}');
-      print('🔐 AuthRepository: Response type: ${response.data.runtimeType}');
-      print(
         '🔐 AuthRepository: Response keys: ${response.data is Map ? (response.data as Map).keys.toList() : 'Not a Map'}',
       );
 
       // Debug the data structure more deeply
       if (response.data is Map) {
         final responseMap = response.data as Map<String, dynamic>;
-        print('🔐 AuthRepository: Full response map: $responseMap');
 
         if (responseMap.containsKey('data') && responseMap['data'] is Map) {
           final dataMap = responseMap['data'] as Map<String, dynamic>;
-          print(
             '🔐 AuthRepository: Data section keys: ${dataMap.keys.toList()}',
           );
-          print('🔐 AuthRepository: Data section values: $dataMap');
-          print('🔐 AuthRepository: Token in data: ${dataMap['token']}');
-          print('🔐 AuthRepository: UserId in data: ${dataMap['UserId']}');
         }
       }
 
@@ -428,12 +375,10 @@ class AuthRepositoryImpl implements AuthRepository {
         );
 
         if (!otpValidationResponse.error) {
-          print('🔐 AuthRepository: OTP validated successfully');
 
           // Check if userId and token are null (user doesn't exist)
           if (otpValidationResponse.data.userId == null ||
               otpValidationResponse.data.token == null) {
-            print(
               '🔐 AuthRepository: User does not exist - userId and token are null',
             );
             return Left('User does not exist. Please register first.');
@@ -444,19 +389,16 @@ class AuthRepositoryImpl implements AuthRepository {
 
           return Right(otpValidationResponse);
         } else {
-          print(
             '🔐 AuthRepository: OTP validation failed: ${otpValidationResponse.message}',
           );
           return Left(otpValidationResponse.message);
         }
       } else {
-        print(
           '🔐 AuthRepository: OTP validation API failed with status: ${response.statusCode}',
         );
         return Left('Failed to validate OTP. Please try again.');
       }
     } catch (e) {
-      print('🔐 AuthRepository: OTP validation API error: $e');
       if (e is DioException) {
         if (e.response != null) {
           // Server responded with error status
@@ -478,12 +420,6 @@ class AuthRepositoryImpl implements AuthRepository {
   // Store user data in SharedPreferences
   Future<void> _storeUserData(OtpValidationData userData) async {
     try {
-      print('🔐 AuthRepository: Storing user data in SharedPreferences');
-      print('🔐 AuthRepository: Raw userData.token: ${userData.token}');
-      print('🔐 AuthRepository: Raw userData.userId: ${userData.userId}');
-      print('🔐 AuthRepository: Raw userData.logId: ${userData.logId}');
-      print('🔐 AuthRepository: Raw userData.fname: ${userData.fname}');
-      print('🔐 AuthRepository: Raw userData.lname: ${userData.lname}');
 
       // Store complete user data as JSON
       await sharedPreferences.setString(
@@ -527,17 +463,7 @@ class AuthRepositoryImpl implements AuthRepository {
       final storedToken = sharedPreferences.getString('user_token');
       final storedUserId = sharedPreferences.getString('user_id');
 
-      print('🔐 AuthRepository: User data stored successfully');
-      print('🔐 AuthRepository: Verified stored token: "$storedToken"');
-      print('🔐 AuthRepository: Verified stored userId: "$storedUserId"');
-      print('🔐 AuthRepository: Token: ${userData.token}');
-      print('🔐 AuthRepository: User ID: ${userData.userId}');
-      print('🔐 AuthRepository: First Name: ${userData.fname}');
-      print('🔐 AuthRepository: Last Name: ${userData.lname}');
-      print('🔐 AuthRepository: Email: ${userData.emailId}');
-      print('🔐 AuthRepository: Devices Count: ${userData.devices.length}');
     } catch (e) {
-      print('🔐 AuthRepository: Error storing user data: $e');
     }
   }
 
@@ -564,20 +490,16 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Either<String, bool>> deleteUserAccount() async {
     try {
       // Get stored user data
-      print('🔐 AuthRepository: Getting user data from SharedPreferences...');
 
       // Debug: List all stored keys
       final allKeys = sharedPreferences.getKeys();
-      print('🔐 AuthRepository: All stored keys: $allKeys');
 
       // Debug: Check what type of data is stored
       final userIdValue = sharedPreferences.get('user_id');
       final tokenValue = sharedPreferences.get('user_token');
 
-      print(
         '🔐 AuthRepository: Raw userId type: ${userIdValue.runtimeType}, value: $userIdValue',
       );
-      print(
         '🔐 AuthRepository: Raw token type: ${tokenValue.runtimeType}, value: $tokenValue',
       );
 
@@ -585,14 +507,10 @@ class AuthRepositoryImpl implements AuthRepository {
       final userId = userIdValue?.toString() ?? '';
       final token = tokenValue?.toString() ?? '';
 
-      print('🔐 AuthRepository: Converted userId: $userId');
-      print(
         '🔐 AuthRepository: Converted token: ${token.isNotEmpty ? 'present' : 'empty'}',
       );
 
       if (userId.isEmpty || token.isEmpty) {
-        print('🔐 AuthRepository: No user ID or token found for deletion');
-        print('🔐 AuthRepository: Proceeding with local data cleanup only');
 
         // Clear any remaining local data
         await logout();
@@ -600,7 +518,6 @@ class AuthRepositoryImpl implements AuthRepository {
         return Right(true); // Return success since local cleanup is done
       }
 
-      print('🔐 AuthRepository: Deleting user account for ID: $userId');
 
       final response = await _dio.delete(
         '${ApiConstants.baseUrl}${ApiConstants.deleteUser}/$userId',
@@ -613,25 +530,21 @@ class AuthRepositoryImpl implements AuthRepository {
         ),
       );
 
-      print(
         '🔐 AuthRepository: Delete user API response: ${response.statusCode}',
       );
 
       if (response.statusCode == 200 || response.statusCode == 204) {
-        print('🔐 AuthRepository: User account deleted successfully');
 
         // Clear all user data from SharedPreferences
         await logout();
 
         return Right(true);
       } else {
-        print(
           '🔐 AuthRepository: Delete user API failed with status: ${response.statusCode}',
         );
         return Left('Failed to delete account. Please try again.');
       }
     } catch (e) {
-      print('🔐 AuthRepository: Delete user API error: $e');
       if (e is DioException) {
         if (e.response != null) {
           // Server responded with error status
@@ -663,7 +576,6 @@ class AuthRepositoryImpl implements AuthRepository {
     final lastName = sharedPreferences.getString('user_last_name') ?? '';
     final devicesCount = sharedPreferences.getInt('user_devices_count') ?? 0;
 
-    print(
       '🔐 AuthRepository: Profile check - FirstName: "$firstName", LastName: "$lastName", Devices: $devicesCount',
     );
 
@@ -671,7 +583,6 @@ class AuthRepositoryImpl implements AuthRepository {
     final hasCompleteProfile =
         firstName.isNotEmpty && lastName.isNotEmpty && devicesCount > 0;
 
-    print('🔐 AuthRepository: Has complete profile: $hasCompleteProfile');
     return hasCompleteProfile;
   }
 
@@ -681,7 +592,6 @@ class AuthRepositoryImpl implements AuthRepository {
     final lastName = sharedPreferences.getString('user_last_name') ?? '';
     final devicesCount = sharedPreferences.getInt('user_devices_count') ?? 0;
 
-    print(
       '🔐 AuthRepository: Basic profile check - FirstName: "$firstName", LastName: "$lastName", Devices: $devicesCount',
     );
 
@@ -689,7 +599,6 @@ class AuthRepositoryImpl implements AuthRepository {
     final hasBasicProfileButNoDevices =
         firstName.isNotEmpty && lastName.isNotEmpty && devicesCount == 0;
 
-    print(
       '🔐 AuthRepository: Has basic profile but no devices: $hasBasicProfileButNoDevices',
     );
     return hasBasicProfileButNoDevices;
@@ -718,7 +627,6 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<String, SocialLoginResponse>> socialLogin(SocialLoginRequest request) async {
     try {
-      print('🔐 AuthRepository: Social login request for email: ${request.emailId}');
       
       final response = await _dio.post(
         '${ApiConstants.baseUrl}${ApiConstants.socialLogin}',
@@ -731,15 +639,11 @@ class AuthRepositoryImpl implements AuthRepository {
         ),
       );
 
-      print('🔐 AuthRepository: Social login API response: ${response.statusCode}');
-      print('🔐 AuthRepository: Social login API data: ${response.data}');
 
       if (response.statusCode == 200) {
         final responseData = response.data;
-        print('🔐 AuthRepository: Response data type: ${responseData.runtimeType}');
         
         final socialLoginResponse = SocialLoginResponse.fromJson(responseData);
-        print('🔐 AuthRepository: Has error: ${socialLoginResponse.error}');
         
         if (!socialLoginResponse.error && socialLoginResponse.data != null) {
           // Store user data in SharedPreferences
@@ -752,22 +656,16 @@ class AuthRepositoryImpl implements AuthRepository {
           await sharedPreferences.setString('user_last_name', userData.lname);
           await sharedPreferences.setString('user_email_id', userData.emailid);
           
-          print('🔐 AuthRepository: Social login successful');
           return Right(socialLoginResponse);
         } else {
-          print('🔐 AuthRepository: Social login failed: ${socialLoginResponse.message}');
           return Left(socialLoginResponse.message);
         }
       } else {
-        print('🔐 AuthRepository: Social login failed with status: ${response.statusCode}');
         return Left('Social login failed with status: ${response.statusCode}');
       }
     } catch (e) {
-      print('🔐 AuthRepository: Social login error: $e');
       if (e is DioException) {
         if (e.response != null) {
-          print('🔐 AuthRepository: Server error: ${e.response!.statusCode}');
-          print('🔐 AuthRepository: Server response: ${e.response!.data}');
           return Left('Server error: ${e.response!.statusCode}');
         }
       }

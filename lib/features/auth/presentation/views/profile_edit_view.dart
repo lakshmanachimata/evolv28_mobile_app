@@ -196,7 +196,6 @@ class _ProfileEditViewBody extends StatelessWidget {
         GestureDetector(
           onTap: () {
             // Handle profile picture change
-            print('Change profile picture');
           },
           child: Container(
             width: 100,
@@ -354,7 +353,6 @@ class _ProfileEditViewBody extends StatelessWidget {
       child: ElevatedButton(
         onPressed: () {
           // Handle save profile
-          print('Save profile');
           context.go(AppRoutes.profile);
         },
         style: ElevatedButton.styleFrom(

@@ -79,13 +79,11 @@ class ProfileEditViewModel extends ChangeNotifier {
 
   // Change profile picture
   void changeProfilePicture() {
-    print('Change profile picture');
     // Implement profile picture change logic here
   }
 
   // Save profile
   void saveProfile() {
-    print('Save profile: $_firstName $_lastName');
     // Implement save profile logic here
   }
 }

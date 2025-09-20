@@ -41,7 +41,6 @@ class NativeBluetoothService {
       final String status = await _channel.invokeMethod('getBluetoothStatus');
       return status;
     } catch (e) {
-      print('Error getting Bluetooth status: $e');
       return 'unknown';
     }
   }
@@ -52,7 +51,6 @@ class NativeBluetoothService {
       final String status = await _channel.invokeMethod('getBluetoothPermissionStatus');
       return status;
     } catch (e) {
-      print('Error getting Bluetooth permission status: $e');
       return 'unknown';
     }
   }
@@ -63,7 +61,6 @@ class NativeBluetoothService {
       final String result = await _channel.invokeMethod('requestBluetoothPermission');
       return result;
     } catch (e) {
-      print('Error requesting Bluetooth permission: $e');
       return 'error';
     }
   }
@@ -74,7 +71,6 @@ class NativeBluetoothService {
       final String result = await _channel.invokeMethod('startScanning');
       return result;
     } catch (e) {
-      print('Error starting Bluetooth scan: $e');
       return 'error';
     }
   }
@@ -85,7 +81,6 @@ class NativeBluetoothService {
       final String result = await _channel.invokeMethod('stopScanning');
       return result;
     } catch (e) {
-      print('Error stopping Bluetooth scan: $e');
       return 'error';
     }
   }

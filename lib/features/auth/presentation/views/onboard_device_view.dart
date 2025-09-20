@@ -98,7 +98,6 @@ class _OnboardDeviceViewState extends State<OnboardDeviceView> {
         return;
       }
 
-      print('🔐 OnboardDeviceView: Verifying OTP for email: $email');
       
       // Call the verify OTP API
       final result = await _verifyOtpUseCase(email, otp);
@@ -106,7 +105,6 @@ class _OnboardDeviceViewState extends State<OnboardDeviceView> {
       result.fold(
         (error) {
           // Error occurred
-          print('🔐 OnboardDeviceView: OTP verification failed: $error');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Invalid OTP. Please try again.'),
@@ -117,14 +115,12 @@ class _OnboardDeviceViewState extends State<OnboardDeviceView> {
         },
         (success) {
           // Success
-          print('🔐 OnboardDeviceView: OTP verification successful');
           
           // Show device activated success dialog
           _showDeviceActivatedSuccessDialog();
         },
       );
     } catch (e) {
-      print('🔐 OnboardDeviceView: OTP verification error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('An error occurred: $e'),
@@ -400,7 +396,6 @@ class _OnboardDeviceViewState extends State<OnboardDeviceView> {
           child: ElevatedButton(
             onPressed: () {
               // Handle buy now action
-              print('Buy now tapped');
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF547D81), // Teal/blue-green
@@ -468,7 +463,6 @@ class _OnboardDeviceViewState extends State<OnboardDeviceView> {
             ),
             onChanged: (value) {
               // Handle OTP input changes
-              print('OTP entered: $value');
             },
           ),
         ),
@@ -478,7 +472,6 @@ class _OnboardDeviceViewState extends State<OnboardDeviceView> {
         // // Resend OTP Link
         // GestureDetector(
         //   onTap: () {
-        //     print('Resend OTP tapped');
         //   },
         //   child: Text(
         //     'Resend OTP',
@@ -548,7 +541,6 @@ class _OnboardDeviceViewState extends State<OnboardDeviceView> {
         // Contact Support
         GestureDetector(
           onTap: () {
-            print('Contact Support tapped');
           },
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,

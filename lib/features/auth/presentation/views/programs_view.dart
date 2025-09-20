@@ -402,7 +402,6 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
                     // Play button
                     GestureDetector(
                       onTap: () {
-                        print('🎵 Programs: Play button tapped for program: ${program.id}');
                         viewModel.playBluetoothProgram(program.id);
                       },
                       child: Container(
@@ -659,7 +658,6 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
 
   // Custom transition builder for different view changes
   Widget _buildTransition(Widget child, Animation<double> animation) {
-    print('🎬 Animation triggered for child: ${child.key}');
     // Simple slide transition from right to left
     return SlideTransition(
       position: Tween<Offset>(

@@ -25,9 +25,7 @@ class AddLogExample {
 
     try {
       final response = await _loggingService.addLog(logData);
-      print('Log added successfully: $response');
     } catch (e) {
-      print('Error adding log: $e');
     }
   }
 
@@ -49,9 +47,7 @@ class AddLogExample {
 
     try {
       final response = await _loggingService.addLog(logData);
-      print('Array log added successfully: $response');
     } catch (e) {
-      print('Error adding array log: $e');
     }
   }
 
@@ -61,9 +57,7 @@ class AddLogExample {
 
     try {
       final response = await _loggingService.addLog(logData);
-      print('String log added successfully: $response');
     } catch (e) {
-      print('Error adding string log: $e');
     }
   }
 
@@ -98,9 +92,7 @@ class AddLogExample {
 
     try {
       final response = await _loggingService.addLog(logData);
-      print('Complex log added successfully: $response');
     } catch (e) {
-      print('Error adding complex log: $e');
     }
   }
 
@@ -121,9 +113,7 @@ class AddLogExample {
 
     try {
       final response = await _loggingService.addLog(logData);
-      print('Error log added successfully: $response');
     } catch (e) {
-      print('Error adding error log: $e');
     }
   }
 
@@ -153,9 +143,7 @@ class AddLogExample {
 
     try {
       final response = await _loggingService.addLog(logData);
-      print('Analytics log added successfully: $response');
     } catch (e) {
-      print('Error adding analytics log: $e');
     }
   }
 
@@ -173,9 +161,7 @@ class AddLogExample {
             
             try {
               final response = await _loggingService.addLog(logData);
-              print('Button press logged: $response');
             } catch (e) {
-              print('Error logging button press: $e');
             }
           },
           child: const Text('Log Button Press'),
@@ -192,9 +178,7 @@ class AddLogExample {
             
             try {
               final response = await _loggingService.addLog(logData);
-              print('Screen view logged: $response');
             } catch (e) {
-              print('Error logging screen view: $e');
             }
           },
           child: const Text('Log Screen View'),
@@ -226,9 +210,7 @@ class AddLogExample {
 
     try {
       final response = await _loggingService.addLog(logs);
-      print('Batch logs added successfully: $response');
     } catch (e) {
-      print('Error adding batch logs: $e');
     }
   }
 }

@@ -181,7 +181,6 @@ class AtnUpdateLogExample {
         reqTime: reqTime,
       );
     } catch (e) {
-      print('Error logging command: $e');
       // Handle error appropriately
     }
   }
@@ -197,7 +196,6 @@ class BluetoothServiceIntegration {
     
     // Store the request time for when we get the response
     // You might want to store this in a map or similar structure
-    print('Command sent: $command at $reqTime');
   }
 
   // This method would be called from BluetoothService when receiving responses

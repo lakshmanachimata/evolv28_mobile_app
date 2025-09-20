@@ -19,8 +19,6 @@ class OtpValidationResponse {
         data: OtpValidationData.fromJson(json['data'] ?? {}),
       );
     } catch (e) {
-      print('🔐 OtpValidationResponse: Error parsing JSON: $e');
-      print('🔐 OtpValidationResponse: JSON data: $json');
       // Return a default response if parsing fails
       return OtpValidationResponse(
         error: true,
@@ -121,8 +119,6 @@ class OtpValidationData {
         emailid: json['emailid']?.toString(),
       );
     } catch (e) {
-      print('🔐 OtpValidationData: Error parsing JSON: $e');
-      print('🔐 OtpValidationData: JSON data: $json');
       // Return default data if parsing fails
       return OtpValidationData();
     }
@@ -176,7 +172,6 @@ class OtpValidationData {
             return List.from(parsed);
           }
         } catch (e) {
-          print('🔐 OtpValidationData: Error parsing devices string: $e');
         }
         return [];
       }
@@ -184,7 +179,6 @@ class OtpValidationData {
       // If it's any other type, return empty list
       return [];
     } catch (e) {
-      print('🔐 OtpValidationData: Error parsing devices: $e');
       return [];
     }
   }

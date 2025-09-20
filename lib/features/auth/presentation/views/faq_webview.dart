@@ -73,7 +73,6 @@ class _FAQWebViewState extends State<FAQWebView> {
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
     } else {
-      print('Could not launch $url');
     }
   }
 

@@ -69,33 +69,26 @@ class _SplashScreenState extends State<SplashScreen>
       
       // Check if user is logged in (has valid token and user ID)
       final isLoggedIn = await authRepository.isLoggedIn();
-      print('🚀 SplashScreen: User logged in: $isLoggedIn');
       
       if (isLoggedIn) {
         // User is logged in, fetch latest user details first
-        print('🚀 SplashScreen: Fetching latest user details...');
         final userDetails = await _fetchLatestUserDetails(authRepository);
         
         // Fetch all music for the user and check navigation based on music data
         if (userDetails != null) {
-          print('🚀 SplashScreen: Fetching all music for user...');
           final hasMusicData = await _fetchAllMusic(userDetails.data.userId ?? userDetails.data.id);
           
           // Always go to dashboard screen where permission dialogs are implemented
-          print('🚀 SplashScreen: Navigating to dashboard (permission dialogs will be shown there)');
           context.go(AppRoutes.dashboard);
         } else {
           // If user details fetch fails, go to dashboard screen
-          print('🚀 SplashScreen: Failed to fetch user details, navigating to dashboard');
           context.go(AppRoutes.dashboard);
         }
       } else {
         // User not logged in, go to login screen
-        print('🚀 SplashScreen: Navigating to login');
         context.go(AppRoutes.login);
       }
     } catch (e) {
-      print('🚀 SplashScreen: Error checking authentication: $e');
       // On error, default to login screen
       if (mounted) {
         context.go(AppRoutes.login);
@@ -105,19 +98,15 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<dynamic> _fetchLatestUserDetails(AuthRepository authRepository) async {
     try {
-      print('🚀 SplashScreen: Starting to fetch latest user details...');
       
       // Get stored user data to get user ID
       final storedUserData = await authRepository.getStoredUserData();
-      print('🚀 SplashScreen: Stored user data: $storedUserData');
       
       final userIdString = storedUserData['userId'];
-      print('🚀 SplashScreen: User ID string: $userIdString');
       
       if (userIdString != null && userIdString.isNotEmpty) {
         final userId = int.tryParse(userIdString);
         if (userId != null) {
-          print('🚀 SplashScreen: Fetching latest user details for userId: $userId');
           
           // Get GetUserDetailsUseCase from dependency injection
           final getUserDetailsUseCase = sl<GetUserDetailsUseCase>();
@@ -127,12 +116,10 @@ class _SplashScreenState extends State<SplashScreen>
           
           return result.fold(
             (error) {
-              print('🚀 SplashScreen: Failed to fetch user details: $error');
               // Return null if fetch fails
               return null;
             },
             (userDetails) {
-              print('🚀 SplashScreen: Successfully fetched latest user details');
               // Update stored user data with latest information
               _updateStoredUserData(userDetails);
               // Return the user details
@@ -140,15 +127,12 @@ class _SplashScreenState extends State<SplashScreen>
             },
           );
         } else {
-          print('🚀 SplashScreen: Invalid user ID format: $userIdString');
           return null;
         }
       } else {
-        print('🚀 SplashScreen: No user ID found in stored data');
         return null;
       }
     } catch (e) {
-      print('🚀 SplashScreen: Error fetching user details: $e');
       // Return null if fetch fails
       return null;
     }
@@ -157,17 +141,14 @@ class _SplashScreenState extends State<SplashScreen>
   Future<bool> _fetchAllMusic(String? userIdString) async {
     try {
       if (userIdString == null || userIdString.isEmpty) {
-        print('🚀 SplashScreen: No user ID provided for fetching all music');
         return false;
       }
 
       final userId = int.tryParse(userIdString);
       if (userId == null) {
-        print('🚀 SplashScreen: Invalid user ID format for fetching all music: $userIdString');
         return false;
       }
 
-      print('🚀 SplashScreen: Fetching all music for userId: $userId');
       
       // Get GetAllMusicUseCase from dependency injection
       final getAllMusicUseCase = sl<GetAllMusicUseCase>();
@@ -177,31 +158,24 @@ class _SplashScreenState extends State<SplashScreen>
       
       return result.fold(
         (error) {
-          print('🚀 SplashScreen: Failed to fetch all music: $error');
           return false;
         },
         (musicData) {
-          print('🚀 SplashScreen: Successfully fetched all music');
-          print('🚀 SplashScreen: All music response: $musicData');
           
           // Check if the data array is non-empty
           if (musicData is Map<String, dynamic> && musicData.containsKey('data')) {
             final data = musicData['data'];
             if (data is List && data.isNotEmpty) {
-              print('🚀 SplashScreen: User has ${data.length} music items');
               return true;
             } else {
-              print('🚀 SplashScreen: User has no music items (empty data array)');
               return false;
             }
           } else {
-            print('🚀 SplashScreen: Invalid music data format');
             return false;
           }
         },
       );
     } catch (e) {
-      print('🚀 SplashScreen: Error fetching all music: $e');
       return false;
     }
   }
@@ -250,10 +224,8 @@ class _SplashScreenState extends State<SplashScreen>
         // Update complete user data JSON
         await prefs.setString('user_data', jsonEncode(userDetails.toJson()));
         
-        print('🚀 SplashScreen: Updated stored user data with latest information');
       }
     } catch (e) {
-      print('🚀 SplashScreen: Error updating stored user data: $e');
     }
   }
 

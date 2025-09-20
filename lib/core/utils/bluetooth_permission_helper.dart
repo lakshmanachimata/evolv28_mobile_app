@@ -15,8 +15,6 @@ class BluetoothPermissionHelper {
         final status = await NativeBluetoothService.getBluetoothStatus();
         final permissionStatus = await NativeBluetoothService.getBluetoothPermissionStatus();
         
-        print('🔵 BluetoothPermissionHelper: iOS Bluetooth status: $status');
-        print('🔵 BluetoothPermissionHelper: iOS Permission status: $permissionStatus');
         
         // Bluetooth is enabled if status is powered_on and permission is granted
         return status == 'powered_on' && permissionStatus == 'granted';
@@ -26,14 +24,10 @@ class BluetoothPermissionHelper {
         final bluetoothConnectStatus = await Permission.bluetoothConnect.status;
         final bluetoothScanStatus = await Permission.bluetoothScan.status;
         
-        print('🔵 BluetoothPermissionHelper: Android Bluetooth permission status: $status');
-        print('🔵 BluetoothPermissionHelper: Android BluetoothConnect status: $bluetoothConnectStatus');
-        print('🔵 BluetoothPermissionHelper: Android BluetoothScan status: $bluetoothScanStatus');
         
         return status.isGranted && bluetoothConnectStatus.isGranted && bluetoothScanStatus.isGranted;
       }
     } catch (e) {
-      print('❌ BluetoothPermissionHelper: Error checking Bluetooth status: $e');
       return false;
     }
   }
@@ -56,7 +50,6 @@ class BluetoothPermissionHelper {
                bluetoothScanStatus.isGranted;
       }
     } catch (e) {
-      print('❌ BluetoothPermissionHelper: Error requesting Bluetooth permission: $e');
       return false;
     }
   }
@@ -66,7 +59,6 @@ class BluetoothPermissionHelper {
     try {
       await openAppSettings();
     } catch (e) {
-      print('❌ BluetoothPermissionHelper: Error opening app settings: $e');
     }
   }
 
@@ -165,7 +157,6 @@ class BluetoothPermissionHelper {
 
       return true;
     } catch (e) {
-      print('❌ BluetoothPermissionHelper: Error in checkAndRequestBluetoothPermission: $e');
       await showBluetoothPermissionDialog(context);
       return false;
     }
@@ -196,7 +187,6 @@ class BluetoothPermissionHelper {
         };
       }
     } catch (e) {
-      print('❌ BluetoothPermissionHelper: Error getting detailed status: $e');
       return {
         'error': e.toString(),
         'platform': Platform.isIOS ? 'iOS' : 'Android',

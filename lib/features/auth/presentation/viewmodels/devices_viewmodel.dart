@@ -161,16 +161,13 @@ class DevicesViewModel extends ChangeNotifier {
   Future<void> initialize() async {
     // Prevent multiple initializations
     if (_isInitialized) {
-      print('DevicesViewModel already initialized, skipping');
       return;
     }
 
-    print('Initializing DevicesViewModel...');
     _isInitialized = true;
     
     // Use native Bluetooth service for iOS or when forced
     if (shouldUseNativeBluetooth || _forceNativeBluetooth) {
-      print('Using native Bluetooth service for iOS');
       await startDeviceConnectionWithNative();
       return;
     }
@@ -199,7 +196,6 @@ class DevicesViewModel extends ChangeNotifier {
   void _listenToBluetoothStateChanges() {
     if (Platform.isAndroid || Platform.isIOS) {
       FlutterBluePlus.adapterState.listen((BluetoothAdapterState state) {
-        print('Bluetooth adapter state changed: $state');
         if (state == BluetoothAdapterState.on) {
           _isBluetoothEnabled = true;
           _bluetoothDialogShown =
@@ -218,10 +214,8 @@ class DevicesViewModel extends ChangeNotifier {
           notifyListeners();
         } else if (state == BluetoothAdapterState.unknown) {
           // When state is unknown, wait a bit and check again
-          print('Bluetooth adapter state unknown, checking status...');
           Future.delayed(const Duration(milliseconds: 1000), () async {
             bool isOn = await FlutterBluePlus.isOn;
-            print('Bluetooth status after unknown state: isOn=$isOn');
             if (isOn && !_isBluetoothEnabled) {
               _isBluetoothEnabled = true;
               _bluetoothDialogShown = false;
@@ -251,23 +245,19 @@ class DevicesViewModel extends ChangeNotifier {
             // For Android, use the standard approach
             await Future.delayed(const Duration(milliseconds: 200));
             _isBluetoothEnabled = await FlutterBluePlus.isOn;
-            print(
               'Android Bluetooth status check: isSupported=true, isOn=$_isBluetoothEnabled',
             );
 
             if (!_isBluetoothEnabled) {
-              print(
                 'Android Bluetooth appears off, waiting for adapter state...',
               );
               await Future.delayed(const Duration(milliseconds: 500));
               _isBluetoothEnabled = await FlutterBluePlus.isOn;
-              print(
                 'Android Bluetooth status recheck: isOn=$_isBluetoothEnabled',
               );
             }
           } else if (Platform.isIOS) {
             // For iOS, handle unknown adapter state like the reference code
-            print(
               'iOS: Starting Bluetooth status check with unknown state handling',
             );
 
@@ -277,14 +267,12 @@ class DevicesViewModel extends ChangeNotifier {
             // Try to get the current state
             await Future.delayed(const Duration(milliseconds: 200));
             _isBluetoothEnabled = await FlutterBluePlus.isOn;
-            print(
               'iOS Bluetooth status check: isSupported=true, isOn=$_isBluetoothEnabled',
             );
 
             // If we can't determine the state, assume it's enabled and proceed
             // The scanning will reveal the actual state
             if (!_isBluetoothEnabled) {
-              print(
                 'iOS: Bluetooth state unclear, proceeding with permission flow (scanning will reveal actual state)',
               );
               _isBluetoothEnabled = true; // Assume enabled for now
@@ -293,16 +281,13 @@ class DevicesViewModel extends ChangeNotifier {
         } else {
           // If Bluetooth is not supported, assume it's enabled to avoid showing dialog unnecessarily
           _isBluetoothEnabled = true;
-          print('Bluetooth status check: isSupported=false, assuming enabled');
         }
       } else {
         _isBluetoothEnabled = false; // Other platforms disabled
-        print('Bluetooth status check: Platform not supported');
       }
     } catch (e) {
       // If there's an error checking Bluetooth status, assume it's enabled to avoid showing dialog unnecessarily
       _isBluetoothEnabled = true;
-      print('Error checking Bluetooth status: $e, assuming enabled');
     }
 
     _bluetoothStatusChecked = true; // Mark that we've checked the status
@@ -310,7 +295,6 @@ class DevicesViewModel extends ChangeNotifier {
 
     // After status check is complete, start the device connection flow if Bluetooth is enabled
     if (_isBluetoothEnabled && !_permissionFlowInitiated) {
-      print('Bluetooth status check complete, starting device connection flow');
       Future.delayed(const Duration(milliseconds: 200), () {
         startDeviceConnection();
       });
@@ -319,13 +303,11 @@ class DevicesViewModel extends ChangeNotifier {
 
   // Start the device connection flow
   void startDeviceConnection() async {
-    print(
       'startDeviceConnection called: isBluetoothEnabled=$_isBluetoothEnabled, dialogShown=$_bluetoothDialogShown, scanPermissionGranted=$_isBluetoothScanPermissionGranted, statusChecked=$_bluetoothStatusChecked, permissionFlowInitiated=$_permissionFlowInitiated',
     );
 
     // Prevent multiple permission flow calls
     if (_permissionFlowInitiated) {
-      print('Permission flow already initiated, skipping');
       return;
     }
 
@@ -333,7 +315,6 @@ class DevicesViewModel extends ChangeNotifier {
     if (!_isBluetoothEnabled &&
         !_bluetoothDialogShown &&
         _bluetoothStatusChecked) {
-      print('Showing Bluetooth enable dialog');
       _showBluetoothEnableDialog = true;
       _bluetoothDialogShown = true; // Prevent multiple dialogs
       _permissionFlowInitiated = true; // Mark permission flow as initiated
@@ -342,26 +323,21 @@ class DevicesViewModel extends ChangeNotifier {
 
       // Check if location permission is already granted first
       bool hasLocationPermission = await _checkLocationPermission();
-      print(
         'Location permission check result: $hasLocationPermission, dialogShown: $_locationPermissionDialogShown',
       );
       if (!hasLocationPermission && !_locationPermissionDialogShown) {
-        print('Showing location permission dialog first');
         _locationPermissionDialogShown = true; // Prevent multiple requests
         _showLocationPermissionDialog = true; // Show custom dialog first
       } else if (hasLocationPermission) {
         // Location permission granted, check BLE scan permission
         bool hasBluetoothPermission = await _checkBluetoothScanPermission();
-        print(
           'Bluetooth permission check result: $hasBluetoothPermission, dialogShown: $_bluetoothScanPermissionDialogShown',
         );
 
         if (hasBluetoothPermission) {
-          print('All permissions already granted, starting scanning directly');
           _isBluetoothScanPermissionGranted = true;
           _startScanning();
         } else if (!_bluetoothScanPermissionDialogShown) {
-          print(
             'Location permission granted, showing Bluetooth permission dialog',
           );
           _bluetoothScanPermissionDialogShown =
@@ -370,13 +346,11 @@ class DevicesViewModel extends ChangeNotifier {
         }
       }
     } else if (!_bluetoothStatusChecked) {
-      print(
         'Bluetooth status not yet checked, waiting for status check to complete...',
       );
       // Don't recursively call startDeviceConnection - let the status check complete
       // The Bluetooth state listener will handle starting the flow when status is ready
     } else {
-      print('No action taken - conditions not met');
     }
     notifyListeners();
   }
@@ -408,7 +382,6 @@ class DevicesViewModel extends ChangeNotifier {
 
       // If Bluetooth was just enabled and we're not already in a permission flow, proceed to permission check
       if (!_isBluetoothScanPermissionGranted && !_permissionFlowInitiated) {
-        print(
           'Bluetooth enabled after settings, proceeding to permission check',
         );
         Future.delayed(const Duration(milliseconds: 500), () {
@@ -458,7 +431,6 @@ class DevicesViewModel extends ChangeNotifier {
   // Handle Bluetooth scan permission allow - show system dialog after custom dialog
   Future<void> allowBluetoothScanPermission() async {
     _showBluetoothScanPermissionDialog = false;
-    print(
       'User allowed Bluetooth permission in custom dialog, requesting system permission',
     );
     await _requestBluetoothPermissionDirectly();
@@ -467,7 +439,6 @@ class DevicesViewModel extends ChangeNotifier {
   // Handle location permission allow - show system dialog after custom dialog
   Future<void> allowLocationPermission() async {
     _showLocationPermissionDialog = false;
-    print(
       'User allowed location permission in custom dialog, requesting system permission',
     );
     await _requestLocationPermissionDirectly();
@@ -483,9 +454,7 @@ class DevicesViewModel extends ChangeNotifier {
   Future<void> openDeviceSettings() async {
     try {
       await openAppSettings();
-      print('Opened app settings');
     } catch (e) {
-      print('Error opening app settings: $e');
     }
   }
 
@@ -494,12 +463,10 @@ class DevicesViewModel extends ChangeNotifier {
     try {
       if (Platform.isAndroid) {
         final status = await Permission.bluetoothScan.status;
-        print('Android Bluetooth scan permission status: $status');
         _isBluetoothScanPermissionGranted = status.isGranted;
         return status.isGranted;
       } else if (Platform.isIOS) {
         final status = await Permission.bluetooth.status;
-        print('iOS Bluetooth permission status: $status');
 
         // For iOS, permission status can be unreliable, so we test with actual scan attempt
         if (status.isGranted) {
@@ -509,11 +476,9 @@ class DevicesViewModel extends ChangeNotifier {
               timeout: const Duration(seconds: 1),
             );
             await FlutterBluePlus.stopScan();
-            print('iOS: Bluetooth permission verified by successful scan test');
             _isBluetoothScanPermissionGranted = true;
             return true;
           } catch (e) {
-            print('iOS: Bluetooth permission test failed: $e');
             _isBluetoothScanPermissionGranted = false;
             return false;
           }
@@ -524,13 +489,11 @@ class DevicesViewModel extends ChangeNotifier {
               timeout: const Duration(seconds: 1),
             );
             await FlutterBluePlus.stopScan();
-            print(
               'iOS: Bluetooth permission actually granted despite status showing permanentlyDenied',
             );
             _isBluetoothScanPermissionGranted = true;
             return true;
           } catch (e) {
-            print('iOS: Bluetooth permission actually denied: $e');
             _isBluetoothScanPermissionGranted = false;
             return false;
           }
@@ -543,7 +506,6 @@ class DevicesViewModel extends ChangeNotifier {
         return true;
       }
     } catch (e) {
-      print('Error checking Bluetooth scan permission: $e');
       return false;
     }
   }
@@ -551,13 +513,10 @@ class DevicesViewModel extends ChangeNotifier {
   // Check if location permission is already granted
   Future<bool> _checkLocationPermission() async {
     try {
-      print('Checking location permission...');
       LocationPermission permission = await Geolocator.checkPermission();
-      print('Location permission status: $permission');
       return permission == LocationPermission.whileInUse ||
           permission == LocationPermission.always;
     } catch (e) {
-      print('Error checking location permission: $e');
       return false;
     }
   }
@@ -565,8 +524,6 @@ class DevicesViewModel extends ChangeNotifier {
   // Request location permission directly (shows system dialog)
   Future<void> _requestLocationPermissionDirectly() async {
     try {
-      print('Requesting location permission from system...');
-      print(
         'Platform: ${Platform.isIOS
             ? "iOS"
             : Platform.isAndroid
@@ -575,50 +532,41 @@ class DevicesViewModel extends ChangeNotifier {
       );
 
       LocationPermission permission = await Geolocator.requestPermission();
-      print('Location permission request result: $permission');
 
       if (permission == LocationPermission.whileInUse ||
           permission == LocationPermission.always) {
-        print('Location permission granted by system');
         // Location permission granted, now check BLE scan permission
         bool hasBluetoothPermission = await _checkBluetoothScanPermission();
-        print(
           'Bluetooth permission check result: $hasBluetoothPermission, dialogShown: $_bluetoothScanPermissionDialogShown, permanentlyDenied: $_bluetoothPermissionPermanentlyDenied',
         );
 
         if (hasBluetoothPermission) {
-          print('All permissions granted, starting scanning');
           _isBluetoothScanPermissionGranted = true;
           _bluetoothPermissionPermanentlyDenied = false;
           _showBluetoothPermissionErrorDialog = false;
           _startScanning();
         } else if (!_bluetoothScanPermissionDialogShown &&
             !_bluetoothPermissionPermanentlyDenied) {
-          print(
             'Location permission granted, showing Bluetooth permission dialog',
           );
           _bluetoothScanPermissionDialogShown = true;
           _showBluetoothScanPermissionDialog = true; // Show custom dialog first
         } else if (_bluetoothPermissionPermanentlyDenied) {
-          print(
             'Bluetooth permission permanently denied, showing error dialog',
           );
           _showBluetoothPermissionErrorDialog = true;
         }
       } else if (permission == LocationPermission.deniedForever) {
-        print(
           'Location permission permanently denied by system, showing error dialog',
         );
         _showLocationPermissionErrorDialog = true;
         // Don't reset permission flow flag for permanent denial - user needs to go to settings
       } else {
-        print('Location permission denied by system, showing error dialog');
         _showLocationPermissionErrorDialog = true;
         // Reset permission flow flag to allow retry for temporary denial
         _permissionFlowInitiated = false;
       }
     } catch (e) {
-      print('Error requesting location permission: $e');
       _showLocationPermissionErrorDialog = true;
       _permissionFlowInitiated = false;
     }
@@ -628,7 +576,6 @@ class DevicesViewModel extends ChangeNotifier {
   // Request Bluetooth permission directly (shows system dialog)
   Future<void> _requestBluetoothPermissionDirectly() async {
     try {
-      print('Requesting Bluetooth permission from system...');
 
       PermissionStatus status;
       if (Platform.isAndroid) {
@@ -639,32 +586,26 @@ class DevicesViewModel extends ChangeNotifier {
         status = PermissionStatus.granted; // Other platforms
       }
 
-      print('Bluetooth permission request result: $status');
 
       if (status.isGranted) {
-        print('Bluetooth permission granted by system');
         _isBluetoothScanPermissionGranted = true;
         _startScanning();
       } else if (status.isPermanentlyDenied) {
         // For iOS, even if status shows permanentlyDenied, try to start scanning
         // iOS permission detection is unreliable, so we test by attempting to scan
         if (Platform.isIOS) {
-          print(
             'iOS: Permission status shows permanentlyDenied, but testing with actual scan attempt',
           );
           await _testBluetoothPermissionByScanning();
         } else {
-          print('Bluetooth permission permanently denied by system');
           _bluetoothPermissionPermanentlyDenied = true;
           _showBluetoothPermissionErrorDialog = true;
         }
       } else {
-        print('Bluetooth permission denied by system');
         // Reset permission flow flag to allow retry for temporary denial
         _permissionFlowInitiated = false;
       }
     } catch (e) {
-      print('Error requesting Bluetooth permission: $e');
       _permissionFlowInitiated = false;
     }
     notifyListeners();
@@ -673,7 +614,6 @@ class DevicesViewModel extends ChangeNotifier {
   // Test Bluetooth permission by attempting to scan (iOS-specific workaround)
   Future<void> _testBluetoothPermissionByScanning() async {
     try {
-      print('iOS: Testing Bluetooth permission by attempting to scan...');
 
       // Try to start a quick scan to test if permission is actually granted
       await FlutterBluePlus.startScan(
@@ -683,7 +623,6 @@ class DevicesViewModel extends ChangeNotifier {
       );
 
       // If we get here without error, permission is actually granted
-      print('iOS: Scan started successfully - permission is actually granted!');
       await FlutterBluePlus.stopScan();
 
       _isBluetoothScanPermissionGranted = true;
@@ -693,7 +632,6 @@ class DevicesViewModel extends ChangeNotifier {
       // Start the actual scanning
       _startScanning();
     } catch (e) {
-      print('iOS: Scan failed - permission is actually denied: $e');
       _bluetoothPermissionPermanentlyDenied = true;
       _showBluetoothPermissionErrorDialog = true;
     }
@@ -712,8 +650,6 @@ class DevicesViewModel extends ChangeNotifier {
   // Scan for real BLE devices with "evolv28" in name
   void _scanForRealEvolv28Devices() async {
     try {
-      print('Starting real BLE scan for Evolv28 devices...');
-      print(
         'Platform: ${Platform.isIOS
             ? "iOS"
             : Platform.isAndroid
@@ -723,7 +659,6 @@ class DevicesViewModel extends ChangeNotifier {
 
       // Check if Bluetooth is still enabled before scanning
       if (!await FlutterBluePlus.isOn) {
-        print('Bluetooth is not enabled, cannot scan');
         _isScanning = false;
         notifyListeners();
         return;
@@ -741,7 +676,6 @@ class DevicesViewModel extends ChangeNotifier {
         await _startAndroidBLEScan();
       }
     } catch (e) {
-      print('Error during BLE scan: $e');
       _isScanning = false;
       notifyListeners();
     }
@@ -750,7 +684,6 @@ class DevicesViewModel extends ChangeNotifier {
   // iOS-specific BLE scanning (based on reference code)
   Future<void> _startIOSBLEScan() async {
     try {
-      print('Starting iOS BLE scan with unknown adapter state handling...');
 
       // Start scanning with iOS-specific parameters (like reference code)
       await FlutterBluePlus.startScan(
@@ -759,42 +692,33 @@ class DevicesViewModel extends ChangeNotifier {
         continuousDivisor: 1,
       );
 
-      print('iOS BLE scan started successfully');
 
       // Set up scan results listener immediately (like reference code)
       _scanResultsSubscription = FlutterBluePlus.scanResults.listen((results) {
-        print('iOS BLE scan results: ${results.length} devices found');
         _processScanResults(results);
       });
 
       // Listen to adapter state changes (like reference code)
       FlutterBluePlus.adapterState.listen((state) {
-        print('iOS adapter state changed to: $state');
         if (state == BluetoothAdapterState.on) {
-          print('iOS: Adapter is now ON, continuing scan');
         } else if (state == BluetoothAdapterState.unknown ||
             state == BluetoothAdapterState.off) {
-          print('iOS: Adapter state is $state, continuing scan for 15 seconds');
         }
       });
 
       // Listen to scan state changes
       _isScanningSubscription = FlutterBluePlus.isScanning.listen((isScanning) {
-        print('iOS scan state changed: $isScanning');
         if (!isScanning) {
-          print('iOS scanning stopped naturally');
           _isScanning = false;
           _scanResultsSubscription?.cancel();
           _isScanningSubscription?.cancel();
           notifyListeners();
-          print('iOS BLE scan completed');
         }
       });
 
       // Set a 15-second timer to stop scanning and show results (like reference code)
       Timer(const Duration(seconds: 15), () {
         if (_isScanning) {
-          print('iOS BLE scan timeout reached (15 seconds), stopping scan');
           FlutterBluePlus.stopScan();
           _isScanning = false;
           _scanResultsSubscription?.cancel();
@@ -802,12 +726,10 @@ class DevicesViewModel extends ChangeNotifier {
           notifyListeners();
 
           if (_nearbyDevices.isEmpty) {
-            print('iOS: No devices found after 15 seconds');
           }
         }
       });
     } catch (e) {
-      print('Error starting iOS BLE scan: $e');
       _isScanning = false;
       notifyListeners();
     }
@@ -816,7 +738,6 @@ class DevicesViewModel extends ChangeNotifier {
   // Android-specific BLE scanning
   Future<void> _startAndroidBLEScan() async {
     try {
-      print('Starting Android BLE scan...');
 
       // Start scanning for BLE devices with Android-specific parameters
       await FlutterBluePlus.startScan(
@@ -826,23 +747,19 @@ class DevicesViewModel extends ChangeNotifier {
         continuousDivisor: 8,
       );
 
-      print('Android BLE scan started successfully');
 
       // Set up scan results listener
       _scanResultsSubscription = FlutterBluePlus.scanResults.listen((results) {
-        print('Android BLE scan results: ${results.length} devices found');
         _processScanResults(results);
       });
 
       // Listen to scan state changes
       _isScanningSubscription = FlutterBluePlus.isScanning.listen((isScanning) {
-        print('Android scan state changed: $isScanning');
         if (!isScanning) {
           _isScanning = false;
           _scanResultsSubscription?.cancel();
           _isScanningSubscription?.cancel();
           notifyListeners();
-          print('Android BLE scan completed');
         }
       });
 
@@ -851,10 +768,8 @@ class DevicesViewModel extends ChangeNotifier {
         FlutterBluePlus.stopScan();
         _isScanning = false;
         notifyListeners();
-        print('Android BLE scan completed');
       });
     } catch (e) {
-      print('Error starting Android BLE scan: $e');
       _isScanning = false;
       notifyListeners();
     }
@@ -868,7 +783,6 @@ class DevicesViewModel extends ChangeNotifier {
           ? device.platformName
           : device.remoteId.toString();
 
-      print('Found device: $deviceName');
 
       // Check if device contains "evolv28" in name
       if (deviceName.toLowerCase().contains('evolv28')) {
@@ -909,11 +823,9 @@ class DevicesViewModel extends ChangeNotifier {
           (b['signalStrength'] as int).compareTo(a['signalStrength'] as int),
     );
 
-    print('Evolv28 devices found: ${_nearbyDevices.length}');
 
     // If we found devices, Bluetooth permission is actually working
     if (_nearbyDevices.isNotEmpty && !_isBluetoothScanPermissionGranted) {
-      print(
         'Devices found - Bluetooth permission is actually granted, hiding permission dialog',
       );
       _isBluetoothScanPermissionGranted = true;
@@ -931,7 +843,6 @@ class DevicesViewModel extends ChangeNotifier {
   void connectToDevice(String deviceId) async {
     // Prevent multiple connection attempts
     if (_isConnecting || _deviceActivatedDialogShown) {
-      print('Connection already in progress or device already activated');
       return;
     }
 
@@ -947,11 +858,9 @@ class DevicesViewModel extends ChangeNotifier {
       );
 
       final device = deviceData['device'] as BluetoothDevice;
-      print('Connecting to device: ${device.platformName}');
 
       // Connect to the device
       await device.connect();
-      print('Connected to device: ${device.platformName}');
 
       // Update device status
       final deviceIndex = _nearbyDevices.indexWhere((d) => d['id'] == deviceId);
@@ -969,7 +878,6 @@ class DevicesViewModel extends ChangeNotifier {
       }
       notifyListeners();
     } catch (e) {
-      print('Error connecting to device: $e');
       _isConnecting = false;
       notifyListeners();
     }
@@ -987,7 +895,6 @@ class DevicesViewModel extends ChangeNotifier {
 
   // Try again button
   void tryAgain() {
-    print('Try again - restarting permission flow and BLE scan');
     _resetPermissionFlags();
     startDeviceConnection();
   }
@@ -1009,7 +916,6 @@ class DevicesViewModel extends ChangeNotifier {
 
   // Refresh scan - clear devices and start fresh scan
   Future<void> refreshScan() async {
-    print('Refreshing BLE scan...');
 
     // Stop any ongoing scan first
     if (_isScanning) {
@@ -1035,10 +941,8 @@ class DevicesViewModel extends ChangeNotifier {
   void onAppResumed() {
     // Only recheck Bluetooth status if we're not in the middle of a permission flow
     if (!_permissionFlowInitiated) {
-      print('App resumed, checking Bluetooth status');
       recheckBluetoothStatus();
     } else {
-      print(
         'App resumed, but permission flow is already in progress, skipping recheck',
       );
     }
@@ -1049,34 +953,27 @@ class DevicesViewModel extends ChangeNotifier {
   // Check if Bluetooth permission was granted after user returns from settings
   Future<void> _checkBluetoothPermissionAfterSettings() async {
     if (_bluetoothPermissionPermanentlyDenied) {
-      print('Checking if Bluetooth permission was granted after settings');
       bool hasBluetoothPermission = await _checkBluetoothScanPermission();
       if (hasBluetoothPermission) {
-        print('Bluetooth permission granted after settings, starting scan');
         _bluetoothPermissionPermanentlyDenied = false;
         _showBluetoothPermissionErrorDialog = false;
         _isBluetoothScanPermissionGranted = true;
         _startScanning();
       } else {
-        print('Bluetooth permission still not granted after settings');
       }
     }
   }
 
   // Manual method to check Bluetooth status (for debugging)
   Future<void> checkBluetoothStatusManually() async {
-    print('Manual Bluetooth status check requested');
     await _checkBluetoothStatus();
   }
 
   // Manual method to check and reset Bluetooth permission state
   Future<void> checkBluetoothPermissionManually() async {
-    print('Manual Bluetooth permission check requested');
     bool hasBluetoothPermission = await _checkBluetoothScanPermission();
-    print('Manual Bluetooth permission check result: $hasBluetoothPermission');
 
     if (hasBluetoothPermission) {
-      print(
         'Bluetooth permission is granted, resetting flags and starting scan',
       );
       _bluetoothPermissionPermanentlyDenied = false;
@@ -1084,14 +981,12 @@ class DevicesViewModel extends ChangeNotifier {
       _isBluetoothScanPermissionGranted = true;
       _startScanning();
     } else {
-      print('Bluetooth permission is not granted');
     }
     notifyListeners();
   }
 
   // Force refresh permission state and restart scanning
   Future<void> forceRefreshPermissions() async {
-    print('Force refreshing permissions...');
 
     // Reset all permission flags
     _resetPermissionFlags();
@@ -1100,15 +995,12 @@ class DevicesViewModel extends ChangeNotifier {
     bool hasLocationPermission = await _checkLocationPermission();
     bool hasBluetoothPermission = await _checkBluetoothScanPermission();
 
-    print(
       'Force refresh - Location: $hasLocationPermission, Bluetooth: $hasBluetoothPermission',
     );
 
     if (hasLocationPermission && hasBluetoothPermission) {
-      print('All permissions granted, starting scan');
       _startScanning();
     } else {
-      print('Permissions not fully granted, restarting permission flow');
       _permissionFlowInitiated = false;
       startDeviceConnection();
     }
@@ -1119,7 +1011,6 @@ class DevicesViewModel extends ChangeNotifier {
   // iOS-specific method to get BLE devices when adapter state is unknown (based on reference code)
   Future<void> getBLEDevicesWhenAdapterUnknown() async {
     if (Platform.isIOS) {
-      print('iOS: Getting BLE devices when adapter state is unknown');
       _isScanning = true;
       _nearbyDevices.clear();
       notifyListeners();
@@ -1143,14 +1034,11 @@ class DevicesViewModel extends ChangeNotifier {
               });
             }
           }
-          print(
             'iOS: Successfully found ${_nearbyDevices.length} Evolv28 devices',
           );
         } else {
-          print('iOS: No Evolv28 devices found after 15 seconds');
         }
       } catch (e) {
-        print('iOS: Error getting BLE devices: $e');
       } finally {
         _isScanning = false;
         notifyListeners();
@@ -1168,7 +1056,6 @@ class DevicesViewModel extends ChangeNotifier {
     StreamSubscription<bool>? isScanningSubscription;
 
     try {
-      print('iOS: Starting BLE device discovery (like reference code)');
 
       // Start scanning (like reference code)
       await FlutterBluePlus.startScan(
@@ -1180,17 +1067,13 @@ class DevicesViewModel extends ChangeNotifier {
       // Listen to scan results immediately (like reference code)
       scanResultsSubscription = FlutterBluePlus.scanResults.listen((results) {
         scanResults = results;
-        print('iOS: Found ${results.length} devices during scan');
       });
 
       // Listen to adapter state changes (like reference code)
       FlutterBluePlus.adapterState.listen((state) {
-        print('iOS: Adapter state changed to: $state');
         if (state == BluetoothAdapterState.on) {
-          print('iOS: Adapter is now ON, continuing scan');
         } else if (state == BluetoothAdapterState.unknown ||
             state == BluetoothAdapterState.off) {
-          print(
             'iOS: Adapter state is $state, continuing scan for ${timeout.inSeconds} seconds',
           );
         }
@@ -1211,9 +1094,7 @@ class DevicesViewModel extends ChangeNotifier {
         }
       }
 
-      print('iOS: Discovery completed, found ${devices.length} unique devices');
     } catch (e) {
-      print('iOS: Error during BLE discovery: $e');
     } finally {
       // Clean up subscriptions
       scanResultsSubscription?.cancel();
@@ -1242,9 +1123,7 @@ class DevicesViewModel extends ChangeNotifier {
 
       _isDeviceConnected = false;
       notifyListeners();
-      print('Disconnected from device: ${device.platformName}');
     } catch (e) {
-      print('Error disconnecting from device: $e');
     }
   }
 
@@ -1260,7 +1139,6 @@ class DevicesViewModel extends ChangeNotifier {
       
       // Listen to Bluetooth state changes
       _nativeBluetoothStateSubscription = NativeBluetoothService.bluetoothStateStream.listen((data) {
-        print('Native Bluetooth state changed: ${data['state']}, permission: ${data['permission']}');
         
         final state = data['state'].toString().toNativeBluetoothState();
         final permission = data['permission'].toString().toBluetoothPermissionStatus();
@@ -1273,7 +1151,6 @@ class DevicesViewModel extends ChangeNotifier {
       
       // Listen to device discoveries
       _nativeDeviceDiscoveredSubscription = NativeBluetoothService.deviceDiscoveredStream.listen((deviceData) {
-        print('Native device discovered: ${deviceData['name']} (${deviceData['id']})');
         
         // Filter only devices with "evolv28" in the name
         final deviceName = deviceData['name'] ?? '';
@@ -1293,9 +1170,7 @@ class DevicesViewModel extends ChangeNotifier {
         }
       });
       
-      print('Native Bluetooth service initialized');
     } catch (e) {
-      print('Error initializing native Bluetooth service: $e');
     }
   }
   
@@ -1303,10 +1178,8 @@ class DevicesViewModel extends ChangeNotifier {
   Future<String> getNativeBluetoothStatus() async {
     try {
       final status = await NativeBluetoothService.getBluetoothStatus();
-      print('Native Bluetooth status: $status');
       return status;
     } catch (e) {
-      print('Error getting native Bluetooth status: $e');
       return 'unknown';
     }
   }
@@ -1315,10 +1188,8 @@ class DevicesViewModel extends ChangeNotifier {
   Future<String> getNativeBluetoothPermissionStatus() async {
     try {
       final status = await NativeBluetoothService.getBluetoothPermissionStatus();
-      print('Native Bluetooth permission status: $status');
       return status;
     } catch (e) {
-      print('Error getting native Bluetooth permission status: $e');
       return 'unknown';
     }
   }
@@ -1327,10 +1198,8 @@ class DevicesViewModel extends ChangeNotifier {
   Future<String> requestNativeBluetoothPermission() async {
     try {
       final result = await NativeBluetoothService.requestBluetoothPermission();
-      print('Native Bluetooth permission request result: $result');
       return result;
     } catch (e) {
-      print('Error requesting native Bluetooth permission: $e');
       return 'error';
     }
   }
@@ -1343,10 +1212,8 @@ class DevicesViewModel extends ChangeNotifier {
       notifyListeners();
       
       final result = await NativeBluetoothService.startScanning();
-      print('Native Bluetooth scanning result: $result');
       return result;
     } catch (e) {
-      print('Error starting native Bluetooth scanning: $e');
       _isScanning = false;
       notifyListeners();
       return 'error';
@@ -1359,10 +1226,8 @@ class DevicesViewModel extends ChangeNotifier {
       final result = await NativeBluetoothService.stopScanning();
       _isScanning = false;
       notifyListeners();
-      print('Native Bluetooth scanning stopped: $result');
       return result;
     } catch (e) {
-      print('Error stopping native Bluetooth scanning: $e');
       return 'error';
     }
   }
@@ -1383,7 +1248,6 @@ class DevicesViewModel extends ChangeNotifier {
       final deviceName = device['name'] ?? '';
       final isEvolv28 = deviceName.toLowerCase().contains('evolv28');
       if (!isEvolv28) {
-        print('Removing non-evolv28 device: $deviceName');
       }
       return !isEvolv28;
     });
@@ -1405,18 +1269,15 @@ class DevicesViewModel extends ChangeNotifier {
   /// Enhanced start device connection using native service when available
   Future<void> startDeviceConnectionWithNative() async {
     if (shouldUseNativeBluetooth) {
-      print('Using native Bluetooth service for iOS');
       
       // Initialize native service
       await initializeNativeBluetooth();
       
       // Check Bluetooth status
       final status = await getNativeBluetoothStatus();
-      print('Native Bluetooth status: $status');
       
       // Check permission status
       final permissionStatus = await getNativeBluetoothPermissionStatus();
-      print('Native Bluetooth permission status: $permissionStatus');
       
       if (status == 'powered_on' && permissionStatus == 'granted') {
         // Start scanning
@@ -1448,9 +1309,7 @@ class DevicesViewModel extends ChangeNotifier {
       _nativeBluetoothStateSubscription?.cancel();
       _nativeDeviceDiscoveredSubscription?.cancel();
       NativeBluetoothService.dispose();
-      print('BLE scanning stopped and subscriptions cancelled');
     } catch (e) {
-      print('Error stopping BLE scan: $e');
     }
     super.dispose();
   }

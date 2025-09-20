@@ -91,7 +91,6 @@ class DashboardViewModel extends ChangeNotifier {
   static void setMinimizedState(String programId) {
     _isMinimizedFromPlayer = true;
     _minimizedProgramId = programId;
-    print('🎵 Dashboard: setMinimizedState called with programId: $programId');
   }
 
   static void clearMinimizedState() {
@@ -101,14 +100,11 @@ class DashboardViewModel extends ChangeNotifier {
 
   // Initialize the dashboard
   Future<void> initialize() async {
-    print('🎵 Dashboard: initialize() called');
     _isLoading = true;
     notifyListeners();
 
     // Initialize Bluetooth service
-    print('🎵 Dashboard: Initializing Bluetooth service...');
     await _bluetoothService.initialize();
-    print('🎵 Dashboard: Bluetooth service initialized');
     
     // Listen to Bluetooth service changes
     _bluetoothListener = () {
@@ -117,7 +113,6 @@ class DashboardViewModel extends ChangeNotifier {
           _bluetoothService.isConnected && 
           !_showPlayerCard && 
           !_isMinimizedFromPlayer) {
-        print('🎵 Dashboard: Command sequence completed, checking player status...');
         checkPlayerStatus();
       }
       notifyListeners();
@@ -125,24 +120,18 @@ class DashboardViewModel extends ChangeNotifier {
     _bluetoothService.addListener(_bluetoothListener);
 
     // Check permissions before starting Bluetooth operations
-    print('🎵 Dashboard: Checking permissions before Bluetooth operations...');
     await _checkPermissionsAndStartBluetooth();
 
     // Check if we're coming from a minimized player
-    print('🎵 Dashboard: Checking minimized player state...');
-    print('🎵 Dashboard: _isMinimizedFromPlayer: $_isMinimizedFromPlayer, _minimizedProgramId: $_minimizedProgramId');
     
     if (_isMinimizedFromPlayer && _minimizedProgramId != null) {
-      print('🎵 Dashboard: Restoring minimized player state');
       _showPlayerCard = true;
       _isPlaying = true;
       _currentPlayingProgramId = _minimizedProgramId;
       // Set the selected BCU file so the player card shows the correct program name
       _bluetoothService.setSelectedBcuFile(_minimizedProgramId!);
-      print('🎵 Dashboard: Minimized player restored with programId: $_minimizedProgramId');
       clearMinimizedState(); // Clear the static state
     } else {
-      print('🎵 Dashboard: Not coming from minimized player, will check player status');
     }
     
     // Player status check will be handled automatically by the Bluetooth listener
@@ -152,7 +141,6 @@ class DashboardViewModel extends ChangeNotifier {
     await Future.delayed(const Duration(milliseconds: 500));
 
     _isLoading = false;
-    print('🎵 Dashboard: initialize() completed');
     notifyListeners();
   }
 
@@ -219,33 +207,27 @@ class DashboardViewModel extends ChangeNotifier {
   // Handle logout
   void logout() {
     // Implement logout logic here
-    print('Logout requested');
   }
 
   // Handle profile settings
   void openProfileSettings() {
     // Implement profile settings logic here
-    print('Profile settings requested');
   }
 
   // Handle notifications
   void openNotifications() {
     // Implement notifications logic here
-    print('Notifications requested');
   }
 
   // Handle device management
   void openDeviceManagement() {
     // Implement device management logic here
-    print('Device management requested');
   }
 
   // Check if a program is currently playing when navigating to dashboard
   Future<void> checkPlayerStatus() async {
-    print('🎵 Dashboard: checkPlayerStatus called');
     
     if (!_bluetoothService.isConnected) {
-      print('🎵 Dashboard: Bluetooth not connected, skipping player check');
       return;
     }
     
@@ -253,22 +235,17 @@ class DashboardViewModel extends ChangeNotifier {
       final playingFile = await _bluetoothService.checkPlayerCommand();
       
       if (playingFile != null) {
-        print('🎵 Dashboard: Program is playing: $playingFile');
         _showPlayerCard = true;
         _isPlaying = true;
         // Set the selected BCU file so the player card shows the correct program name
         _bluetoothService.setSelectedBcuFile(playingFile);
-        print('🎵 Dashboard: Player card state set to: showPlayerCard=$_showPlayerCard, isPlaying=$_isPlaying, selectedBcuFile=$playingFile');
         notifyListeners();
       } else {
-        print('🎵 Dashboard: No program currently playing');
         _showPlayerCard = false;
         _isPlaying = false;
-        print('🎵 Dashboard: Player card state set to: showPlayerCard=$_showPlayerCard, isPlaying=$_isPlaying');
         notifyListeners();
       }
     } catch (e) {
-      print('🎵 Dashboard: Error checking player status: $e');
     }
   }
 
@@ -282,27 +259,22 @@ class DashboardViewModel extends ChangeNotifier {
 
   // Stop the currently playing program via Bluetooth
   Future<void> stopBluetoothProgram(BuildContext context) async {
-    print('🎵 Dashboard: stopBluetoothProgram called');
     
     if (!_bluetoothService.isConnected) {
-      print('🎵 Dashboard: Bluetooth not connected, cannot stop program');
       _showStopErrorSnackbar(context, 'Bluetooth not connected');
       return;
     }
     
     try {
-      print('🎵 Dashboard: Sending stop command to Bluetooth device...');
       final success = await _bluetoothService.stopProgram();
       
       if (success) {
-        print('🎵 Dashboard: Program stopped successfully');
         // Reset player state
         _showPlayerCard = false;
         _isPlaying = false;
         _currentPlayingProgramId = null;
         // Also reset Bluetooth service play success state
         _bluetoothService.setPlaySuccessState(false);
-        print('🎵 Dashboard: Player state reset - showPlayerCard: $_showPlayerCard, isPlaySuccessful: ${_bluetoothService.isPlaySuccessful}');
         notifyListeners();
         
         // Force UI refresh on iOS with a small delay
@@ -312,11 +284,9 @@ class DashboardViewModel extends ChangeNotifier {
         // Show success snackbar
         _showStopSuccessSnackbar(context, 'Player stopped');
       } else {
-        print('🎵 Dashboard: Failed to stop program');
         _showStopErrorSnackbar(context, 'Failed to stop program');
       }
     } catch (e) {
-      print('🎵 Dashboard: Error stopping program: $e');
       _showStopErrorSnackbar(context, 'Error stopping program: $e');
     }
   }
@@ -360,7 +330,6 @@ class DashboardViewModel extends ChangeNotifier {
   // Handle help and support
   void openHelpSupport() {
     // Implement help and support logic here
-    print('Help and support requested');
   }
 
   // Handle Bluetooth connection
@@ -386,7 +355,6 @@ class DashboardViewModel extends ChangeNotifier {
     // Get the file ID for the program name
     final programId = _bluetoothService.getProgramIdByName(programName);
     if (programId != null) {
-      print('🎵 Switching to program: $programName (ID: $programId)');
       
       // Don't show player card immediately - wait for success response
       _currentPlayingProgramId = _getProgramIdFromTitle(programName);
@@ -394,18 +362,14 @@ class DashboardViewModel extends ChangeNotifier {
       
       await _bluetoothService.playProgram(programId);
     } else {
-      print('Program ID not found for: $programName');
     }
   }
 
   // Permission checking methods
   Future<void> _checkPermissionsAndStartBluetooth() async {
-    print('🎵 Dashboard: Starting permission check flow...');
-    print('🎵 Dashboard: isBluetoothEnabled=$_isBluetoothEnabled, dialogShown=$_bluetoothDialogShown, scanPermissionGranted=$_isBluetoothScanPermissionGranted, statusChecked=$_bluetoothStatusChecked, permissionFlowInitiated=$_permissionFlowInitiated');
     
     // Prevent multiple permission flow calls
     if (_permissionFlowInitiated) {
-      print('🎵 Dashboard: Permission flow already initiated, skipping');
       return;
     }
 
@@ -416,7 +380,6 @@ class DashboardViewModel extends ChangeNotifier {
     if (!_isBluetoothEnabled &&
         !_bluetoothDialogShown &&
         _bluetoothStatusChecked) {
-      print('🎵 Dashboard: Showing Bluetooth enable dialog');
       _showBluetoothEnableDialog = true;
       _bluetoothDialogShown = true; // Prevent multiple dialogs
       _permissionFlowInitiated = true; // Mark permission flow as initiated
@@ -425,31 +388,24 @@ class DashboardViewModel extends ChangeNotifier {
 
       // Check if location permission is already granted first
       bool hasLocationPermission = await _checkLocationPermission();
-      print('🎵 Dashboard: Location permission check result: $hasLocationPermission, dialogShown: $_locationPermissionDialogShown');
       if (!hasLocationPermission && !_locationPermissionDialogShown) {
-        print('🎵 Dashboard: Showing location permission dialog first');
         _locationPermissionDialogShown = true; // Prevent multiple requests
         _showLocationPermissionDialog = true; // Show custom dialog first
       } else if (hasLocationPermission) {
         // Location permission granted, check BLE scan permission
         bool hasBluetoothPermission = await _checkBluetoothScanPermission();
-        print('🎵 Dashboard: Bluetooth permission check result: $hasBluetoothPermission, dialogShown: $_bluetoothScanPermissionDialogShown');
 
         if (hasBluetoothPermission) {
-          print('🎵 Dashboard: All permissions already granted, starting Bluetooth operations directly');
           _isBluetoothScanPermissionGranted = true;
           await _startBluetoothOperations();
         } else if (!_bluetoothScanPermissionDialogShown) {
-          print('🎵 Dashboard: Location permission granted, showing Bluetooth permission dialog');
           _bluetoothScanPermissionDialogShown = true; // Prevent multiple requests
           _showBluetoothScanPermissionDialog = true; // Show custom dialog first
         }
       }
     } else if (!_bluetoothStatusChecked) {
-      print('🎵 Dashboard: Bluetooth status not yet checked, waiting for status check to complete...');
       // Don't recursively call - let the status check complete
     } else {
-      print('🎵 Dashboard: No action taken - conditions not met');
     }
     notifyListeners();
   }
@@ -459,7 +415,6 @@ class DashboardViewModel extends ChangeNotifier {
       final adapterState = await ble.FlutterBluePlus.adapterState.first;
       _isBluetoothEnabled = adapterState == ble.BluetoothAdapterState.on;
       _bluetoothStatusChecked = true;
-      print('🎵 Dashboard: Bluetooth enabled: $_isBluetoothEnabled, status checked: $_bluetoothStatusChecked');
       
       // Log Bluetooth status check
       await _loggingService.logBluetoothOperation(
@@ -468,7 +423,6 @@ class DashboardViewModel extends ChangeNotifier {
         deviceName: 'Bluetooth ${_isBluetoothEnabled ? 'enabled' : 'disabled'}',
       );
     } catch (e) {
-      print('🎵 Dashboard: Error checking Bluetooth status: $e');
       _isBluetoothEnabled = false;
       _bluetoothStatusChecked = true;
       
@@ -487,7 +441,6 @@ class DashboardViewModel extends ChangeNotifier {
       bool isGranted = permission == LocationPermission.whileInUse || 
                       permission == LocationPermission.always;
       _isLocationPermissionGranted = isGranted;
-      print('🎵 Dashboard: Location permission granted: $isGranted');
       
       // Log location permission status in background
       await _loggingService.sendLogs(
@@ -498,7 +451,6 @@ class DashboardViewModel extends ChangeNotifier {
       
       return isGranted;
     } catch (e) {
-      print('🎵 Dashboard: Error checking location permission: $e');
       
       // Log location permission error
       await _loggingService.sendLogs(
@@ -518,7 +470,6 @@ class DashboardViewModel extends ChangeNotifier {
         var status = await Permission.bluetoothScan.status;
         bool isGranted = status == PermissionStatus.granted;
         _isBluetoothScanPermissionGranted = isGranted;
-        print('🎵 Dashboard: Bluetooth scan permission granted: $isGranted');
         
         // Log BLE permission status in background
         await _loggingService.sendLogs(
@@ -542,7 +493,6 @@ class DashboardViewModel extends ChangeNotifier {
         return true;
       }
     } catch (e) {
-      print('🎵 Dashboard: Error checking Bluetooth scan permission: $e');
       
       // Log BLE permission error
       await _loggingService.sendLogs(
@@ -556,22 +506,16 @@ class DashboardViewModel extends ChangeNotifier {
   }
 
   Future<void> _startBluetoothOperations() async {
-    print('🎵 Dashboard: Starting Bluetooth operations after permissions granted...');
     
     // Initialize Bluetooth service with permissions
     await _bluetoothService.initializeAfterPermissions();
     
-    print('🎵 Dashboard: Checking Bluetooth connection status...');
-    print('🎵 Dashboard: isConnected: ${_bluetoothService.isConnected}');
     
     if (!_bluetoothService.isConnected) {
-      print('🚀 Auto-starting Bluetooth scan on dashboard load...');
       // Small delay to ensure UI is fully loaded
       await Future.delayed(const Duration(milliseconds: 500));
       await _bluetoothService.startScanning();
-      print('🎵 Dashboard: Bluetooth scanning completed');
     } else {
-      print('🎵 Dashboard: Already connected to Bluetooth device');
     }
   }
 
@@ -591,15 +535,12 @@ class DashboardViewModel extends ChangeNotifier {
 
   Future<void> allowLocationPermission() async {
     _showLocationPermissionDialog = false;
-    print('🎵 Dashboard: User allowed location permission, requesting system permission');
     
     try {
       LocationPermission permission = await Geolocator.requestPermission();
-      print('🎵 Dashboard: Location permission request result: $permission');
       
       if (permission == LocationPermission.whileInUse || 
           permission == LocationPermission.always) {
-        print('🎵 Dashboard: Location permission granted');
         _isLocationPermissionGranted = true;
         
         // Log successful location permission
@@ -611,20 +552,16 @@ class DashboardViewModel extends ChangeNotifier {
         
         // Continue with Bluetooth scan permission check
         bool hasBluetoothPermission = await _checkBluetoothScanPermission();
-        print('🎵 Dashboard: Bluetooth permission check result: $hasBluetoothPermission, dialogShown: $_bluetoothScanPermissionDialogShown');
 
         if (hasBluetoothPermission) {
-          print('🎵 Dashboard: All permissions granted, starting Bluetooth operations');
           _isBluetoothScanPermissionGranted = true;
           await _startBluetoothOperations();
         } else if (!_bluetoothScanPermissionDialogShown) {
-          print('🎵 Dashboard: Location permission granted, showing Bluetooth permission dialog');
           _bluetoothScanPermissionDialogShown = true;
           _showBluetoothScanPermissionDialog = true;
         }
       } else {
         // Location permission denied
-        print('🎵 Dashboard: Location permission denied: ${permission.name}');
         
         // Log denied location permission
         await _loggingService.sendLogs(
@@ -634,12 +571,10 @@ class DashboardViewModel extends ChangeNotifier {
         );
         
         if (permission == LocationPermission.deniedForever) {
-          print('🎵 Dashboard: Location permission permanently denied');
           _showLocationPermissionErrorDialog = true;
         }
       }
     } catch (e) {
-      print('🎵 Dashboard: Error requesting location permission: $e');
       
       // Log location permission error
       await _loggingService.sendLogs(
@@ -653,12 +588,10 @@ class DashboardViewModel extends ChangeNotifier {
 
   Future<void> allowBluetoothScanPermission() async {
     _showBluetoothScanPermissionDialog = false;
-    print('🎵 Dashboard: User allowed Bluetooth scan permission, requesting system permission');
     
     try {
       if (Platform.isAndroid) {
         var status = await Permission.bluetoothScan.request();
-        print('🎵 Dashboard: Bluetooth scan permission request result: $status');
         
         // Log BLE permission result in background
         await _loggingService.sendLogs(
@@ -668,16 +601,13 @@ class DashboardViewModel extends ChangeNotifier {
         );
         
         if (status == PermissionStatus.granted) {
-          print('🎵 Dashboard: Bluetooth scan permission granted');
           _isBluetoothScanPermissionGranted = true;
           await _startBluetoothOperations();
         } else if (status == PermissionStatus.permanentlyDenied) {
-          print('🎵 Dashboard: Bluetooth scan permission permanently denied');
           _showBluetoothPermissionErrorDialog = true;
         }
       }
     } catch (e) {
-      print('🎵 Dashboard: Error requesting Bluetooth scan permission: $e');
       
       // Log BLE permission error
       await _loggingService.sendLogs(
@@ -702,9 +632,7 @@ class DashboardViewModel extends ChangeNotifier {
   Future<void> openDeviceSettings() async {
     try {
       await openAppSettings();
-      print('🎵 Dashboard: Opened app settings');
     } catch (e) {
-      print('🎵 Dashboard: Error opening app settings: $e');
     }
   }
 

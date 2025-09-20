@@ -48,9 +48,7 @@ class SettingsViewModel extends ChangeNotifier {
         _userName = 'User';
       }
       
-      print('🔐 SettingsViewModel: Loaded user name: $_userName');
     } catch (e) {
-      print('🔐 SettingsViewModel: Error loading user name: $e');
       _userName = 'User';
     }
 
@@ -130,10 +128,8 @@ class SettingsViewModel extends ChangeNotifier {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
-        print('Could not launch $url');
       }
     } catch (e) {
-      print('Error launching URL: $e');
     }
   }
 
@@ -164,13 +160,11 @@ class SettingsViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      print('🔐 SettingsViewModel: Starting logout process');
       
       // Call the delete user API with timeout
       final result = await deleteUserUseCase().timeout(
         const Duration(seconds: 10),
         onTimeout: () {
-          print('🔐 SettingsViewModel: API timeout, proceeding with local logout');
           return const Left('Request timeout, proceeding with local logout');
         },
       );
@@ -178,7 +172,6 @@ class SettingsViewModel extends ChangeNotifier {
       result.fold(
         (error) {
           // Error occurred - still proceed with logout
-          print('🔐 SettingsViewModel: Logout failed: $error');
           _isLoggingOut = false;
           notifyListeners();
           
@@ -200,7 +193,6 @@ class SettingsViewModel extends ChangeNotifier {
         },
         (success) {
           // Success
-          print('🔐 SettingsViewModel: Logout successful');
           _isLoggingOut = false;
           notifyListeners();
           
@@ -222,7 +214,6 @@ class SettingsViewModel extends ChangeNotifier {
         },
       );
     } catch (e) {
-      print('🔐 SettingsViewModel: Logout error: $e');
       _isLoggingOut = false;
       notifyListeners();
       

@@ -244,20 +244,15 @@ class LoginViewModel extends ChangeNotifier {
       final hasCompleteProfile = await authRepository.hasCompleteProfile();
       final hasBasicProfileButNoDevices = await authRepository.hasBasicProfileButNoDevices();
       
-      print('🔐 LoginViewModel: Profile check - Complete: $hasCompleteProfile, Basic but no devices: $hasBasicProfileButNoDevices');
       
       if (hasCompleteProfile) {
-        print('🔐 LoginViewModel: User has complete profile - navigating to dashboard');
         return 'dashboard';
       } else if (hasBasicProfileButNoDevices) {
-        print('🔐 LoginViewModel: User has basic profile but no devices - navigating to onboard device');
         return 'onboardDevice';
       } else {
-        print('🔐 LoginViewModel: User has incomplete profile - navigating to onboarding');
         return 'onboarding';
       }
     } catch (e) {
-      print('🔐 LoginViewModel: Error checking profile: $e');
       return 'onboarding'; // Default to onboarding if there's an error
     }
   }
@@ -268,7 +263,6 @@ class LoginViewModel extends ChangeNotifier {
       final route = await getNavigationRoute();
       return route == 'onboarding';
     } catch (e) {
-      print('🔐 LoginViewModel: Error checking profile: $e');
       return true; // Default to onboarding if there's an error
     }
   }
@@ -278,7 +272,6 @@ class LoginViewModel extends ChangeNotifier {
     try {
       return await authRepository.getStoredUserData();
     } catch (e) {
-      print('🔐 LoginViewModel: Error getting stored user data: $e');
       return {};
     }
   }
@@ -300,19 +293,16 @@ class LoginViewModel extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      print('🔐 LoginViewModel: Starting Google Sign-In');
 
       // Sign in with Google
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       
       if (googleUser == null) {
-        print('🔐 LoginViewModel: Google Sign-In cancelled by user');
         _isLoading = false;
         notifyListeners();
         return;
       }
 
-      print('🔐 LoginViewModel: Google Sign-In successful for: ${googleUser.email}');
 
       // Get device name
       final deviceName = await DeviceHelper.getDeviceName();
@@ -332,14 +322,12 @@ class LoginViewModel extends ChangeNotifier {
         userKey: googleUser.id,
       );
 
-      print('🔐 LoginViewModel: Calling social login API');
 
       // Call social login API
       final result = await socialLoginUseCase(socialLoginRequest);
       
       result.fold(
         (error) {
-          print('🔐 LoginViewModel: Social login failed: $error');
           _errorMessage = error;
           _isLoading = false;
           notifyListeners();
@@ -353,7 +341,6 @@ class LoginViewModel extends ChangeNotifier {
           );
         },
         (socialLoginResponse) {
-          print('🔐 LoginViewModel: Social login successful');
           _isLoading = false;
           notifyListeners();
           
@@ -371,7 +358,6 @@ class LoginViewModel extends ChangeNotifier {
         },
       );
     } catch (e) {
-      print('🔐 LoginViewModel: Google Sign-In error: $e');
       _errorMessage = 'Google Sign-In failed: ${e.toString()}';
       _isLoading = false;
       notifyListeners();

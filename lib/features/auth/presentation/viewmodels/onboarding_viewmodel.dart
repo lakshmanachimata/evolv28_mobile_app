@@ -80,22 +80,18 @@ class OnboardingViewModel extends ChangeNotifier {
 
   void handlePrivacyPolicyLinkTap() {
     // TODO: Implement privacy policy link handling
-    debugPrint('Privacy policy link tapped');
   }
 
   void handleResendOtp() {
     // TODO: Implement resend OTP functionality
-    debugPrint('Resend OTP tapped');
   }
 
   void handleBuyNow() {
     // TODO: Implement buy now functionality
-    debugPrint('Buy now tapped');
   }
 
   void handleContactSupport() {
     // TODO: Implement contact support functionality
-    debugPrint('Contact support tapped');
   }
 
   void hideKeyboard() {

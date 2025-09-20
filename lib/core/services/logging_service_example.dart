@@ -142,7 +142,6 @@ class LoggingServiceExample {
         );
         
         // Do something
-        print('Button pressed!');
       },
       child: const Text('Example Button'),
     );

@@ -29,7 +29,6 @@ class DeviceHelper {
       
       return 'Unknown Device';
     } catch (e) {
-      print('Error getting device name: $e');
       return 'Unknown Device';
     }
   }

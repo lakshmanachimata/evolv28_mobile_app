@@ -262,7 +262,6 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
 
                         if (otpResponse != null) {
                           // Success - show OTP card
-                          print(
                             '📧 LoginView: OTP sent successfully: ${otpResponse.data.otp}',
                           );
                           setState(() {
@@ -951,7 +950,6 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
 
         if (otpValidationResponse != null) {
           // Success - OTP validated
-          print('🔐 LoginView: OTP validated successfully');
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('OTP verified successfully!'),
@@ -965,19 +963,15 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
           final navigationRoute = await viewModel.getNavigationRoute();
 
           if (navigationRoute == 'dashboard') {
-            print('🔐 LoginView: Navigating to dashboard screen');
             context.go(AppRoutes.dashboard);
           } else if (navigationRoute == 'onboardDevice') {
-            print('🔐 LoginView: Navigating to onboard device screen');
             context.go(AppRoutes.onboardDevice);
           } else {
-            print('🔐 LoginView: Navigating to onboarding screen');
             context.go(AppRoutes.onboarding);
           }
         } else {
           // Error - increment failed attempts
           _failedAttempts++;
-          print(
             '🔐 LoginView: OTP validation failed. Attempt $_failedAttempts',
           );
 
@@ -1046,7 +1040,6 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
 
         if (otpResponse != null) {
           // Success - OTP resent
-          print(
             '📧 LoginView: OTP resent successfully: ${otpResponse.data.otp}',
           );
           ScaffoldMessenger.of(context).showSnackBar(

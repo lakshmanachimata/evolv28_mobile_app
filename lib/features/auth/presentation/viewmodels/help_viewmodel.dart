@@ -44,11 +44,9 @@ class HelpViewModel extends ChangeNotifier {
   void submitReport() {
     final message = _messageController.text.trim();
     if (message.isEmpty) {
-      print('Please enter a message');
       return;
     }
     
-    print('Submitting report: $_selectedProblemType - $message');
     // Implement report submission logic here
     
     // Clear form after submission

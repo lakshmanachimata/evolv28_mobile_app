@@ -77,18 +77,15 @@ class ProfileViewModel extends ChangeNotifier {
   // Handle badges and leaderboard
   void openBadgesLeaderboard() {
     // Implement badges and leaderboard logic here
-    print('Badges and leaderboard requested');
   }
 
   // Handle add family member
   void addFamilyMember() {
     // Implement add family member logic here
-    print('Add family member requested');
   }
 
   // Handle edit daily goal
   void editDailyGoal() {
     // Implement edit daily goal logic here
-    print('Edit daily goal requested');
   }
 }

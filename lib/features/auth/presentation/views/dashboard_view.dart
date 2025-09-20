@@ -34,14 +34,10 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
   @override
   void initState() {
     super.initState();
-    print('🎵 Dashboard View: initState() called');
     // Initialize the dashboard
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      print('🎵 Dashboard View: PostFrameCallback executing...');
       final viewModel = Provider.of<DashboardViewModel>(context, listen: false);
-      print('🎵 Dashboard View: Calling viewModel.initialize()...');
       await viewModel.initialize();
-      print('🎵 Dashboard View: viewModel.initialize() completed');
       
       // Check location permission
       await LocationPermissionHelper.checkAndRequestLocationPermission(context);
@@ -65,7 +61,6 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
           // Loading Overlay
           Consumer<DashboardViewModel>(
             builder: (context, viewModel, child) {
-              print('DEBUG: isExecutingCommands: ${viewModel.isExecutingCommands}, isSendingPlayCommands: ${viewModel.isSendingPlayCommands}');
               if (viewModel.isExecutingCommands || viewModel.isSendingPlayCommands) {
                 return _buildLoadingOverlay(context);
               }
@@ -145,17 +140,13 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
               // Player Card (after successful play response or for non-Bluetooth programs)
               Consumer<DashboardViewModel>(
                 builder: (context, viewModel, child) {
-                  print('DEBUG: showPlayerCard: ${viewModel.showPlayerCard}, isPlaySuccessful: ${viewModel.isPlaySuccessful}');
                   // Show player card if:
                   // 1. Bluetooth play was successful (isPlaySuccessful = true)
                   // 2. Non-Bluetooth program is playing (showPlayerCard = true)
                   final shouldShowPlayerCard = viewModel.isPlaySuccessful || viewModel.showPlayerCard;
-                  print('DEBUG: shouldShowPlayerCard: $shouldShowPlayerCard');
                   if (shouldShowPlayerCard) {
-                    print('DEBUG: Building player card');
                     return _buildPlayerCard(context, viewModel);
                   }
-                  print('DEBUG: Hiding player card');
                   return SizedBox.shrink();
                 },
               ),
