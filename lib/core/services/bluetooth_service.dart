@@ -44,6 +44,7 @@ class BluetoothService extends ChangeNotifier {
   bool _isWaitingForFifthCommand = false;
   Completer<String?>? _playerStatusCompleter;
   Completer<bool>? _stopCommandCompleter;
+  String? _lastNotificationResponse;
 
   // Nordic UART Service UUIDs
   static const String nordicUartServiceUUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
@@ -472,6 +473,9 @@ class BluetoothService extends ChangeNotifier {
     print('Length: ${value.length}');
     print('=============================');
 
+    // Store the latest notification response for play command waiting
+    _lastNotificationResponse = stringValue;
+
     // Check if this is a player status response
     if (_playerStatusCompleter != null && !_playerStatusCompleter!.isCompleted && stringValue.contains('#SPL,')) {
       print('🎵 BluetoothService: Player status response received: $stringValue');
@@ -801,14 +805,24 @@ class BluetoothService extends ChangeNotifier {
       }
     });
 
-    // Use a simple delay approach instead of creating a new subscription
+    // Wait for actual response from the device
     // The _handleNotification method will handle the response
-    await Future.delayed(const Duration(milliseconds: 1000));
-    
-    // For now, return a placeholder - the actual response will be handled
-    // by the existing notification system
-    timeoutTimer.cancel();
-    return 'Response handled by existing notification system';
+    while (!completer.isCompleted) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      
+      // Check if we have received any response in the notification handler
+      // For play commands, we expect responses like #ACK! for most commands
+      // and #SPL,filename for the final 5#SPL! command
+      if (_lastNotificationResponse != null && _lastNotificationResponse!.isNotEmpty) {
+        final response = _lastNotificationResponse!;
+        _lastNotificationResponse = null; // Clear after using
+        timeoutTimer.cancel();
+        completer.complete(response);
+        break;
+      }
+    }
+
+    return await completer.future;
   }
 
   // Set the selected BCU file (used when checking player status)
