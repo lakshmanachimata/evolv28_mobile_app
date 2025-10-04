@@ -873,6 +873,20 @@ class DashboardViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void denyBluetoothScanPermission() {
+    _showBluetoothScanPermissionDialog = false;
+    print('🎵 Dashboard: User denied Bluetooth scan permission');
+    
+    // Log denied Bluetooth permission
+    _loggingService.sendLogs(
+      event: 'BLE Permission',
+      status: 'failed',
+      notes: 'user_denied',
+    );
+    
+    notifyListeners();
+  }
+
   void handleLocationPermissionErrorOk() {
     _showLocationPermissionErrorDialog = false;
     notifyListeners();

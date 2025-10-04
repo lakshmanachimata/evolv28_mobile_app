@@ -86,14 +86,23 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
           // Permission Dialogs
           Consumer<DashboardViewModel>(
             builder: (context, viewModel, child) {
+              // Show Bluetooth scan permission as bottom sheet
+              if (viewModel.showBluetoothScanPermissionDialog) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  showModalBottomSheet<bool>(
+                    context: context,
+                    isDismissible: false,
+                    enableDrag: false,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => _buildBluetoothScanPermissionDialog(context, viewModel),
+                  );
+                });
+              }
+              
               return Stack(
                 children: [
                   if (viewModel.showBluetoothEnableDialog)
                     _buildBluetoothEnableDialog(context, viewModel),
-                  
-                  if (viewModel.showBluetoothScanPermissionDialog)
-                    _buildBluetoothScanPermissionDialog(context, viewModel),
-                  
                   
                   if (viewModel.showBluetoothPermissionErrorDialog)
                     _buildBluetoothPermissionErrorDialog(context, viewModel),
@@ -1057,58 +1066,108 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
 
   Widget _buildBluetoothScanPermissionDialog(BuildContext context, DashboardViewModel viewModel) {
     return Container(
-      color: Colors.black.withOpacity(0.5),
-      child: Center(
-        child: Container(
-          width: 300,
-          margin: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Bluetooth Permission',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  'Allow Evolv28 to discover nearby Bluetooth devices',
-                  style: TextStyle(fontSize: 14, color: Colors.black87),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: viewModel.allowBluetoothScanPermission,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFF07A60),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+              ),
+              const SizedBox(height: 20),
+              
+              // Close button
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      viewModel.denyBluetoothScanPermission();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.red[50],
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                    ),
-                    child: const Text(
-                      'Allow',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                      child: Icon(
+                        Icons.close,
+                        color: Colors.red[600],
+                        size: 20,
                       ),
                     ),
                   ),
+                ],
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Title
+              const Text(
+                'Allow Bluetooth',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
                 ),
-              ],
-            ),
+                textAlign: TextAlign.center,
+              ),
+              
+              const SizedBox(height: 24),
+              
+              // Content
+              const Text(
+                'Please allow bluetooth for establishing the connection with Evolv28',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.left,
+              ),
+              
+              const SizedBox(height: 32),
+              
+              // Allow button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: viewModel.allowBluetoothScanPermission,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFF17961),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'Allow',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+            ],
           ),
         ),
       ),
