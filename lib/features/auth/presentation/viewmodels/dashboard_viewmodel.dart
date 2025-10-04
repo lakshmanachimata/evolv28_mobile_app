@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart' as ble;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/routing/app_router_config.dart';
 import '../../../../core/services/bluetooth_service.dart';
@@ -103,6 +104,9 @@ class DashboardViewModel extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
+    // Load user data from SharedPreferences
+    await _loadUserData();
+
     // Initialize Bluetooth service
     print('🎵 Dashboard: Initializing Bluetooth service...');
     await _bluetoothService.initialize();
@@ -152,6 +156,37 @@ class DashboardViewModel extends ChangeNotifier {
     _isLoading = false;
     print('🎵 Dashboard: initialize() completed');
     notifyListeners();
+  }
+
+  // Load user data from SharedPreferences
+  Future<void> _loadUserData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Get user data
+      final firstName = prefs.getString('user_first_name')?.trim() ?? '';
+      final lastName = prefs.getString('user_last_name')?.trim() ?? '';
+      final userName = prefs.getString('user_name')?.trim() ?? '';
+      
+      // Set user name - use userName if available, otherwise combine first and last name
+      if (userName.isNotEmpty) {
+        _userName = userName;
+      } else if (firstName.isNotEmpty && lastName.isNotEmpty) {
+        _userName = '$firstName $lastName';
+      } else if (firstName.isNotEmpty) {
+        _userName = firstName;
+      } else if (lastName.isNotEmpty) {
+        _userName = lastName;
+      } else {
+        _userName = 'User'; // Default fallback
+      }
+      
+      print('🎵 Dashboard: Loaded user data - Name: "$_userName"');
+      
+    } catch (e) {
+      print('🎵 Dashboard: Error loading user data: $e');
+      // Keep default values if loading fails
+    }
   }
 
   // Initialize with minimized player state

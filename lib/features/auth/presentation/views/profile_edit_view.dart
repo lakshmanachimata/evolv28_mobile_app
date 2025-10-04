@@ -190,76 +190,85 @@ class _ProfileEditViewBody extends StatelessWidget {
 
 
   Widget _buildProfilePictureSection() {
-    return Column(
-      children: [
-        // Profile picture placeholder
-        GestureDetector(
-          onTap: () {
-            // Handle profile picture change
-            print('Change profile picture');
-          },
-          child: Container(
-            width: 100,
-            height: 100,
-            decoration: const BoxDecoration(
-              color: Color(0xFFF17961), // Orange color
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.person,
-              color: Colors.white,
-              size: 48,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        // Edit Picture button
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+    return Consumer<ProfileEditViewModel>(
+      builder: (context, viewModel, child) {
+        return Column(
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF17961), // Orange color
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Icon(
-                    Icons.camera_alt,
-                    color: Colors.white,
-                    size: 16,
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    'Edit Picture',
-                    style: TextStyle(
+            // Profile picture placeholder
+            GestureDetector(
+              onTap: () {
+                // Handle profile picture change
+                print('Change profile picture');
+              },
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF17961), // Orange color
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    viewModel.getInitials(),
+                    style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                ],
+                ),
               ),
             ),
-            const SizedBox(width: 16),
-            // Friends icon
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.people,
-                color: Colors.black,
-                size: 20,
-              ),
+            const SizedBox(height: 16),
+            // Edit Picture button
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF17961), // Orange color
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Icon(
+                        Icons.camera_alt,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Edit Picture',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Friends icon
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.people,
+                    color: Colors.black,
+                    size: 20,
+                  ),
+                ),
+              ],
             ),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -269,38 +278,54 @@ class _ProfileEditViewBody extends StatelessWidget {
   ) {
     return Column(
       children: [
-        _buildFormField('FIRST NAME', 'usereve', Icons.person_outline),
+        _buildFormField(
+          'FIRST NAME', 
+          viewModel.firstName, 
+          Icons.person_outline,
+          (value) => viewModel.updateFirstName(value),
+        ),
         const SizedBox(height: 20),
-        _buildFormField('LAST NAME', 'eve', Icons.person_outline),
+        _buildFormField(
+          'LAST NAME', 
+          viewModel.lastName, 
+          Icons.person_outline,
+          (value) => viewModel.updateLastName(value),
+        ),
         const SizedBox(height: 20),
         _buildFormField(
           'Email',
-          'usereve@yopmail.com',
+          viewModel.emailOrMobile,
           Icons.email_outlined,
+          (value) => viewModel.updateEmailOrMobile(value),
         ),
         const SizedBox(height: 20),
         _buildFormField(
           'Country',
-          'Select Country',
+          viewModel.selectedCountry,
           Icons.location_on_outlined,
+          (value) => viewModel.updateCountry(value),
         ),
         const SizedBox(height: 20),
         _buildFormField(
           'DATE OF BIRTH',
-          'Enter Your Date of birth',
+          viewModel.dateOfBirth != null 
+            ? '${viewModel.dateOfBirth!.day}/${viewModel.dateOfBirth!.month}/${viewModel.dateOfBirth!.year}'
+            : 'Enter Your Date of birth',
           Icons.calendar_today_outlined,
+          null, // Date field will be handled separately
         ),
         const SizedBox(height: 20),
         _buildFormField(
           'GENDER',
-          'Select Gender',
+          viewModel.gender.isNotEmpty ? viewModel.gender : 'Select Gender',
           Icons.person_outline,
+          (value) => viewModel.updateGender(value),
         ),
       ],
     );
   }
 
-  Widget _buildFormField(String label, String placeholder, IconData icon) {
+  Widget _buildFormField(String label, String value, IconData icon, Function(String)? onChanged) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -315,9 +340,13 @@ class _ProfileEditViewBody extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         TextFormField(
+          controller: TextEditingController(text: value),
+          onChanged: onChanged,
           style: const TextStyle(color: Colors.black, fontSize: 16),
           decoration: InputDecoration(
-            hintText: placeholder,
+            hintText: label == 'DATE OF BIRTH' ? 'Enter Your Date of birth' : 
+                     label == 'GENDER' ? 'Select Gender' : 
+                     label == 'Country' ? 'Select Country' : '',
             hintStyle: const TextStyle(color: Colors.grey, fontSize: 16),
             prefixIcon: Icon(icon, color: Colors.grey.shade600, size: 20),
             border: OutlineInputBorder(
