@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/routing/app_router_config.dart';
 import '../../domain/repositories/auth_repository.dart';
@@ -221,15 +222,15 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
   Widget _buildContinueButton(BuildContext context) {
     return Consumer<LoginViewModel>(
       builder: (context, viewModel, child) {
-        final isButtonEnabled =
-            viewModel.isEmailValid && viewModel.transactionalAlerts;
+        final isButtonEnabled = viewModel.isEmailValid && 
+            viewModel.privacyPolicyAccepted && 
+            viewModel.termsAndConditionsAccepted;
         return SizedBox(
           width: double.infinity,
           height: 50,
-          child: ElevatedButton(
-            onPressed: viewModel.isLoading || !isButtonEnabled
-                ? null
-                : () async {
+          child: isButtonEnabled && !viewModel.isLoading
+              ? ElevatedButton(
+                  onPressed: () async {
                     // Validate email before proceeding
                     final emailError = viewModel.validateEmail();
                     if (emailError != null) {
@@ -294,31 +295,43 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
                       }
                     }
                   },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isButtonEnabled
-                  ? const Color(0xFFF17961) // Burnt orange when enabled
-                  : const Color(0xFFF17961).withOpacity(0.3), // Dimmed orange when disabled
-              foregroundColor: isButtonEnabled
-                  ? Colors.white
-                  : Colors.white.withOpacity(0.7), // Dimmed white text when disabled
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: viewModel.isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFF17961),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  )
-                : const Text(
-                    'Continue',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
-          ),
+                  child: viewModel.isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text(
+                          'Continue',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                )
+              : Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'Continue',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                ),
         );
       },
     );
@@ -405,51 +418,128 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
     );
   }
 
-  Widget _buildTransactionalAlertsCheckbox(BuildContext context) {
+  Widget _buildTermsAndConditionsSection(BuildContext context) {
     return Consumer<LoginViewModel>(
       builder: (context, viewModel, child) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          child: SizedBox(
-            width: double.infinity,
-            child: Row(
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    viewModel.setTransactionalAlerts(
-                      !viewModel.transactionalAlerts,
-                    );
-                  },
-                  child: Container(
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      color: viewModel.transactionalAlerts
-                          ? const Color(0xFFF07A60)
-                          : Colors.transparent,
-                      border: Border.all(
-                        color: const Color(0xFFF07A60),
-                        width: 2,
-                      ),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: viewModel.transactionalAlerts
-                        ? const Icon(Icons.check, size: 14, color: Colors.white)
-                        : null,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Receive transactional alerts via SMS, Email, WhatsApp',
-                    style: TextStyle(color: Colors.black, fontSize: 13),
-                  ),
-                ),
-              ],
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF20B2AA).withOpacity(0.1), // Light teal background
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: const Color(0xFF20B2AA).withOpacity(0.3),
+              width: 1,
             ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Terms and Conditions text
+              Text(
+                'These terms govern the rights and responses to your use of the evolv28 device, the evolv28 website and application (current and / or future versions) and related content, material and / or services. Including any support services received from evolv28 and create a legally binding agreement between both the parties.',
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontSize: 13,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 12),
+              
+              // Policy links
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      // Open privacy policy in web browser
+                      launchUrl(Uri.parse('https://www.evolv28.com/privacy-policy/'));
+                    },
+                    child: const Text(
+                      'Read our Privacy Policy',
+                      style: TextStyle(
+                        color: Color(0xFF20B2AA),
+                        fontSize: 13,
+                        decoration: TextDecoration.underline,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  GestureDetector(
+                    onTap: () {
+                      // Open terms and conditions in web browser
+                      launchUrl(Uri.parse('https://www.evolv28.com/terms-conditions/'));
+                    },
+                    child: const Text(
+                      'Read our Terms and Conditions',
+                      style: TextStyle(
+                        color: Color(0xFF20B2AA),
+                        fontSize: 13,
+                        decoration: TextDecoration.underline,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              
+              // Checkboxes
+              Column(
+                children: [
+                  _buildCheckboxRow(
+                    'Agree to our Privacy Policy',
+                    viewModel.privacyPolicyAccepted,
+                    () => viewModel.setPrivacyPolicyAccepted(!viewModel.privacyPolicyAccepted),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildCheckboxRow(
+                    'Agree to Terms and Conditions',
+                    viewModel.termsAndConditionsAccepted,
+                    () => viewModel.setTermsAndConditionsAccepted(!viewModel.termsAndConditionsAccepted),
+                  ),
+                ],
+              ),
+            ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildCheckboxRow(String text, bool isChecked, VoidCallback onTap) {
+    return Row(
+      children: [
+        GestureDetector(
+          onTap: onTap,
+          child: Container(
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              color: isChecked ? const Color(0xFF20B2AA) : Colors.transparent,
+              border: Border.all(
+                color: const Color(0xFF20B2AA),
+                width: 2,
+              ),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: isChecked
+                ? const Icon(Icons.check, size: 14, color: Colors.white)
+                : null,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              color: Colors.black,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -582,21 +672,17 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
                   _buildContinueButton(context),
                   const SizedBox(height: 24),
 
-                  // OR separator
-                  _buildOrSeparator(),
-                  const SizedBox(height: 24),
-
-                  // Social login buttons
-                  _buildSocialLoginButtons(context),
+                  // Terms and Conditions section
+                  _buildTermsAndConditionsSection(context),
                 ],
               ),
             ),
           ),
         ),
-        const SizedBox(height: 24),
+        // const SizedBox(height: 24),
 
         // Transactional alerts checkbox
-        _buildTransactionalAlertsCheckbox(context),
+        // _buildTransactionalAlertsCheckbox(context),
       ],
     );
   }

@@ -38,6 +38,8 @@ class LoginViewModel extends ChangeNotifier {
   bool _rememberMe = false;
   bool _transactionalAlerts = true;
   bool _termsAndConditions = false;
+  bool _privacyPolicyAccepted = false;
+  bool _termsAndConditionsAccepted = false;
   bool _isPasswordVisible = false;
 
   // State
@@ -51,6 +53,8 @@ class LoginViewModel extends ChangeNotifier {
   bool get rememberMe => _rememberMe;
   bool get transactionalAlerts => _transactionalAlerts;
   bool get termsAndConditions => _termsAndConditions;
+  bool get privacyPolicyAccepted => _privacyPolicyAccepted;
+  bool get termsAndConditionsAccepted => _termsAndConditionsAccepted;
   bool get isPasswordVisible => _isPasswordVisible;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -82,6 +86,16 @@ class LoginViewModel extends ChangeNotifier {
 
   void setTermsAndConditions(bool value) {
     _termsAndConditions = value;
+    notifyListeners();
+  }
+
+  void setPrivacyPolicyAccepted(bool value) {
+    _privacyPolicyAccepted = value;
+    notifyListeners();
+  }
+
+  void setTermsAndConditionsAccepted(bool value) {
+    _termsAndConditionsAccepted = value;
     notifyListeners();
   }
 
