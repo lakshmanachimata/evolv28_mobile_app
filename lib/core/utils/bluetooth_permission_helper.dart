@@ -7,6 +7,13 @@ class BluetoothPermissionHelper {
   /// Check if Bluetooth is enabled and permission is granted
   static Future<bool> isBluetoothEnabled() async {
     try {
+      if (Platform.isMacOS) {
+        // For macOS, assume Bluetooth is available and enabled by default
+        // macOS handles Bluetooth permissions differently than mobile platforms
+        print('🔵 BluetoothPermissionHelper: macOS detected, assuming Bluetooth enabled');
+        return true;
+      }
+      
       // Initialize the native service if not already done
       await NativeBluetoothService.initialize();
       
@@ -34,6 +41,11 @@ class BluetoothPermissionHelper {
       }
     } catch (e) {
       print('❌ BluetoothPermissionHelper: Error checking Bluetooth status: $e');
+      // For macOS, return true as fallback since permission_handler has limited support
+      if (Platform.isMacOS) {
+        print('🔵 BluetoothPermissionHelper: macOS fallback - returning true for Bluetooth status');
+        return true;
+      }
       return false;
     }
   }
@@ -41,6 +53,12 @@ class BluetoothPermissionHelper {
   /// Request Bluetooth permission
   static Future<bool> requestBluetoothPermission() async {
     try {
+      if (Platform.isMacOS) {
+        // For macOS, assume permission is granted by default
+        print('🔵 BluetoothPermissionHelper: macOS detected, assuming Bluetooth permission granted');
+        return true;
+      }
+      
       if (Platform.isIOS) {
         // Use native iOS implementation
         final result = await NativeBluetoothService.requestBluetoothPermission();
@@ -57,6 +75,11 @@ class BluetoothPermissionHelper {
       }
     } catch (e) {
       print('❌ BluetoothPermissionHelper: Error requesting Bluetooth permission: $e');
+      // For macOS, return true as fallback
+      if (Platform.isMacOS) {
+        print('🔵 BluetoothPermissionHelper: macOS fallback - returning true for Bluetooth permission');
+        return true;
+      }
       return false;
     }
   }
@@ -64,9 +87,20 @@ class BluetoothPermissionHelper {
   /// Open system Bluetooth settings
   static Future<void> openBluetoothSettings() async {
     try {
+      if (Platform.isMacOS) {
+        // For macOS, we can't open app settings programmatically
+        // The user would need to manually go to System Preferences > Bluetooth
+        print('🔵 BluetoothPermissionHelper: macOS detected - cannot open app settings programmatically');
+        print('🔵 BluetoothPermissionHelper: Please go to System Preferences > Bluetooth');
+        return;
+      }
+      
       await openAppSettings();
     } catch (e) {
       print('❌ BluetoothPermissionHelper: Error opening app settings: $e');
+      if (Platform.isMacOS) {
+        print('🔵 BluetoothPermissionHelper: macOS fallback - cannot open settings programmatically');
+      }
     }
   }
 
@@ -187,8 +221,8 @@ class BluetoothPermissionHelper {
         final permissionStatus = await NativeBluetoothService.getBluetoothPermissionStatus();
         
         return {
-          'status': status,
-          'permission': permissionStatus,
+          'status': status.toString().split('.').last,
+          'permission': permissionStatus.toString().split('.').last,
           'platform': 'iOS',
         };
       } else {

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart';
@@ -6,10 +7,22 @@ class LocationPermissionHelper {
   /// Check if location permission is granted
   static Future<bool> isLocationPermissionGranted() async {
     try {
+      if (Platform.isMacOS) {
+        // For macOS, assume location permission is granted by default
+        // macOS handles location permissions differently than mobile platforms
+        print('📍 LocationPermissionHelper: macOS detected, assuming location permission granted');
+        return true;
+      }
+      
       final status = await Permission.location.status;
       return status.isGranted;
     } catch (e) {
       print('❌ LocationPermissionHelper: Error checking location permission: $e');
+      // For macOS, return true as fallback since permission_handler has limited support
+      if (Platform.isMacOS) {
+        print('📍 LocationPermissionHelper: macOS fallback - returning true for location permission');
+        return true;
+      }
       return false;
     }
   }
@@ -27,10 +40,21 @@ class LocationPermissionHelper {
   /// Request location permission
   static Future<bool> requestLocationPermission() async {
     try {
+      if (Platform.isMacOS) {
+        // For macOS, assume permission is granted by default
+        print('📍 LocationPermissionHelper: macOS detected, assuming location permission granted');
+        return true;
+      }
+      
       final status = await Permission.location.request();
       return status.isGranted;
     } catch (e) {
       print('❌ LocationPermissionHelper: Error requesting location permission: $e');
+      // For macOS, return true as fallback
+      if (Platform.isMacOS) {
+        print('📍 LocationPermissionHelper: macOS fallback - returning true for location permission');
+        return true;
+      }
       return false;
     }
   }
@@ -38,9 +62,20 @@ class LocationPermissionHelper {
   /// Open system location settings
   static Future<void> openLocationSettings() async {
     try {
+      if (Platform.isMacOS) {
+        // For macOS, we can't open app settings programmatically
+        // The user would need to manually go to System Preferences > Security & Privacy > Privacy > Location Services
+        print('📍 LocationPermissionHelper: macOS detected - cannot open app settings programmatically');
+        print('📍 LocationPermissionHelper: Please go to System Preferences > Security & Privacy > Privacy > Location Services');
+        return;
+      }
+      
       await openAppSettings();
     } catch (e) {
       print('❌ LocationPermissionHelper: Error opening app settings: $e');
+      if (Platform.isMacOS) {
+        print('📍 LocationPermissionHelper: macOS fallback - cannot open settings programmatically');
+      }
     }
   }
 

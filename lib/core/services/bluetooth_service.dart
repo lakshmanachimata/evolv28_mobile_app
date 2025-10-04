@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart' as ble;
 import 'package:permission_handler/permission_handler.dart';
 import 'logging_service.dart';
 import '../di/injection_container.dart';
+import 'native_bluetooth_service.dart';
 
 enum BluetoothConnectionState {
   disconnected,
@@ -70,7 +72,37 @@ class BluetoothService extends ChangeNotifier {
     // Don't request permissions automatically - let the calling view handle permission flow
     // await _requestPermissions();
     
-    // Listen to adapter state changes
+    if (Platform.isMacOS) {
+      // Initialize native Bluetooth service for macOS
+      print('🔵 BluetoothService: macOS detected, initializing native Bluetooth service');
+      await NativeBluetoothService.initialize();
+      
+      // Listen to native Bluetooth state changes
+      NativeBluetoothService.bluetoothStateStream.listen((stateData) {
+        final isEnabled = stateData['isEnabled'] as bool? ?? false;
+        final state = stateData['state'] as String? ?? 'unknown';
+        
+        print('🔵 BluetoothService: Native Bluetooth state changed - enabled: $isEnabled, state: $state');
+        
+        if (isEnabled) {
+          _clearError();
+        } else {
+          _setError('Bluetooth is turned off');
+        }
+      });
+      
+      // Check initial Bluetooth state
+      final isEnabled = await NativeBluetoothService.isBluetoothEnabled();
+      if (isEnabled) {
+        _clearError();
+      } else {
+        _setError('Bluetooth is turned off');
+      }
+      
+      return;
+    }
+    
+    // Listen to adapter state changes for other platforms
     ble.FlutterBluePlus.adapterState.listen((state) {
       if (state == ble.BluetoothAdapterState.on) {
         _clearError();
@@ -102,10 +134,21 @@ class BluetoothService extends ChangeNotifier {
     if (_connectionState == BluetoothConnectionState.scanning) return;
 
     try {
-      // Check if Bluetooth is on
-      if (await ble.FlutterBluePlus.adapterState.first != ble.BluetoothAdapterState.on) {
-        _setError('Bluetooth is turned off');
-        return;
+      if (Platform.isMacOS) {
+        // Check Bluetooth state using native service
+        final isEnabled = await NativeBluetoothService.isBluetoothEnabled();
+        if (!isEnabled) {
+          _setError('Bluetooth is turned off');
+          return;
+        }
+        print('🔵 BluetoothService: macOS Bluetooth is enabled, proceeding with scan');
+        _clearError();
+      } else {
+        // Check if Bluetooth is on for other platforms
+        if (await ble.FlutterBluePlus.adapterState.first != ble.BluetoothAdapterState.on) {
+          _setError('Bluetooth is turned off');
+          return;
+        }
       }
 
       _connectionState = BluetoothConnectionState.scanning;
@@ -113,7 +156,6 @@ class BluetoothService extends ChangeNotifier {
       _scannedDevices.clear();
       _scanCountdown = 10; // Initialize countdown to 10 seconds
       print('Initialized countdown: $_scanCountdown');
-      _clearError();
       notifyListeners();
 
       // Start scanning for 10 seconds
@@ -960,6 +1002,12 @@ class BluetoothService extends ChangeNotifier {
     _scanTimer?.cancel();
     _countdownTimer?.cancel();
     _notificationSubscription?.cancel();
+    
+    // Clean up native Bluetooth service
+    if (Platform.isMacOS) {
+      NativeBluetoothService.dispose();
+    }
+    
     super.dispose();
   }
 }

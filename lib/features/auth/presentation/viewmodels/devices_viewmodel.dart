@@ -1299,7 +1299,7 @@ class DevicesViewModel extends ChangeNotifier {
     try {
       final status = await NativeBluetoothService.getBluetoothStatus();
       print('Native Bluetooth status: $status');
-      return status;
+      return status.toString().split('.').last;
     } catch (e) {
       print('Error getting native Bluetooth status: $e');
       return 'unknown';
@@ -1311,7 +1311,7 @@ class DevicesViewModel extends ChangeNotifier {
     try {
       final status = await NativeBluetoothService.getBluetoothPermissionStatus();
       print('Native Bluetooth permission status: $status');
-      return status;
+      return status.toString().split('.').last;
     } catch (e) {
       print('Error getting native Bluetooth permission status: $e');
       return 'unknown';
@@ -1323,7 +1323,7 @@ class DevicesViewModel extends ChangeNotifier {
     try {
       final result = await NativeBluetoothService.requestBluetoothPermission();
       print('Native Bluetooth permission request result: $result');
-      return result;
+      return result.toString();
     } catch (e) {
       print('Error requesting native Bluetooth permission: $e');
       return 'error';
@@ -1339,7 +1339,7 @@ class DevicesViewModel extends ChangeNotifier {
       
       final result = await NativeBluetoothService.startScanning();
       print('Native Bluetooth scanning result: $result');
-      return result;
+      return result.toString();
     } catch (e) {
       print('Error starting native Bluetooth scanning: $e');
       _isScanning = false;
@@ -1355,7 +1355,7 @@ class DevicesViewModel extends ChangeNotifier {
       _isScanning = false;
       notifyListeners();
       print('Native Bluetooth scanning stopped: $result');
-      return result;
+      return result.toString();
     } catch (e) {
       print('Error stopping native Bluetooth scanning: $e');
       return 'error';
