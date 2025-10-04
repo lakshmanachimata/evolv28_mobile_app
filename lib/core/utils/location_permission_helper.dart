@@ -79,78 +79,122 @@ class LocationPermissionHelper {
     }
   }
 
-  /// Show location permission dialog
+  /// Show location permission bottom sheet
   static Future<bool> showLocationPermissionDialog(BuildContext context) async {
-    return await showDialog<bool>(
+    return await showModalBottomSheet<bool>(
       context: context,
-      barrierDismissible: false,
+      isDismissible: false,
+      enableDrag: false,
+      backgroundColor: Colors.transparent,
       builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
           ),
-          title: Row(
-            children: [
-              Icon(
-                Icons.location_on,
-                color: const Color(0xFFF17961),
-                size: 28,
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Location Permission',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          content: const Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Evolv28 needs access to your device\'s location to find and connect to your Evolv28 device.',
-                style: TextStyle(fontSize: 16),
-              ),
-              SizedBox(height: 12),
-              Text(
-                'This permission is required for device discovery and connection.',
-                style: TextStyle(fontSize: 14, color: Colors.grey),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(false);
-              },
-              child: const Text(
-                'Not Now',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey,
-                ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Handle bar
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  // Close button
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).pop(false);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.red[50],
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Icon(
+                            Icons.close,
+                            color: Colors.red[600],
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Title
+                  const Text(
+                    'Location Permission',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  
+                  const SizedBox(height: 24),
+                  
+                  // Content
+                  const Text(
+                    'Evolv28 collects location data to find and connect to nearby Evolv28 devices via Bluetooth, even when the app is closed or not in use. This data is used to enable seamless device connectivity and ensure proper functionality.',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.black,
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.left,
+                  ),
+                  
+                  const SizedBox(height: 32),
+                  
+                  // Allow button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        Navigator.of(context).pop(true);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFF17961),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Allow',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 16),
+                ],
               ),
             ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.of(context).pop(true);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFF17961),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text(
-                'Allow',
-                style: TextStyle(fontSize: 16),
-              ),
-            ),
-          ],
+          ),
         );
       },
     ) ?? false;
