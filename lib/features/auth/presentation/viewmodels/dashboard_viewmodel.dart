@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -25,6 +26,7 @@ class DashboardViewModel extends ChangeNotifier {
   bool _isLoading = false;
   String _userName = 'Jane Doe'; // Default name, can be passed from previous screen
   bool _shouldAutoConnect = false; // Flag to determine if auto-connection should be attempted
+  List<dynamic> _userDevices = []; // User's devices from server data
   int _selectedTabIndex = 0;
   bool _isPlaying = false; // Track if a program is currently playing
   bool _showPlayerCard = false; // Track if player card should be shown
@@ -111,7 +113,11 @@ class DashboardViewModel extends ChangeNotifier {
     // Initialize Bluetooth service
     print('🎵 Dashboard: Initializing Bluetooth service...');
     await _bluetoothService.initialize();
-    print('🎵 Dashboard: Bluetooth service initialized');
+    
+    // Set user devices for validation
+    _bluetoothService.setUserDevices(_userDevices);
+    
+    print('🎵 Dashboard: Bluetooth service initialized with ${_userDevices.length} user devices');
     
     // Listen to Bluetooth service changes
     _bluetoothListener = () {
@@ -191,6 +197,9 @@ class DashboardViewModel extends ChangeNotifier {
       
       print('🎵 Dashboard: Loaded user data - Name: "$_userName", Devices Count: $devicesCount');
       
+      // Load user's devices array from stored JSON data
+      await _loadUserDevices(prefs);
+      
       // Check if user has devices and should auto-connect
       if (devicesCount > 0) {
         print('🎵 Dashboard: User has $devicesCount devices - will attempt auto-connection after Bluetooth initialization');
@@ -207,10 +216,49 @@ class DashboardViewModel extends ChangeNotifier {
     }
   }
 
+  // Load user's devices array from stored data
+  Future<void> _loadUserDevices(SharedPreferences prefs) async {
+    try {
+      // Try to get devices from user_data_json first
+      final userDataJson = prefs.getString('user_data_json');
+      if (userDataJson != null) {
+        final userData = jsonDecode(userDataJson);
+        final devices = userData['devices'] as List<dynamic>? ?? [];
+        print('🎵 Dashboard: Loaded ${devices.length} devices from user_data_json: $devices');
+        _userDevices = devices;
+        return;
+      }
+      
+      // Fallback to user_data
+      final userDataString = prefs.getString('user_data');
+      if (userDataString != null) {
+        final userData = jsonDecode(userDataString);
+        final devices = userData['data']?['devices'] as List<dynamic>? ?? [];
+        print('🎵 Dashboard: Loaded ${devices.length} devices from user_data: $devices');
+        _userDevices = devices;
+        return;
+      }
+      
+      print('🎵 Dashboard: No user devices data found in SharedPreferences');
+      _userDevices = [];
+      
+    } catch (e) {
+      print('🎵 Dashboard: Error loading user devices: $e');
+      _userDevices = [];
+    }
+  }
+
   // Attempt automatic device connection
   Future<void> _attemptAutoConnection() async {
     try {
       print('🎵 Dashboard: Starting auto-connection process...');
+      print('🎵 Dashboard: User has ${_userDevices.length} devices in their account');
+      
+      // Check if user has devices in their account
+      if (_userDevices.isEmpty) {
+        print('🎵 Dashboard: User has no devices in their account - skipping auto-connection');
+        return;
+      }
       
       // Check if Bluetooth service is ready
       if (!_bluetoothService.isConnected) {
@@ -226,12 +274,21 @@ class DashboardViewModel extends ChangeNotifier {
         if (_bluetoothService.scannedDevices.isNotEmpty) {
           print('🎵 Dashboard: Found ${_bluetoothService.scannedDevices.length} devices during auto-scan');
           
-          // If we found exactly one device, it should auto-connect
-          // If multiple devices, we'll let the user choose
-          if (_bluetoothService.scannedDevices.length == 1) {
-            print('🎵 Dashboard: Single device found - auto-connection should be in progress');
+          // Check if any scanned devices match user's devices
+          final matchingDevices = _findMatchingUserDevices(_bluetoothService.scannedDevices);
+          
+          if (matchingDevices.isNotEmpty) {
+            print('🎵 Dashboard: Found ${matchingDevices.length} devices that match user\'s devices');
+            
+            // If we found exactly one matching device, auto-connect to it
+            if (matchingDevices.length == 1) {
+              print('🎵 Dashboard: Single matching device found - auto-connection should be in progress');
+              // The BluetoothService should handle auto-connection for single devices
+            } else {
+              print('🎵 Dashboard: Multiple matching devices found - user will need to select');
+            }
           } else {
-            print('🎵 Dashboard: Multiple devices found - user will need to select');
+            print('🎵 Dashboard: No scanned devices match user\'s devices - user will need to connect manually');
           }
         } else {
           print('🎵 Dashboard: No devices found during auto-scan');
@@ -243,6 +300,46 @@ class DashboardViewModel extends ChangeNotifier {
     } catch (e) {
       print('🎵 Dashboard: Error during auto-connection: $e');
     }
+  }
+
+  // Find devices that match user's devices
+  List<ble.BluetoothDevice> _findMatchingUserDevices(List<ble.BluetoothDevice> scannedDevices) {
+    final matchingDevices = <ble.BluetoothDevice>[];
+    
+    for (final scannedDevice in scannedDevices) {
+      final deviceName = scannedDevice.platformName.toLowerCase();
+      
+      // Check if this scanned device matches any of user's devices
+      for (final userDevice in _userDevices) {
+        if (userDevice is Map<String, dynamic>) {
+          // Check various possible device identifiers
+          final deviceId = userDevice['id']?.toString().toLowerCase() ?? '';
+          final deviceNameFromUser = userDevice['name']?.toString().toLowerCase() ?? '';
+          final deviceMac = userDevice['mac']?.toString().toLowerCase() ?? '';
+          final deviceSerial = userDevice['serial']?.toString().toLowerCase() ?? '';
+          
+          // Match by device name (most common case)
+          if (deviceName.contains('evolv28') && 
+              (deviceNameFromUser.contains('evolv28') || 
+               deviceId.contains('evolv28') ||
+               deviceMac.isNotEmpty ||
+               deviceSerial.isNotEmpty)) {
+            matchingDevices.add(scannedDevice);
+            print('🎵 Dashboard: Found matching device: ${scannedDevice.platformName}');
+            break; // Don't add the same device multiple times
+          }
+        } else if (userDevice is String) {
+          // If user device is just a string, check if it contains evolv28
+          if (userDevice.toLowerCase().contains('evolv28') && deviceName.contains('evolv28')) {
+            matchingDevices.add(scannedDevice);
+            print('🎵 Dashboard: Found matching device by string: ${scannedDevice.platformName}');
+            break;
+          }
+        }
+      }
+    }
+    
+    return matchingDevices;
   }
 
   // Initialize with minimized player state

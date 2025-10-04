@@ -47,6 +47,9 @@ class BluetoothService extends ChangeNotifier {
   Completer<String?>? _playerStatusCompleter;
   Completer<bool>? _stopCommandCompleter;
   String? _lastNotificationResponse;
+  
+  // User devices for validation
+  List<dynamic> _userDevices = [];
 
   // Nordic UART Service UUIDs
   static const String nordicUartServiceUUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
@@ -67,6 +70,7 @@ class BluetoothService extends ChangeNotifier {
   bool get isPlaySuccessful => _isPlaySuccessful;
   String get selectedBcuFile => _selectedBcuFile;
   List<String> get playCommandResponses => _playCommandResponses;
+  List<dynamic> get userDevices => _userDevices;
 
   Future<void> initialize() async {
     // Don't request permissions automatically - let the calling view handle permission flow
@@ -128,6 +132,12 @@ class BluetoothService extends ChangeNotifier {
   /// Call this method after permissions are granted to ensure proper initialization
   Future<void> initializeAfterPermissions() async {
     await _requestPermissions();
+  }
+
+  /// Set user's registered devices for validation during auto-connection
+  void setUserDevices(List<dynamic> devices) {
+    _userDevices = devices;
+    print('🔵 BluetoothService: Set ${_userDevices.length} user devices for validation');
   }
 
   Future<void> startScanning() async {
@@ -233,18 +243,80 @@ class BluetoothService extends ChangeNotifier {
         status: 'failed',
         notes: 'unable to find device',
       );
-    } else if (_scannedDevices.length == 1) {
-      // Auto-connect to the single device found
-      print('✅ Single device found: ${_scannedDevices.first.platformName}');
-      print('✅ Auto-connecting and starting command sequence...');
-      _connectToDevice(_scannedDevices.first);
     } else {
-      _connectionState = BluetoothConnectionState.disconnected;
-      _statusMessage = 'Multiple devices found';
-      _setError('Multiple Evolv28 devices found. Please select one.');
+      // Check if any scanned devices match user's registered devices
+      final matchingDevices = _findMatchingUserDevices(_scannedDevices);
+      
+      if (matchingDevices.isEmpty) {
+        _connectionState = BluetoothConnectionState.disconnected;
+        _statusMessage = 'No authorized devices found';
+        _setError('No devices found that match your registered devices');
+        
+        // Log when no matching devices are found
+        _loggingService.sendLogs(
+          event: 'BLE Device Connect',
+          status: 'failed',
+          notes: 'no authorized devices found',
+        );
+      } else if (matchingDevices.length == 1) {
+        // Auto-connect to the single matching device
+        print('✅ Single authorized device found: ${matchingDevices.first.platformName}');
+        print('✅ Auto-connecting to authorized device...');
+        _connectToDevice(matchingDevices.first);
+      } else {
+        _connectionState = BluetoothConnectionState.disconnected;
+        _statusMessage = 'Multiple authorized devices found';
+        _setError('Multiple authorized devices found. Please select one.');
+      }
     }
     
     notifyListeners();
+  }
+
+  // Find devices that match user's registered devices
+  List<ble.BluetoothDevice> _findMatchingUserDevices(List<ble.BluetoothDevice> scannedDevices) {
+    final matchingDevices = <ble.BluetoothDevice>[];
+    
+    // If user has no devices registered, don't auto-connect to anything
+    if (_userDevices.isEmpty) {
+      print('🔵 BluetoothService: User has no registered devices - skipping auto-connection');
+      return matchingDevices;
+    }
+    
+    for (final scannedDevice in scannedDevices) {
+      final deviceName = scannedDevice.platformName.toLowerCase();
+      
+      // Check if this scanned device matches any of user's registered devices
+      for (final userDevice in _userDevices) {
+        if (userDevice is Map<String, dynamic>) {
+          // Check various possible device identifiers
+          final deviceId = userDevice['id']?.toString().toLowerCase() ?? '';
+          final deviceNameFromUser = userDevice['name']?.toString().toLowerCase() ?? '';
+          final deviceMac = userDevice['mac']?.toString().toLowerCase() ?? '';
+          final deviceSerial = userDevice['serial']?.toString().toLowerCase() ?? '';
+          
+          // Match by device name (most common case)
+          if (deviceName.contains('evolv28') && 
+              (deviceNameFromUser.contains('evolv28') || 
+               deviceId.contains('evolv28') ||
+               deviceMac.isNotEmpty ||
+               deviceSerial.isNotEmpty)) {
+            matchingDevices.add(scannedDevice);
+            print('🔵 BluetoothService: Found matching authorized device: ${scannedDevice.platformName}');
+            break; // Don't add the same device multiple times
+          }
+        } else if (userDevice is String) {
+          // If user device is just a string, check if it contains evolv28
+          if (userDevice.toLowerCase().contains('evolv28') && deviceName.contains('evolv28')) {
+            matchingDevices.add(scannedDevice);
+            print('🔵 BluetoothService: Found matching authorized device by string: ${scannedDevice.platformName}');
+            break;
+          }
+        }
+      }
+    }
+    
+    return matchingDevices;
   }
 
   Future<void> _connectToDevice(ble.BluetoothDevice device) async {
