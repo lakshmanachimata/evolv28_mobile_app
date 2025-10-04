@@ -2,12 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../core/di/injection_container.dart';
+import '../../domain/entities/create_profile_request.dart';
+import '../../domain/usecases/create_profile_usecase.dart';
+
 class OnboardingViewModel extends ChangeNotifier {
   int _currentStep = 0;
   bool _agreedToPrivacyPolicy = false;
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _otpController = TextEditingController();
+  late CreateProfileUseCase _createProfileUseCase;
 
   // Getters
   int get currentStep => _currentStep;
@@ -22,6 +27,7 @@ class OnboardingViewModel extends ChangeNotifier {
   String get nextButtonText => isLastStep ? 'Finish' : 'Next';
 
   OnboardingViewModel() {
+    _createProfileUseCase = sl<CreateProfileUseCase>();
     _initializeControllers();
   }
 
@@ -30,12 +36,14 @@ class OnboardingViewModel extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final existingFirstName = prefs.getString('user_first_name')?.trim() ?? '';
     final existingLastName = prefs.getString('user_last_name')?.trim() ?? '';
-    
+
     _firstNameController.text = existingFirstName;
     _lastNameController.text = existingLastName;
     _otpController.text = '';
-    
-    print('🔐 OnboardingViewModel: Initialized with existing data - FirstName: "$existingFirstName", LastName: "$existingLastName"');
+
+    print(
+      '🔐 OnboardingViewModel: Initialized with existing data - FirstName: "$existingFirstName", LastName: "$existingLastName"',
+    );
   }
 
   void togglePrivacyPolicyAgreement() {
@@ -110,20 +118,47 @@ class OnboardingViewModel extends ChangeNotifier {
     SystemChannels.textInput.invokeMethod('TextInput.hide');
   }
 
-  // Save user profile data
+  // Save user profile data using API
   Future<bool> saveUserProfile() async {
     try {
+      // Get user email from SharedPreferences
       final prefs = await SharedPreferences.getInstance();
-      
-      // Save first name and last name
-      await prefs.setString('user_first_name', _firstNameController.text.trim());
-      await prefs.setString('user_last_name', _lastNameController.text.trim());
-      
-      print('🔐 OnboardingViewModel: Saved user profile - FirstName: "${_firstNameController.text.trim()}", LastName: "${_lastNameController.text.trim()}"');
-      
-      return true;
+      final userEmail = prefs.getString('user_email_id') ?? '';
+
+      if (userEmail.isEmpty) {
+        print('🔐 OnboardingViewModel: No user email found');
+        return false;
+      }
+
+      // Create the profile request
+      final request = CreateProfileRequest(
+        firstName: _firstNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
+        emailId: userEmail,
+      );
+
+      print(
+        '🔐 OnboardingViewModel: Creating profile with API - FirstName: "${request.firstName}", LastName: "${request.lastName}", Email: "${request.emailId}"',
+      );
+
+      // Call the API
+      final result = await _createProfileUseCase(request);
+
+        return result.fold(
+          (error) {
+            print('🔐 OnboardingViewModel: Profile creation failed: $error');
+            return false;
+          },
+          (response) {
+            print(
+              '🔐 OnboardingViewModel: Profile created successfully: ${response.message}',
+            );
+            // Return true if error is false or null (success), false otherwise
+            return response.error == false;
+          },
+        );
     } catch (e) {
-      print('🔐 OnboardingViewModel: Error saving user profile: $e');
+      print('🔐 OnboardingViewModel: Error creating profile: $e');
       return false;
     }
   }
@@ -133,14 +168,20 @@ class OnboardingViewModel extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final devicesCount = prefs.getInt('user_devices_count') ?? 0;
-      
-      print('🔐 OnboardingViewModel: Checking devices count after profile save: $devicesCount');
-      
+
+      print(
+        '🔐 OnboardingViewModel: Checking devices count after profile save: $devicesCount',
+      );
+
       if (devicesCount > 0) {
-        print('🔐 OnboardingViewModel: User has devices - navigating to dashboard');
+        print(
+          '🔐 OnboardingViewModel: User has devices - navigating to dashboard',
+        );
         return 'dashboard';
       } else {
-        print('🔐 OnboardingViewModel: User has no devices - navigating to onboard device');
+        print(
+          '🔐 OnboardingViewModel: User has no devices - navigating to onboard device',
+        );
         return 'onboardDevice';
       }
     } catch (e) {

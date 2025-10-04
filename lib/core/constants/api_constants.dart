@@ -15,6 +15,7 @@ class ApiConstants {
   static const String userDetails = '/api/UserDetails';
   static const String allMusic = '/api/user/device/all_music';
   static const String socialLogin = '/api/auth/social';
+  static const String createProfile = '/api/user/create_profile';
   static const String deviceTroubleshotLog = '/api/devicetroubleshotlog';
   static const String logsNewInsert = '/api/logs/newinsert';
 

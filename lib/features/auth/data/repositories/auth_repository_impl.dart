@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/constants/api_constants.dart';
 import '../../domain/entities/auth_result.dart';
+import '../../domain/entities/create_profile_request.dart';
+import '../../domain/entities/create_profile_response.dart';
 import '../../domain/entities/otp_response.dart';
 import '../../domain/entities/otp_validation_response.dart';
 import '../../domain/entities/social_login_request.dart';
@@ -794,6 +796,85 @@ class AuthRepositoryImpl implements AuthRepository {
         }
       }
       return Left('Social login failed: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<Either<String, CreateProfileResponse>> createProfile(
+    CreateProfileRequest request,
+  ) async {
+    try {
+      print(
+        '🔐 AuthRepository: Create profile request for email: ${request.emailId}',
+      );
+
+      // Get authorization token
+      final token = sharedPreferences.getString('user_token');
+      if (token == null || token.isEmpty) {
+        print('🔐 AuthRepository: No authorization token found');
+        return const Left('No authorization token found');
+      }
+
+      final response = await _dio.post(
+        '${ApiConstants.baseUrl}${ApiConstants.createProfile}',
+        data: request.toJson(),
+        options: Options(
+          headers: {
+            'Authorization': token,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      print(
+        '🔐 AuthRepository: Create profile API response: ${response.statusCode}',
+      );
+      print('🔐 AuthRepository: Create profile API data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+        print(
+          '🔐 AuthRepository: Response data type: ${responseData.runtimeType}',
+        );
+
+        final createProfileResponse = CreateProfileResponse.fromJson(
+          responseData,
+        );
+        print(
+          '🔐 AuthRepository: Create profile success: ${createProfileResponse.error}',
+        );
+
+        if (createProfileResponse.error == false) {
+          // Store user data in SharedPreferences using the same method as OTP validation
+          await _storeUserData(createProfileResponse.data);
+
+          print('🔐 AuthRepository: Profile created successfully');
+          return Right(createProfileResponse);
+        } else {
+          print(
+            '🔐 AuthRepository: Create profile failed: ${createProfileResponse.message}',
+          );
+          return Left(createProfileResponse.message);
+        }
+      } else {
+        print(
+          '🔐 AuthRepository: Create profile failed with status: ${response.statusCode}',
+        );
+        return Left(
+          'Create profile failed with status: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      print('🔐 AuthRepository: Create profile error: $e');
+      if (e is DioException) {
+        if (e.response != null) {
+          print('🔐 AuthRepository: Server error: ${e.response!.statusCode}');
+          print('🔐 AuthRepository: Server response: ${e.response!.data}');
+          return Left('Server error: ${e.response!.statusCode}');
+        }
+      }
+      return Left('Create profile failed: ${e.toString()}');
     }
   }
 }

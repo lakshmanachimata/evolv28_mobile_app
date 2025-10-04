@@ -4,6 +4,8 @@ import '../entities/otp_response.dart';
 import '../entities/otp_validation_response.dart';
 import '../entities/social_login_response.dart';
 import '../entities/social_login_request.dart';
+import '../entities/create_profile_request.dart';
+import '../entities/create_profile_response.dart';
 
 abstract class AuthRepository {
   Future<Either<String, AuthResult>> login(String email, String password, bool rememberMe);
@@ -13,6 +15,7 @@ abstract class AuthRepository {
   Future<Either<String, OtpValidationResponse>> getUserDetails(int userId);
   Future<Either<String, dynamic>> getAllMusic(int userId);
   Future<Either<String, SocialLoginResponse>> socialLogin(SocialLoginRequest request);
+  Future<Either<String, CreateProfileResponse>> createProfile(CreateProfileRequest request);
   Future<void> logout();
   Future<Either<String, bool>> deleteUserAccount();
   Future<bool> isLoggedIn();
