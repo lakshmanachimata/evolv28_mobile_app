@@ -24,6 +24,7 @@ class DashboardViewModel extends ChangeNotifier {
   // State variables
   bool _isLoading = false;
   String _userName = 'Jane Doe'; // Default name, can be passed from previous screen
+  bool _shouldAutoConnect = false; // Flag to determine if auto-connection should be attempted
   int _selectedTabIndex = 0;
   bool _isPlaying = false; // Track if a program is currently playing
   bool _showPlayerCard = false; // Track if player card should be shown
@@ -130,6 +131,12 @@ class DashboardViewModel extends ChangeNotifier {
     print('🎵 Dashboard: Checking permissions before Bluetooth operations...');
     await _checkPermissionsAndStartBluetooth();
 
+    // Attempt auto-connection if user has devices
+    if (_shouldAutoConnect) {
+      print('🎵 Dashboard: User has devices - attempting auto-connection...');
+      await _attemptAutoConnection();
+    }
+
     // Check if we're coming from a minimized player
     print('🎵 Dashboard: Checking minimized player state...');
     print('🎵 Dashboard: _isMinimizedFromPlayer: $_isMinimizedFromPlayer, _minimizedProgramId: $_minimizedProgramId');
@@ -167,6 +174,7 @@ class DashboardViewModel extends ChangeNotifier {
       final firstName = prefs.getString('user_first_name')?.trim() ?? '';
       final lastName = prefs.getString('user_last_name')?.trim() ?? '';
       final userName = prefs.getString('user_name')?.trim() ?? '';
+      final devicesCount = prefs.getInt('user_devices_count') ?? 0;
       
       // Set user name - use userName if available, otherwise combine first and last name
       if (userName.isNotEmpty) {
@@ -181,11 +189,59 @@ class DashboardViewModel extends ChangeNotifier {
         _userName = 'User'; // Default fallback
       }
       
-      print('🎵 Dashboard: Loaded user data - Name: "$_userName"');
+      print('🎵 Dashboard: Loaded user data - Name: "$_userName", Devices Count: $devicesCount');
+      
+      // Check if user has devices and should auto-connect
+      if (devicesCount > 0) {
+        print('🎵 Dashboard: User has $devicesCount devices - will attempt auto-connection after Bluetooth initialization');
+        _shouldAutoConnect = true;
+      } else {
+        print('🎵 Dashboard: User has no devices - skipping auto-connection');
+        _shouldAutoConnect = false;
+      }
       
     } catch (e) {
       print('🎵 Dashboard: Error loading user data: $e');
       // Keep default values if loading fails
+      _shouldAutoConnect = false;
+    }
+  }
+
+  // Attempt automatic device connection
+  Future<void> _attemptAutoConnection() async {
+    try {
+      print('🎵 Dashboard: Starting auto-connection process...');
+      
+      // Check if Bluetooth service is ready
+      if (!_bluetoothService.isConnected) {
+        print('🎵 Dashboard: Bluetooth service not connected, starting scanning...');
+        
+        // Start scanning for devices
+        await _bluetoothService.startScanning();
+        
+        // Wait a bit for scanning to complete
+        await Future.delayed(const Duration(seconds: 12));
+        
+        // Check if we found any devices
+        if (_bluetoothService.scannedDevices.isNotEmpty) {
+          print('🎵 Dashboard: Found ${_bluetoothService.scannedDevices.length} devices during auto-scan');
+          
+          // If we found exactly one device, it should auto-connect
+          // If multiple devices, we'll let the user choose
+          if (_bluetoothService.scannedDevices.length == 1) {
+            print('🎵 Dashboard: Single device found - auto-connection should be in progress');
+          } else {
+            print('🎵 Dashboard: Multiple devices found - user will need to select');
+          }
+        } else {
+          print('🎵 Dashboard: No devices found during auto-scan');
+        }
+      } else {
+        print('🎵 Dashboard: Bluetooth service already connected');
+      }
+      
+    } catch (e) {
+      print('🎵 Dashboard: Error during auto-connection: $e');
     }
   }
 
