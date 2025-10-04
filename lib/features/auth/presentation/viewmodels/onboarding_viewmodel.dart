@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class OnboardingViewModel extends ChangeNotifier {
   int _currentStep = 0;
@@ -24,10 +25,17 @@ class OnboardingViewModel extends ChangeNotifier {
     _initializeControllers();
   }
 
-  void _initializeControllers() {
-    _firstNameController.text = '';
-    _lastNameController.text = '';
+  void _initializeControllers() async {
+    // Load existing user data if available
+    final prefs = await SharedPreferences.getInstance();
+    final existingFirstName = prefs.getString('user_first_name')?.trim() ?? '';
+    final existingLastName = prefs.getString('user_last_name')?.trim() ?? '';
+    
+    _firstNameController.text = existingFirstName;
+    _lastNameController.text = existingLastName;
     _otpController.text = '';
+    
+    print('🔐 OnboardingViewModel: Initialized with existing data - FirstName: "$existingFirstName", LastName: "$existingLastName"');
   }
 
   void togglePrivacyPolicyAgreement() {
@@ -100,6 +108,45 @@ class OnboardingViewModel extends ChangeNotifier {
 
   void hideKeyboard() {
     SystemChannels.textInput.invokeMethod('TextInput.hide');
+  }
+
+  // Save user profile data
+  Future<bool> saveUserProfile() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Save first name and last name
+      await prefs.setString('user_first_name', _firstNameController.text.trim());
+      await prefs.setString('user_last_name', _lastNameController.text.trim());
+      
+      print('🔐 OnboardingViewModel: Saved user profile - FirstName: "${_firstNameController.text.trim()}", LastName: "${_lastNameController.text.trim()}"');
+      
+      return true;
+    } catch (e) {
+      print('🔐 OnboardingViewModel: Error saving user profile: $e');
+      return false;
+    }
+  }
+
+  // Get navigation route after saving profile
+  Future<String> getNavigationRouteAfterProfileSave() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final devicesCount = prefs.getInt('user_devices_count') ?? 0;
+      
+      print('🔐 OnboardingViewModel: Checking devices count after profile save: $devicesCount');
+      
+      if (devicesCount > 0) {
+        print('🔐 OnboardingViewModel: User has devices - navigating to dashboard');
+        return 'dashboard';
+      } else {
+        print('🔐 OnboardingViewModel: User has no devices - navigating to onboard device');
+        return 'onboardDevice';
+      }
+    } catch (e) {
+      print('🔐 OnboardingViewModel: Error checking devices count: $e');
+      return 'onboardDevice'; // Default to onboard device if there's an error
+    }
   }
 
   @override

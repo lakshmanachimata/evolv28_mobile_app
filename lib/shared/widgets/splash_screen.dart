@@ -76,18 +76,25 @@ class _SplashScreenState extends State<SplashScreen>
         print('🚀 SplashScreen: Fetching latest user details...');
         final userDetails = await _fetchLatestUserDetails(authRepository);
         
-        // Fetch all music for the user and check navigation based on music data
+        // Fetch all music for the user
         if (userDetails != null) {
           print('🚀 SplashScreen: Fetching all music for user...');
-          final hasMusicData = await _fetchAllMusic(userDetails.data.userId ?? userDetails.data.id);
-          
-          // Always go to dashboard screen where permission dialogs are implemented
-          print('🚀 SplashScreen: Navigating to dashboard (permission dialogs will be shown there)');
+          await _fetchAllMusic(userDetails.data.userId ?? userDetails.data.id);
+        }
+        
+        // Use the same navigation logic as LoginView
+        final navigationRoute = await _getNavigationRoute(authRepository);
+        print('🚀 SplashScreen: Navigation route determined: $navigationRoute');
+        
+        if (navigationRoute == 'dashboard') {
+          print('🚀 SplashScreen: Navigating to dashboard');
           context.go(AppRoutes.dashboard);
+        } else if (navigationRoute == 'onboardDevice') {
+          print('🚀 SplashScreen: Navigating to onboard device');
+          context.go(AppRoutes.onboardDevice);
         } else {
-          // If user details fetch fails, go to dashboard screen
-          print('🚀 SplashScreen: Failed to fetch user details, navigating to dashboard');
-          context.go(AppRoutes.dashboard);
+          print('🚀 SplashScreen: Navigating to onboarding');
+          context.go(AppRoutes.onboarding);
         }
       } else {
         // User not logged in, go to login screen
@@ -100,6 +107,30 @@ class _SplashScreenState extends State<SplashScreen>
       if (mounted) {
         context.go(AppRoutes.login);
       }
+    }
+  }
+
+  // Get navigation route using the same logic as LoginViewModel
+  Future<String> _getNavigationRoute(AuthRepository authRepository) async {
+    try {
+      final hasCompleteProfile = await authRepository.hasCompleteProfile();
+      final hasBasicProfileButNoDevices = await authRepository.hasBasicProfileButNoDevices();
+      
+      print('🚀 SplashScreen: Profile check - Complete: $hasCompleteProfile, Basic but no devices: $hasBasicProfileButNoDevices');
+      
+      if (hasCompleteProfile) {
+        print('🚀 SplashScreen: User has complete profile - navigating to dashboard');
+        return 'dashboard';
+      } else if (hasBasicProfileButNoDevices) {
+        print('🚀 SplashScreen: User has basic profile but no devices - navigating to onboard device');
+        return 'onboardDevice';
+      } else {
+        print('🚀 SplashScreen: User has incomplete profile - navigating to onboarding');
+        return 'onboarding';
+      }
+    } catch (e) {
+      print('🚀 SplashScreen: Error checking profile: $e');
+      return 'onboarding'; // Default to onboarding if there's an error
     }
   }
 

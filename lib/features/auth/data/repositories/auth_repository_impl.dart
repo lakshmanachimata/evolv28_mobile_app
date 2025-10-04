@@ -659,8 +659,10 @@ class AuthRepositoryImpl implements AuthRepository {
   // Check if user has complete profile (firstname, lastname, and devices)
   @override
   Future<bool> hasCompleteProfile() async {
-    final firstName = sharedPreferences.getString('user_first_name') ?? '';
-    final lastName = sharedPreferences.getString('user_last_name') ?? '';
+    final firstName =
+        sharedPreferences.getString('user_first_name')?.trim() ?? '';
+    final lastName =
+        sharedPreferences.getString('user_last_name')?.trim() ?? '';
     final devicesCount = sharedPreferences.getInt('user_devices_count') ?? 0;
 
     print(
@@ -669,7 +671,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
     // User has complete profile if they have both first and last name AND have devices
     final hasCompleteProfile =
-        firstName.isNotEmpty && lastName.isNotEmpty && devicesCount > 0;
+        (firstName.isNotEmpty && lastName.isNotEmpty) || devicesCount > 0;
 
     print('🔐 AuthRepository: Has complete profile: $hasCompleteProfile');
     return hasCompleteProfile;
@@ -677,8 +679,10 @@ class AuthRepositoryImpl implements AuthRepository {
 
   // Check if user has basic profile (firstname and lastname) but no devices
   Future<bool> hasBasicProfileButNoDevices() async {
-    final firstName = sharedPreferences.getString('user_first_name') ?? '';
-    final lastName = sharedPreferences.getString('user_last_name') ?? '';
+    final firstName =
+        sharedPreferences.getString('user_first_name')?.trim() ?? '';
+    final lastName =
+        sharedPreferences.getString('user_last_name')?.trim() ?? '';
     final devicesCount = sharedPreferences.getInt('user_devices_count') ?? 0;
 
     print(
@@ -716,10 +720,14 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Either<String, SocialLoginResponse>> socialLogin(SocialLoginRequest request) async {
+  Future<Either<String, SocialLoginResponse>> socialLogin(
+    SocialLoginRequest request,
+  ) async {
     try {
-      print('🔐 AuthRepository: Social login request for email: ${request.emailId}');
-      
+      print(
+        '🔐 AuthRepository: Social login request for email: ${request.emailId}',
+      );
+
       final response = await _dio.post(
         '${ApiConstants.baseUrl}${ApiConstants.socialLogin}',
         data: request.toJson(),
@@ -731,35 +739,49 @@ class AuthRepositoryImpl implements AuthRepository {
         ),
       );
 
-      print('🔐 AuthRepository: Social login API response: ${response.statusCode}');
+      print(
+        '🔐 AuthRepository: Social login API response: ${response.statusCode}',
+      );
       print('🔐 AuthRepository: Social login API data: ${response.data}');
 
       if (response.statusCode == 200) {
         final responseData = response.data;
-        print('🔐 AuthRepository: Response data type: ${responseData.runtimeType}');
-        
+        print(
+          '🔐 AuthRepository: Response data type: ${responseData.runtimeType}',
+        );
+
         final socialLoginResponse = SocialLoginResponse.fromJson(responseData);
         print('🔐 AuthRepository: Has error: ${socialLoginResponse.error}');
-        
+
         if (!socialLoginResponse.error && socialLoginResponse.data != null) {
           // Store user data in SharedPreferences
           final userData = socialLoginResponse.data!;
-          await sharedPreferences.setString('user_data_json', jsonEncode(responseData));
+          await sharedPreferences.setString(
+            'user_data_json',
+            jsonEncode(responseData),
+          );
           await sharedPreferences.setString('user_token', userData.tokenid);
           await sharedPreferences.setString('user_id', userData.id);
-          await sharedPreferences.setString('user_log_id', userData.logId ?? '');
+          await sharedPreferences.setString(
+            'user_log_id',
+            userData.logId ?? '',
+          );
           await sharedPreferences.setString('user_first_name', userData.fname);
           await sharedPreferences.setString('user_last_name', userData.lname);
           await sharedPreferences.setString('user_email_id', userData.emailid);
-          
+
           print('🔐 AuthRepository: Social login successful');
           return Right(socialLoginResponse);
         } else {
-          print('🔐 AuthRepository: Social login failed: ${socialLoginResponse.message}');
+          print(
+            '🔐 AuthRepository: Social login failed: ${socialLoginResponse.message}',
+          );
           return Left(socialLoginResponse.message);
         }
       } else {
-        print('🔐 AuthRepository: Social login failed with status: ${response.statusCode}');
+        print(
+          '🔐 AuthRepository: Social login failed with status: ${response.statusCode}',
+        );
         return Left('Social login failed with status: ${response.statusCode}');
       }
     } catch (e) {

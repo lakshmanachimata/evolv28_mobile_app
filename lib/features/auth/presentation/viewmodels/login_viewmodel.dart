@@ -38,8 +38,8 @@ class LoginViewModel extends ChangeNotifier {
   bool _rememberMe = false;
   bool _transactionalAlerts = true;
   bool _termsAndConditions = false;
-  bool _privacyPolicyAccepted = false;
-  bool _termsAndConditionsAccepted = false;
+  bool _privacyPolicyAccepted = true;
+  bool _termsAndConditionsAccepted = true;
   bool _isPasswordVisible = false;
 
   // State

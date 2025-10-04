@@ -337,18 +337,26 @@ class _OnboardingViewBody extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        TextFormField(
-          controller: viewModel.firstNameController,
-          keyboardType: TextInputType.name,
-          textInputAction: TextInputAction.next,
-          decoration: InputDecoration(
-            hintText: 'Jane',
-            hintStyle: TextStyle(color: Colors.black),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white),
+          ),
+          child: TextFormField(
+            controller: viewModel.firstNameController,
+            keyboardType: TextInputType.name,
+            textInputAction: TextInputAction.next,
+            style: const TextStyle(color: Colors.black),
+            decoration: InputDecoration(
+              hintText: 'Jane',
+              hintStyle: TextStyle(color: Colors.grey.shade600),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
+              border: InputBorder.none,
             ),
-            border: InputBorder.none,
           ),
         ),
 
@@ -374,9 +382,10 @@ class _OnboardingViewBody extends StatelessWidget {
             controller: viewModel.lastNameController,
             keyboardType: TextInputType.name,
             textInputAction: TextInputAction.done,
+            style: const TextStyle(color: Colors.black),
             decoration: InputDecoration(
               hintText: 'Doe',
-              hintStyle: TextStyle(color: Colors.black),
+              hintStyle: TextStyle(color: Colors.grey.shade600),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 16,
@@ -611,10 +620,31 @@ class _OnboardingViewBody extends StatelessWidget {
             height: 42,
             child: ElevatedButton(
               onPressed: viewModel.canProceedFromCurrentStep()
-                  ? () {
+                  ? () async {
                       if (viewModel.currentStep == 1) {
-                        // Navigate to dashboard from profile setup
-                        context.go(AppRoutes.dashboard);
+                        // Save user profile data before navigating
+                        final success = await viewModel.saveUserProfile();
+                        if (success) {
+                          // Determine navigation route based on devices
+                          final navigationRoute = await viewModel.getNavigationRouteAfterProfileSave();
+                          
+                          if (navigationRoute == 'dashboard') {
+                            print('🔐 OnboardingView: Navigating to dashboard');
+                            context.go(AppRoutes.dashboard);
+                          } else {
+                            print('🔐 OnboardingView: Navigating to onboard device');
+                            context.go(AppRoutes.onboardDevice);
+                          }
+                        } else {
+                          // Show error message
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Failed to save profile. Please try again.'),
+                              backgroundColor: Colors.red,
+                              duration: Duration(seconds: 3),
+                            ),
+                          );
+                        }
                       } else if (viewModel.isLastStep) {
                         context.go('/home');
                       } else {

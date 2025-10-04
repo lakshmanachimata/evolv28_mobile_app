@@ -367,10 +367,8 @@ class _OnboardDeviceViewState extends State<OnboardDeviceView> {
           height: 56,
           child: ElevatedButton(
             onPressed: () {
-              // Show OTP verification screen
-              setState(() {
-                _showOtpScreen = true;
-              });
+              // Navigate directly to dashboard screen
+              context.go(AppRoutes.dashboard);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFF17961), // Coral/light orange
