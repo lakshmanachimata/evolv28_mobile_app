@@ -125,8 +125,6 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
                           ? Column(
                               children: [
                                 _buildOtpCard(),
-                                const SizedBox(height: 24),
-                                _buildTermsAndConditionsCheckbox(context),
                               ],
                             )
                           : _buildLoginCard(),
@@ -852,25 +850,43 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
                       // Continue Button
                       SizedBox(
                         width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () => _handleOtpContinue(context),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFF17961),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: const Text(
-                            'Continue',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
+                        child: _isOtpComplete()
+                            ? ElevatedButton(
+                                onPressed: () => _handleOtpContinue(context),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFF17961),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                child: const Text(
+                                  'Continue',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              )
+                            : Container(
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade200,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Center(
+                                  child: Text(
+                                    'Continue',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                ),
+                              ),
                       ),
                     ],
                   );
@@ -933,6 +949,8 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
               }
             });
           }
+          // Trigger rebuild to update continue button state
+          setState(() {});
         },
         onTap: () {
           // Select all text when field is tapped
@@ -985,13 +1003,6 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
                     child: viewModel.termsAndConditions
                         ? const Icon(Icons.check, size: 14, color: Colors.white)
                         : null,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'I agree to the Terms and conditions & Privacy policy',
-                    style: TextStyle(color: Colors.black, fontSize: 13),
                   ),
                 ),
               ],
@@ -1103,6 +1114,11 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
   // Helper method to get OTP controllers
   List<TextEditingController> _getOtpControllers() {
     return _otpControllers;
+  }
+
+  // Helper method to check if OTP is complete (all 4 digits entered)
+  bool _isOtpComplete() {
+    return _otpControllers.every((controller) => controller.text.isNotEmpty);
   }
 
   // Handle resend OTP
