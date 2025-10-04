@@ -45,8 +45,8 @@ class LocationPermissionHelper {
   }
 
   /// Show location permission dialog
-  static Future<void> showLocationPermissionDialog(BuildContext context) async {
-    return showDialog<void>(
+  static Future<bool> showLocationPermissionDialog(BuildContext context) async {
+    return await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
@@ -57,13 +57,13 @@ class LocationPermissionHelper {
           title: Row(
             children: [
               Icon(
-                Icons.location_off,
-                color: Colors.orange,
+                Icons.location_on,
+                color: const Color(0xFFF17961),
                 size: 28,
               ),
               const SizedBox(width: 12),
               const Text(
-                'Location Required',
+                'Location Permission',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -76,12 +76,12 @@ class LocationPermissionHelper {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Location access is required for this app to function properly.',
+                'Evolv28 needs access to your device\'s location to find and connect to your Evolv28 device.',
                 style: TextStyle(fontSize: 16),
               ),
               SizedBox(height: 12),
               Text(
-                'Please enable location services in your device settings.',
+                'This permission is required for device discovery and connection.',
                 style: TextStyle(fontSize: 14, color: Colors.grey),
               ),
             ],
@@ -89,10 +89,10 @@ class LocationPermissionHelper {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.of(context).pop(false);
               },
               child: const Text(
-                'Cancel',
+                'Not Now',
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.grey,
@@ -100,9 +100,8 @@ class LocationPermissionHelper {
               ),
             ),
             ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                openLocationSettings();
+              onPressed: () async {
+                Navigator.of(context).pop(true);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFF17961),
@@ -112,14 +111,14 @@ class LocationPermissionHelper {
                 ),
               ),
               child: const Text(
-                'Open Settings',
+                'Allow',
                 style: TextStyle(fontSize: 16),
               ),
             ),
           ],
         );
       },
-    );
+    ) ?? false;
   }
 
   /// Check location permission and show dialog if needed
@@ -128,26 +127,40 @@ class LocationPermissionHelper {
       // First check if location services are enabled
       final isServiceEnabled = await isLocationServiceEnabled();
       if (!isServiceEnabled) {
-        await showLocationPermissionDialog(context);
+        // Show custom dialog first
+        final userAccepted = await showLocationPermissionDialog(context);
+        if (userAccepted) {
+          // User accepted, open settings to enable location services
+          await openLocationSettings();
+        }
         return false;
       }
 
       // Then check if permission is granted
       final isPermissionGranted = await isLocationPermissionGranted();
       if (!isPermissionGranted) {
-        // Try to request permission first
-        final granted = await requestLocationPermission();
-        if (!granted) {
-          // If permission was denied, show dialog to open settings
-          await showLocationPermissionDialog(context);
-          return false;
+        // Show custom dialog first
+        final userAccepted = await showLocationPermissionDialog(context);
+        if (userAccepted) {
+          // User accepted, now request the actual system permission
+          final granted = await requestLocationPermission();
+          if (!granted) {
+            // If permission was denied, open settings
+            await openLocationSettings();
+          }
+          return granted;
         }
+        return false;
       }
 
       return true;
     } catch (e) {
       print('❌ LocationPermissionHelper: Error in checkAndRequestLocationPermission: $e');
-      await showLocationPermissionDialog(context);
+      // Show custom dialog on error
+      final userAccepted = await showLocationPermissionDialog(context);
+      if (userAccepted) {
+        await openLocationSettings();
+      }
       return false;
     }
   }

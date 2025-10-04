@@ -37,7 +37,6 @@ class DashboardViewModel extends ChangeNotifier {
   // Permission dialog state
   bool _showBluetoothEnableDialog = false;
   bool _showBluetoothScanPermissionDialog = false;
-  bool _showLocationPermissionDialog = false;
   bool _showLocationPermissionErrorDialog = false;
   bool _showBluetoothPermissionErrorDialog = false;
   
@@ -83,7 +82,6 @@ class DashboardViewModel extends ChangeNotifier {
   // Permission dialog getters
   bool get showBluetoothEnableDialog => _showBluetoothEnableDialog;
   bool get showBluetoothScanPermissionDialog => _showBluetoothScanPermissionDialog;
-  bool get showLocationPermissionDialog => _showLocationPermissionDialog;
   bool get showLocationPermissionErrorDialog => _showLocationPermissionErrorDialog;
   bool get showBluetoothPermissionErrorDialog => _showBluetoothPermissionErrorDialog;
 
@@ -429,7 +427,6 @@ class DashboardViewModel extends ChangeNotifier {
       if (!hasLocationPermission && !_locationPermissionDialogShown) {
         print('🎵 Dashboard: Showing location permission dialog first');
         _locationPermissionDialogShown = true; // Prevent multiple requests
-        _showLocationPermissionDialog = true; // Show custom dialog first
       } else if (hasLocationPermission) {
         // Location permission granted, check BLE scan permission
         bool hasBluetoothPermission = await _checkBluetoothScanPermission();
@@ -590,7 +587,6 @@ class DashboardViewModel extends ChangeNotifier {
   }
 
   Future<void> allowLocationPermission() async {
-    _showLocationPermissionDialog = false;
     print('🎵 Dashboard: User allowed location permission, requesting system permission');
     
     try {

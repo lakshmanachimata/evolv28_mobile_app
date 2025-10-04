@@ -58,10 +58,8 @@ class DevicesViewModel extends ChangeNotifier {
   StreamSubscription<bool>? _isScanningSubscription;
 
   // Location permission dialog
-  bool _showLocationPermissionDialog = false;
   bool _locationPermissionDialogShown =
       false; // Flag to prevent multiple dialogs
-  bool get showLocationPermissionDialog => _showLocationPermissionDialog;
 
   // Location permission error dialog
   bool _showLocationPermissionErrorDialog = false;
@@ -348,7 +346,6 @@ class DevicesViewModel extends ChangeNotifier {
       if (!hasLocationPermission && !_locationPermissionDialogShown) {
         print('Showing location permission dialog first');
         _locationPermissionDialogShown = true; // Prevent multiple requests
-        _showLocationPermissionDialog = true; // Show custom dialog first
       } else if (hasLocationPermission) {
         // Location permission granted, check BLE scan permission
         bool hasBluetoothPermission = await _checkBluetoothScanPermission();
@@ -466,7 +463,6 @@ class DevicesViewModel extends ChangeNotifier {
 
   // Handle location permission allow - show system dialog after custom dialog
   Future<void> allowLocationPermission() async {
-    _showLocationPermissionDialog = false;
     print(
       'User allowed location permission in custom dialog, requesting system permission',
     );
@@ -1002,7 +998,6 @@ class DevicesViewModel extends ChangeNotifier {
     _showBluetoothEnableDialog = false;
     _showBluetoothScanPermissionDialog = false;
     _showBluetoothPermissionErrorDialog = false;
-    _showLocationPermissionDialog = false;
     _showLocationPermissionErrorDialog = false;
     _isInitialized = false; // Allow re-initialization
   }

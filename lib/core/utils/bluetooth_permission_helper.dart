@@ -71,8 +71,8 @@ class BluetoothPermissionHelper {
   }
 
   /// Show Bluetooth permission dialog
-  static Future<void> showBluetoothPermissionDialog(BuildContext context) async {
-    return showDialog<void>(
+  static Future<bool> showBluetoothPermissionDialog(BuildContext context) async {
+    return await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
@@ -83,13 +83,13 @@ class BluetoothPermissionHelper {
           title: Row(
             children: [
               Icon(
-                Icons.bluetooth_disabled,
-                color: Colors.blue,
+                Icons.bluetooth,
+                color: const Color(0xFFF17961),
                 size: 28,
               ),
               const SizedBox(width: 12),
               const Text(
-                'Bluetooth Required',
+                'Bluetooth Permission',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -102,12 +102,12 @@ class BluetoothPermissionHelper {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Bluetooth access is required for this app to connect to your Evolv28 device.',
+                'Evolv28 needs Bluetooth access to connect to your Evolv28 device.',
                 style: TextStyle(fontSize: 16),
               ),
               SizedBox(height: 12),
               Text(
-                'Please enable Bluetooth in your device settings.',
+                'This permission is required for device pairing and communication.',
                 style: TextStyle(fontSize: 14, color: Colors.grey),
               ),
             ],
@@ -115,10 +115,10 @@ class BluetoothPermissionHelper {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.of(context).pop(false);
               },
               child: const Text(
-                'Cancel',
+                'Not Now',
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.grey,
@@ -126,9 +126,8 @@ class BluetoothPermissionHelper {
               ),
             ),
             ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                openBluetoothSettings();
+              onPressed: () async {
+                Navigator.of(context).pop(true);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFF17961),
@@ -138,14 +137,14 @@ class BluetoothPermissionHelper {
                 ),
               ),
               child: const Text(
-                'Open Settings',
+                'Allow',
                 style: TextStyle(fontSize: 16),
               ),
             ),
           ],
         );
       },
-    );
+    ) ?? false;
   }
 
   /// Check Bluetooth permission and show dialog if needed
@@ -154,19 +153,28 @@ class BluetoothPermissionHelper {
       // Check if Bluetooth is enabled
       final isEnabled = await isBluetoothEnabled();
       if (!isEnabled) {
-        // Try to request permission first
-        final granted = await requestBluetoothPermission();
-        if (!granted) {
-          // If permission was denied or Bluetooth is off, show dialog
-          await showBluetoothPermissionDialog(context);
-          return false;
+        // Show custom dialog first
+        final userAccepted = await showBluetoothPermissionDialog(context);
+        if (userAccepted) {
+          // User accepted, now request the actual system permission
+          final granted = await requestBluetoothPermission();
+          if (!granted) {
+            // If permission was denied, open settings
+            await openBluetoothSettings();
+          }
+          return granted;
         }
+        return false;
       }
 
       return true;
     } catch (e) {
       print('❌ BluetoothPermissionHelper: Error in checkAndRequestBluetoothPermission: $e');
-      await showBluetoothPermissionDialog(context);
+      // Show custom dialog on error
+      final userAccepted = await showBluetoothPermissionDialog(context);
+      if (userAccepted) {
+        await openBluetoothSettings();
+      }
       return false;
     }
   }

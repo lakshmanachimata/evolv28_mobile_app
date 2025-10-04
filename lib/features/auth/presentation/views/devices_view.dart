@@ -92,11 +92,6 @@ class _DevicesViewBodyState extends State<_DevicesViewBody>
               if (viewModel.showBluetoothScanPermissionDialog && !viewModel.isBluetoothScanPermissionGranted)
                 _buildBluetoothScanPermissionDialog(context, viewModel),
 
-              if (viewModel.showLocationPermissionDialog)
-                _buildLocationPermissionDialog(context, viewModel),
-
-              if (viewModel.showLocationPermissionErrorDialog)
-                _buildLocationPermissionErrorDialog(context, viewModel),
 
               if (viewModel.showDeviceActivatedDialog)
                 _buildDeviceActivatedDialog(context, viewModel),
@@ -900,69 +895,6 @@ class _DevicesViewBodyState extends State<_DevicesViewBody>
     );
   }
 
-  Widget _buildLocationPermissionDialog(
-    BuildContext context,
-    DevicesViewModel viewModel,
-  ) {
-    return Container(
-      color: Colors.black.withOpacity(0.5),
-      child: Center(
-        child: Container(
-          width: 300,
-          margin: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Location Permission',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Location access is required for Bluetooth device scanning. This helps us find nearby Evolv28 devices.',
-                  style: TextStyle(fontSize: 14, color: Colors.black87),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: viewModel.allowLocationPermission,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFF07A60),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'Allow Location',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildDeviceActivatedDialog(
     BuildContext context,
     DevicesViewModel viewModel,
@@ -1042,111 +974,6 @@ class _DevicesViewBodyState extends State<_DevicesViewBody>
     );
   }
 
-  Widget _buildLocationPermissionErrorDialog(
-    BuildContext context,
-    DevicesViewModel viewModel,
-  ) {
-    return Container(
-      color: Colors.black.withOpacity(0.5),
-      child: Center(
-        child: Container(
-          width: 300,
-          margin: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Error Icon
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.error, color: Colors.white, size: 30),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Error Title
-                const Text(
-                  'Location Permission Required',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-
-                const SizedBox(height: 16),
-
-                // Error Message
-                const Text(
-                  'Bluetooth device scanning requires location permission. Please enable location access in your device settings to continue.',
-                  style: TextStyle(fontSize: 14, color: Colors.black87),
-                  textAlign: TextAlign.center,
-                ),
-
-                const SizedBox(height: 24),
-
-                // Buttons Row
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: viewModel.handleLocationPermissionErrorOk,
-                        style: TextButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFF547D81), width: 1),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          'Cancel',
-                          style: TextStyle(color: Color(0xFF547D81), fontSize: 16),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          viewModel.handleLocationPermissionErrorOk();
-                          viewModel.openDeviceSettings();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFF07A60),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          'Open Settings',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _AnimatedDots extends StatefulWidget {
