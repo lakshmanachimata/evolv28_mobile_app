@@ -118,9 +118,11 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
 
               // Show unknown device list as bottom sheet
               if (viewModel.showUnknownDeviceDialog) {
+                print('🎵 Dashboard UI: Showing unknown device bottom sheet');
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   // Double-check the state before showing the bottom sheet
                   if (viewModel.showUnknownDeviceDialog) {
+                    print('🎵 Dashboard UI: Confirmed showing unknown device bottom sheet');
                     showModalBottomSheet<bool>(
                       context: context,
                       isDismissible: false,
@@ -128,9 +130,10 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                       backgroundColor: Colors.transparent,
                       builder: (context) => _buildUnknownDeviceBottomSheet(context, viewModel),
                     ).then((_) {
-                      // Ensure state is reset when bottom sheet is dismissed
+                      // Only clean up if the dialog is still showing (not closed by OTP dialog)
                       if (viewModel.showUnknownDeviceDialog) {
-                        viewModel.closeUnknownDeviceDialog();
+                        print('🎵 Dashboard UI: Unknown device bottom sheet dismissed, cleaning up');
+                        viewModel.closeUnknownDeviceDialogAndDismiss();
                       }
                     });
                   }
@@ -149,12 +152,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                       backgroundColor: Colors.transparent,
                       isScrollControlled: true,
                       builder: (context) => _buildOtpConfirmationBottomSheet(context, viewModel),
-                    ).then((_) {
-                      // Ensure state is reset when bottom sheet is dismissed
-                      if (viewModel.showOtpConfirmationDialog) {
-                        viewModel.closeOtpConfirmationDialog();
-                      }
-                    });
+                    );
                   }
                 });
               }
@@ -1582,6 +1580,11 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                         FocusScope.of(context).unfocus();
                         Navigator.of(context).pop();
                         viewModel.closeOtpConfirmationDialog();
+                        // Also dismiss the unknown device bottom sheet if it's still showing
+                        if (viewModel.showUnknownDeviceDialog) {
+                          Navigator.of(context).pop();
+                          viewModel.closeUnknownDeviceDialogAndDismiss();
+                        }
                       },
                       child: Container(
                         padding: const EdgeInsets.all(8),
@@ -1745,6 +1748,11 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                       FocusScope.of(context).unfocus();
                       Navigator.of(context).pop();
                       viewModel.closeOtpConfirmationDialog();
+                      // Also dismiss the unknown device bottom sheet if it's still showing
+                      if (viewModel.showUnknownDeviceDialog) {
+                        Navigator.of(context).pop();
+                        viewModel.closeUnknownDeviceDialogAndDismiss();
+                      }
                     },
                     child: const Text(
                       'Cancel',

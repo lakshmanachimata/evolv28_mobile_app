@@ -273,6 +273,14 @@ class DashboardViewModel extends ChangeNotifier {
 
   // Attempt automatic device connection
   Future<void> _attemptAutoConnection() async {
+    // Prevent multiple simultaneous calls
+    if (_isAutoConnectionRunning) {
+      print('🎵 Dashboard: Auto-connection already running, skipping duplicate call');
+      return;
+    }
+    
+    _isAutoConnectionRunning = true;
+    
     try {
       print('🎵 Dashboard: Starting device scanning process...');
       print('🎵 Dashboard: User has ${_userDevices.length} devices in their account');
@@ -295,17 +303,23 @@ class DashboardViewModel extends ChangeNotifier {
           final unknownDevicesList = _findUnknownDevices(_bluetoothService.scannedDevices);
           
           if (unknownDevicesList.isNotEmpty) {
-            // Show unknown devices list dialog
-            _unknownDevices = unknownDevicesList.map((device) => {
-              'id': device.remoteId.toString(),
-              'name': device.platformName.isNotEmpty ? device.platformName : device.remoteId.toString(),
-              'signalStrength': 85, // Mock signal strength
-              'isConnected': false,
-              'isUnknown': true,
-              'device': device, // Store the actual BluetoothDevice for connection
-            }).toList();
-            _showUnknownDeviceDialog = true;
-            print('🎵 Dashboard: Found ${_unknownDevices.length} unknown devices');
+            print('🎵 Dashboard: Found ${unknownDevicesList.length} unknown devices, checking OTP dialog status...');
+            print('🎵 Dashboard: Current state - otpDialogClosed: $_otpDialogClosed, showOtpConfirmationDialog: $_showOtpConfirmationDialog, showUnknownDeviceDialog: $_showUnknownDeviceDialog');
+            // Only show unknown devices list dialog if OTP dialog hasn't been closed
+            if (!_otpDialogClosed) {
+              _unknownDevices = unknownDevicesList.map((device) => {
+                'id': device.remoteId.toString(),
+                'name': device.platformName.isNotEmpty ? device.platformName : device.remoteId.toString(),
+                'signalStrength': 85, // Mock signal strength
+                'isConnected': false,
+                'isUnknown': true,
+                'device': device, // Store the actual BluetoothDevice for connection
+              }).toList();
+              _showUnknownDeviceDialog = true;
+              print('🎵 Dashboard: Showing unknown device dialog with ${_unknownDevices.length} devices');
+            } else {
+              print('🎵 Dashboard: Found ${unknownDevicesList.length} unknown devices but OTP dialog was closed, not showing dialog');
+            }
           } else {
             // Show device selection dialog for all found devices (all are known)
             _scannedDevices = _bluetoothService.scannedDevices.map((device) => {
@@ -327,6 +341,8 @@ class DashboardViewModel extends ChangeNotifier {
       
     } catch (e) {
       print('🎵 Dashboard: Error during auto-connection: $e');
+    } finally {
+      _isAutoConnectionRunning = false;
     }
   }
 
@@ -628,8 +644,13 @@ class DashboardViewModel extends ChangeNotifier {
       // If already connected, disconnect
       await _bluetoothService.disconnect();
     } else {
-      // Start scanning for devices and attempt auto-connection
-      await _attemptAutoConnection();
+      // Only start scanning if we're not already showing dialogs or scanning
+      if (!_showUnknownDeviceDialog && !_showDeviceSelectionDialog && !_showOtpConfirmationDialog) {
+        print('🎵 Dashboard: connectBluetoothDevice() - Starting new scan');
+        await _attemptAutoConnection();
+      } else {
+        print('🎵 Dashboard: connectBluetoothDevice() - Skipping scan, dialog already showing');
+      }
     }
     notifyListeners();
   }
@@ -1052,22 +1073,40 @@ class DashboardViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Flag to prevent showing unknown device dialog after OTP dialog is closed
+  bool _otpDialogClosed = false;
+  
+  // Flag to prevent multiple simultaneous calls to _attemptAutoConnection
+  bool _isAutoConnectionRunning = false;
+
   void selectUnknownDevice(Map<String, dynamic> device) {
     _selectedUnknownDevice = device;
     _showOtpConfirmationDialog = true;
     _otpCode = '';
+    _otpDialogClosed = false; // Reset flag when selecting device
     print('🎵 Dashboard: Selected unknown device for OTP verification: ${device['name']}');
     notifyListeners();
   }
 
   void closeOtpConfirmationDialog() {
+    print('🎵 Dashboard: Closing OTP confirmation dialog');
+    print('🎵 Dashboard: Current state - showOtpConfirmationDialog: $_showOtpConfirmationDialog, showUnknownDeviceDialog: $_showUnknownDeviceDialog, otpDialogClosed: $_otpDialogClosed');
     _showOtpConfirmationDialog = false;
     _selectedUnknownDevice = null;
     _otpCode = '';
-    // Also close the unknown device dialog to prevent showing another bottom sheet
+    // Set flag to prevent showing unknown device dialog again
+    _otpDialogClosed = true;
+    print('🎵 Dashboard: OTP confirmation dialog closed');
+    print('🎵 Dashboard: New state - showOtpConfirmationDialog: $_showOtpConfirmationDialog, showUnknownDeviceDialog: $_showUnknownDeviceDialog, otpDialogClosed: $_otpDialogClosed');
+    notifyListeners();
+  }
+
+  // Method to properly close unknown device dialog and dismiss modal
+  void closeUnknownDeviceDialogAndDismiss() {
+    print('🎵 Dashboard: Closing unknown device dialog and dismissing modal');
     _showUnknownDeviceDialog = false;
     _unknownDevices.clear();
-    print('🎵 Dashboard: OTP confirmation dialog closed');
+    _selectedUnknownDevice = null;
     notifyListeners();
   }
 
