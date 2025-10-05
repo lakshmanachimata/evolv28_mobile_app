@@ -129,13 +129,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                       enableDrag: false,
                       backgroundColor: Colors.transparent,
                       builder: (context) => _buildUnknownDeviceBottomSheet(context, viewModel),
-                    ).then((_) {
-                      // Only clean up if the dialog is still showing (not closed by OTP dialog)
-                      if (viewModel.showUnknownDeviceDialog) {
-                        print('🎵 Dashboard UI: Unknown device bottom sheet dismissed, cleaning up');
-                        viewModel.closeUnknownDeviceDialogAndDismiss();
-                      }
-                    });
+                    );
                   }
                 });
               }
@@ -1580,11 +1574,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                         FocusScope.of(context).unfocus();
                         Navigator.of(context).pop();
                         viewModel.closeOtpConfirmationDialog();
-                        // Also dismiss the unknown device bottom sheet if it's still showing
-                        if (viewModel.showUnknownDeviceDialog) {
-                          Navigator.of(context).pop();
-                          viewModel.closeUnknownDeviceDialogAndDismiss();
-                        }
+                        // Don't dismiss the unknown device bottom sheet - let it remain visible
                       },
                       child: Container(
                         padding: const EdgeInsets.all(8),
@@ -1748,11 +1738,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                       FocusScope.of(context).unfocus();
                       Navigator.of(context).pop();
                       viewModel.closeOtpConfirmationDialog();
-                      // Also dismiss the unknown device bottom sheet if it's still showing
-                      if (viewModel.showUnknownDeviceDialog) {
-                        Navigator.of(context).pop();
-                        viewModel.closeUnknownDeviceDialogAndDismiss();
-                      }
+                      // Don't dismiss the unknown device bottom sheet - let it remain visible
                     },
                     child: const Text(
                       'Cancel',

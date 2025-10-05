@@ -344,21 +344,21 @@ class DashboardViewModel extends ChangeNotifier {
               '🎵 Dashboard: Current state - otpDialogClosed: $_otpDialogClosed, showOtpConfirmationDialog: $_showOtpConfirmationDialog, showUnknownDeviceDialog: $_showUnknownDeviceDialog',
             );
             // Only show unknown devices list dialog if OTP dialog hasn't been closed
-            _unknownDevices = unknownDevicesList
-                .map(
-                  (device) => {
-                    'id': device.remoteId.toString(),
-                    'name': device.platformName.isNotEmpty
-                        ? device.platformName
-                        : device.remoteId.toString(),
-                    'signalStrength': 85, // Mock signal strength
-                    'isConnected': false,
-                    'isUnknown': true,
-                    'device':
-                        device, // Store the actual BluetoothDevice for connection
-                  },
-                )
-                .toList();
+             _unknownDevices = unknownDevicesList
+                 .map(
+                   (device) => {
+                     'id': device.remoteId.toString(),
+                     'name': device.platformName.isNotEmpty
+                         ? device.platformName
+                         : device.remoteId.toString(),
+                     'signalStrength': _bluetoothService.getDeviceRssi(device), // Use actual RSSI from device
+                     'isConnected': false,
+                     'isUnknown': true,
+                     'device':
+                         device, // Store the actual BluetoothDevice for connection
+                   },
+                 )
+                 .toList();
             _showUnknownDeviceDialog = true;
           } else {
             // Show device selection dialog for all found devices (all are known)
@@ -369,7 +369,7 @@ class DashboardViewModel extends ChangeNotifier {
                     'name': device.platformName.isNotEmpty
                         ? device.platformName
                         : device.remoteId.toString(),
-                    'signalStrength': 85, // Mock signal strength
+                    'signalStrength': _bluetoothService.getDeviceRssi(device), // Use actual RSSI from device
                     'isConnected': false,
                   },
                 )
@@ -1125,7 +1125,7 @@ class DashboardViewModel extends ChangeNotifier {
                 'name': device.platformName.isNotEmpty
                     ? device.platformName
                     : device.remoteId.toString(),
-                'signalStrength': 85, // Mock signal strength
+                'signalStrength': _bluetoothService.getDeviceRssi(device), // Use actual RSSI from device
                 'isConnected': false,
               },
             )
@@ -1191,6 +1191,7 @@ class DashboardViewModel extends ChangeNotifier {
     _showOtpConfirmationDialog = true;
     _otpCode = '';
     _otpDialogClosed = false; // Reset flag when selecting device
+    // Keep the unknown device dialog visible - don't change its state
     print(
       '🎵 Dashboard: Selected unknown device for OTP verification: ${device['name']}',
     );
@@ -1205,7 +1206,7 @@ class DashboardViewModel extends ChangeNotifier {
     _showOtpConfirmationDialog = false;
     _selectedUnknownDevice = null;
     _otpCode = '';
-    // Set flag to prevent showing unknown device dialog again
+    // Don't automatically restore unknown device dialog - let it remain as is
     _otpDialogClosed = true;
     print('🎵 Dashboard: OTP confirmation dialog closed');
     print(

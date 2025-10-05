@@ -27,6 +27,7 @@ class BluetoothService extends ChangeNotifier {
   String _errorMessage = '';
   ble.BluetoothDevice? _connectedDevice;
   List<ble.BluetoothDevice> _scannedDevices = [];
+  Map<String, int> _deviceRssiMap = {}; // Store RSSI for each device
   StreamSubscription<List<ble.ScanResult>>? _scanSubscription;
   Timer? _scanTimer;
   Timer? _countdownTimer;
@@ -71,6 +72,11 @@ class BluetoothService extends ChangeNotifier {
   String get selectedBcuFile => _selectedBcuFile;
   List<String> get playCommandResponses => _playCommandResponses;
   List<dynamic> get userDevices => _userDevices;
+
+  // Get RSSI for a specific device
+  int getDeviceRssi(ble.BluetoothDevice device) {
+    return _deviceRssiMap[device.remoteId.toString()] ?? -100; // Default to -100 if not found
+  }
 
   Future<void> initialize() async {
     // Don't request permissions automatically - let the calling view handle permission flow
@@ -164,6 +170,7 @@ class BluetoothService extends ChangeNotifier {
       _connectionState = BluetoothConnectionState.scanning;
       _statusMessage = 'Scanning for devices...';
       _scannedDevices.clear();
+      _deviceRssiMap.clear(); // Clear RSSI map for new scan
       _scanCountdown = 10; // Initialize countdown to 10 seconds
       print('Initialized countdown: $_scanCountdown');
       notifyListeners();
@@ -209,6 +216,9 @@ class BluetoothService extends ChangeNotifier {
 
       // Check if it's an Evolv28 device
       if (deviceName.toLowerCase().contains('evolv28')) {
+        // Store RSSI for this device
+        _deviceRssiMap[device.remoteId.toString()] = result.rssi;
+        
         // Check if device already exists
         final existingIndex = _scannedDevices.indexWhere((d) => d.remoteId == device.remoteId);
         
