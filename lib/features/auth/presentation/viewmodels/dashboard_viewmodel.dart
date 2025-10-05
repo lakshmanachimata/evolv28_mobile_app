@@ -628,8 +628,8 @@ class DashboardViewModel extends ChangeNotifier {
       // If already connected, disconnect
       await _bluetoothService.disconnect();
     } else {
-      // Start scanning for devices
-      await _bluetoothService.startScanning();
+      // Start scanning for devices and attempt auto-connection
+      await _attemptAutoConnection();
     }
     notifyListeners();
   }
@@ -1064,6 +1064,9 @@ class DashboardViewModel extends ChangeNotifier {
     _showOtpConfirmationDialog = false;
     _selectedUnknownDevice = null;
     _otpCode = '';
+    // Also close the unknown device dialog to prevent showing another bottom sheet
+    _showUnknownDeviceDialog = false;
+    _unknownDevices.clear();
     print('🎵 Dashboard: OTP confirmation dialog closed');
     notifyListeners();
   }
