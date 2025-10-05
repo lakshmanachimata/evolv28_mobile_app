@@ -37,10 +37,20 @@ class AuthRepositoryImpl implements AuthRepository {
 
         final token = 'mock_token_${DateTime.now().millisecondsSinceEpoch}';
 
-        // Save token if remember me is checked
+        // Always save user data consistently (username, email, token)
+        await _saveUserDataConsistently(
+          token: token,
+          userId: '1',
+          firstName: 'Test',
+          lastName: 'User',
+          email: email,
+          userName: 'Test User',
+        );
+
+        // Also save legacy fields if remember me is checked
         if (rememberMe) {
           await sharedPreferences.setString('auth_token', token);
-          await sharedPreferences.setString('user_email', email);
+          await sharedPreferences.setString('user_email_id', email);
         }
 
         return Right(AuthResult(user: user, token: token));
@@ -477,7 +487,126 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
-  // Store user data in SharedPreferences
+  // Centralized method to save user data (username, email, token) consistently
+  Future<void> _saveUserDataConsistently({
+    String? token,
+    String? userId,
+    String? firstName,
+    String? lastName,
+    String? email,
+    String? userName,
+    String? logId,
+    String? gender,
+    String? country,
+    String? age,
+    String? imagePath,
+    String? profilePicPath,
+    List<dynamic>? devices,
+    Map<String, dynamic>? fullUserData,
+  }) async {
+    try {
+      print('🔐 AuthRepository: Saving user data consistently');
+      print('🔐 AuthRepository: Token: $token');
+      print('🔐 AuthRepository: User ID: $userId');
+      print('🔐 AuthRepository: First Name: $firstName');
+      print('🔐 AuthRepository: Last Name: $lastName');
+      print('🔐 AuthRepository: Email: $email');
+      print('🔐 AuthRepository: User Name: $userName');
+
+      // Always save the essential fields (username, email, token)
+      if (token != null && token.isNotEmpty) {
+        await sharedPreferences.setString('user_token', token);
+        print('🔐 AuthRepository: Token saved: $token');
+      }
+
+      if (userId != null && userId.isNotEmpty) {
+        await sharedPreferences.setString('user_id', userId);
+        print('🔐 AuthRepository: User ID saved: $userId');
+      }
+
+      if (firstName != null && firstName.isNotEmpty) {
+        await sharedPreferences.setString('user_first_name', firstName);
+        print('🔐 AuthRepository: First name saved: $firstName');
+      }
+
+      if (lastName != null && lastName.isNotEmpty) {
+        await sharedPreferences.setString('user_last_name', lastName);
+        print('🔐 AuthRepository: Last name saved: $lastName');
+      }
+
+      if (email != null && email.isNotEmpty) {
+        await sharedPreferences.setString('user_email_id', email);
+        print('🔐 AuthRepository: Email saved: $email');
+      }
+
+      // Save additional fields if provided
+      if (userName != null && userName.isNotEmpty) {
+        await sharedPreferences.setString('user_name', userName);
+      }
+
+      if (logId != null && logId.isNotEmpty) {
+        await sharedPreferences.setString('user_log_id', logId);
+      }
+
+      if (gender != null && gender.isNotEmpty) {
+        await sharedPreferences.setString('user_gender', gender);
+      }
+
+      if (country != null && country.isNotEmpty) {
+        await sharedPreferences.setString('user_country', country);
+      }
+
+      if (age != null && age.isNotEmpty) {
+        await sharedPreferences.setString('user_age', age);
+      }
+
+      if (imagePath != null && imagePath.isNotEmpty) {
+        await sharedPreferences.setString('user_image_path', imagePath);
+      }
+
+      if (profilePicPath != null && profilePicPath.isNotEmpty) {
+        await sharedPreferences.setString(
+          'user_profile_pic_path',
+          profilePicPath,
+        );
+      }
+
+      // Save devices count if provided
+      if (devices != null) {
+        await sharedPreferences.setInt('user_devices_count', devices.length);
+        print('🔐 AuthRepository: Devices count saved: ${devices.length}');
+      }
+
+      // Save complete user data as JSON if provided
+      if (fullUserData != null) {
+        await sharedPreferences.setString(
+          'user_data_json',
+          jsonEncode(fullUserData),
+        );
+        print('🔐 AuthRepository: Full user data JSON saved');
+      }
+
+      // Verify what was actually stored
+      final storedToken = sharedPreferences.getString('user_token');
+      final storedUserId = sharedPreferences.getString('user_id');
+      final storedEmail = sharedPreferences.getString('user_email_id');
+      final storedFirstName = sharedPreferences.getString('user_first_name');
+      final storedLastName = sharedPreferences.getString('user_last_name');
+
+      print('🔐 AuthRepository: User data saved successfully');
+      print('🔐 AuthRepository: Verified stored token: "$storedToken"');
+      print('🔐 AuthRepository: Verified stored userId: "$storedUserId"');
+      print('🔐 AuthRepository: Verified stored email: "$storedEmail"');
+      print(
+        '🔐 AuthRepository: Verified stored first name: "$storedFirstName"',
+      );
+      print('🔐 AuthRepository: Verified stored last name: "$storedLastName"');
+    } catch (e) {
+      print('🔐 AuthRepository: Error saving user data consistently: $e');
+    }
+  }
+
+  // Store user data in SharedPreferences (legacy method for OTP validation)
   Future<void> _storeUserData(OtpValidationData userData) async {
     try {
       print('🔐 AuthRepository: Storing user data in SharedPreferences');
@@ -487,57 +616,23 @@ class AuthRepositoryImpl implements AuthRepository {
       print('🔐 AuthRepository: Raw userData.fname: ${userData.fname}');
       print('🔐 AuthRepository: Raw userData.lname: ${userData.lname}');
 
-      // Store complete user data as JSON
-      await sharedPreferences.setString(
-        'user_data_json',
-        jsonEncode(userData.toJson()),
+      // Use centralized method to save user data
+      await _saveUserDataConsistently(
+        token: userData.token,
+        userId: userData.userId,
+        firstName: userData.fname,
+        lastName: userData.lname,
+        email: userData.emailId,
+        userName: userData.userName,
+        logId: userData.logId,
+        gender: userData.gender,
+        country: userData.country,
+        age: userData.age,
+        imagePath: userData.imagePath,
+        profilePicPath: userData.profilepicpath,
+        devices: userData.devices,
+        fullUserData: userData.toJson(),
       );
-
-      // Store individual fields for easy access
-      await sharedPreferences.setString('user_token', userData.token ?? '');
-      await sharedPreferences.setString('user_id', userData.userId ?? '');
-      await sharedPreferences.setString('user_log_id', userData.logId ?? '');
-      await sharedPreferences.setString(
-        'user_first_name',
-        userData.fname ?? '',
-      );
-      await sharedPreferences.setString('user_last_name', userData.lname ?? '');
-      await sharedPreferences.setString(
-        'user_email_id',
-        userData.emailId ?? '',
-      );
-      await sharedPreferences.setString('user_name', userData.userName ?? '');
-      await sharedPreferences.setString('user_gender', userData.gender ?? '');
-      await sharedPreferences.setString('user_country', userData.country ?? '');
-      await sharedPreferences.setString('user_age', userData.age ?? '');
-      await sharedPreferences.setString(
-        'user_image_path',
-        userData.imagePath ?? '',
-      );
-      await sharedPreferences.setString(
-        'user_profile_pic_path',
-        userData.profilepicpath ?? '',
-      );
-
-      // Store devices count
-      await sharedPreferences.setInt(
-        'user_devices_count',
-        userData.devices.length,
-      );
-
-      // Verify what was actually stored
-      final storedToken = sharedPreferences.getString('user_token');
-      final storedUserId = sharedPreferences.getString('user_id');
-
-      print('🔐 AuthRepository: User data stored successfully');
-      print('🔐 AuthRepository: Verified stored token: "$storedToken"');
-      print('🔐 AuthRepository: Verified stored userId: "$storedUserId"');
-      print('🔐 AuthRepository: Token: ${userData.token}');
-      print('🔐 AuthRepository: User ID: ${userData.userId}');
-      print('🔐 AuthRepository: First Name: ${userData.fname}');
-      print('🔐 AuthRepository: Last Name: ${userData.lname}');
-      print('🔐 AuthRepository: Email: ${userData.emailId}');
-      print('🔐 AuthRepository: Devices Count: ${userData.devices.length}');
     } catch (e) {
       print('🔐 AuthRepository: Error storing user data: $e');
     }
@@ -545,11 +640,16 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> logout() async {
+    print('🔐 AuthRepository: Logging out - clearing all user data');
+
+    // Clear all user data fields
     await sharedPreferences.remove('auth_token');
-    await sharedPreferences.remove('user_email');
+    await sharedPreferences.remove('user_email_id');
     await sharedPreferences.remove('user_data_json');
+    await sharedPreferences.remove('user_data'); // Also clear this field
     await sharedPreferences.remove('user_token');
     await sharedPreferences.remove('user_id');
+    await sharedPreferences.remove('user_log_id');
     await sharedPreferences.remove('user_first_name');
     await sharedPreferences.remove('user_last_name');
     await sharedPreferences.remove('user_email_id');
@@ -560,6 +660,8 @@ class AuthRepositoryImpl implements AuthRepository {
     await sharedPreferences.remove('user_image_path');
     await sharedPreferences.remove('user_profile_pic_path');
     await sharedPreferences.remove('user_devices_count');
+
+    print('🔐 AuthRepository: All user data cleared successfully');
   }
 
   @override
@@ -756,21 +858,17 @@ class AuthRepositoryImpl implements AuthRepository {
         print('🔐 AuthRepository: Has error: ${socialLoginResponse.error}');
 
         if (!socialLoginResponse.error && socialLoginResponse.data != null) {
-          // Store user data in SharedPreferences
+          // Store user data in SharedPreferences using centralized method
           final userData = socialLoginResponse.data!;
-          await sharedPreferences.setString(
-            'user_data_json',
-            jsonEncode(responseData),
+          await _saveUserDataConsistently(
+            token: userData.tokenid,
+            userId: userData.id,
+            firstName: userData.fname,
+            lastName: userData.lname,
+            email: userData.emailid,
+            logId: userData.logId,
+            fullUserData: responseData,
           );
-          await sharedPreferences.setString('user_token', userData.tokenid);
-          await sharedPreferences.setString('user_id', userData.id);
-          await sharedPreferences.setString(
-            'user_log_id',
-            userData.logId ?? '',
-          );
-          await sharedPreferences.setString('user_first_name', userData.fname);
-          await sharedPreferences.setString('user_last_name', userData.lname);
-          await sharedPreferences.setString('user_email_id', userData.emailid);
 
           print('🔐 AuthRepository: Social login successful');
           return Right(socialLoginResponse);

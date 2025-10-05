@@ -1278,12 +1278,12 @@ class DashboardViewModel extends ChangeNotifier {
     notifyListeners(); // Call notifyListeners to update UI
   }
 
-  Future<void> verifyOtpAndAddDevice() async {
+  Future<bool> verifyOtpAndAddDevice() async {
     if (_selectedUnknownDevice == null || _otpCode.isEmpty) {
       print('🎵 Dashboard: Cannot verify OTP - missing device or OTP code');
       _otpVerificationMessage = 'Please enter OTP code';
       notifyListeners();
-      return;
+      return false;
     }
 
     _isVerifyingOtp = true;
@@ -1297,14 +1297,14 @@ class DashboardViewModel extends ChangeNotifier {
 
       // Get user email from SharedPreferences
       final prefs = await SharedPreferences.getInstance();
-      final userEmail = prefs.getString('user_email') ?? '';
+      final userEmail = prefs.getString('user_email_id') ?? '';
 
       if (userEmail.isEmpty) {
         print('🎵 Dashboard: No user email found for OTP verification');
         _otpVerificationMessage = 'User email not found';
         _isVerifyingOtp = false;
         notifyListeners();
-        return;
+        return false;
       }
 
       // Verify OTP
@@ -1347,16 +1347,21 @@ class DashboardViewModel extends ChangeNotifier {
 
             // Update Bluetooth service with refreshed device list
             _bluetoothService.setUserDevices(_userDevices);
-            
+
             // Re-set callback for unknown devices (in case it was lost)
-            _bluetoothService.setOnUnknownDevicesFoundCallback((unknownDevices) {
-              print('🎵 Dashboard: Unknown devices found: ${unknownDevices.length}');
+            _bluetoothService.setOnUnknownDevicesFoundCallback((
+              unknownDevices,
+            ) {
+              print(
+                '🎵 Dashboard: Unknown devices found: ${unknownDevices.length}',
+              );
               _unknownDevices = unknownDevices;
               _showUnknownDeviceDialog = true;
-              _unknownDeviceBottomSheetShown = false; // Reset flag for new dialog
+              _unknownDeviceBottomSheetShown =
+                  false; // Reset flag for new dialog
               notifyListeners();
             });
-            
+
             print(
               '🎵 Dashboard: Updated Bluetooth service with ${_userDevices.length} user devices',
             );
@@ -1388,6 +1393,7 @@ class DashboardViewModel extends ChangeNotifier {
           notifyListeners();
         },
       );
+      return result.isRight();
     } catch (e) {
       print('🎵 Dashboard: Error during OTP verification: $e');
       _otpVerificationMessage = 'Error during verification: $e';
@@ -1401,6 +1407,7 @@ class DashboardViewModel extends ChangeNotifier {
       );
 
       notifyListeners();
+      return false;
     }
   }
 

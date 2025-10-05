@@ -246,42 +246,92 @@ class _SplashScreenState extends State<SplashScreen>
       if (userDetails.data != null) {
         final userData = userDetails.data;
         
-        // Update individual fields
-        if (userData.fname != null) {
+        print('🚀 SplashScreen: Updating stored user data with latest information');
+        print('🚀 SplashScreen: First Name: ${userData.fname}');
+        print('🚀 SplashScreen: Last Name: ${userData.lname}');
+        print('🚀 SplashScreen: Email: ${userData.emailId ?? userData.emailid}');
+        print('🚀 SplashScreen: Token: ${userData.token ?? userData.tokenid}');
+        print('🚀 SplashScreen: User ID: ${userData.userId ?? userData.id}');
+        
+        // Always save essential fields (username, email, token) consistently
+        if (userData.fname != null && userData.fname!.isNotEmpty) {
           await prefs.setString('user_first_name', userData.fname!);
-        }
-        if (userData.lname != null) {
-          await prefs.setString('user_last_name', userData.lname!);
-        }
-        if (userData.emailId != null) {
-          await prefs.setString('user_email_id', userData.emailId!);
-        }
-        if (userData.userId != null) {
-          await prefs.setString('user_id', userData.userId!);
-        }
-        if (userData.token != null) {
-          await prefs.setString('user_token', userData.token!);
+          print('🚀 SplashScreen: First name saved: ${userData.fname}');
         }
         
-        // Update additional fields from the API response
-        if (userData.id != null) {
-          await prefs.setString('user_id', userData.id!);
+        if (userData.lname != null && userData.lname!.isNotEmpty) {
+          await prefs.setString('user_last_name', userData.lname!);
+          print('🚀 SplashScreen: Last name saved: ${userData.lname}');
         }
-        if (userData.tokenid != null) {
-          await prefs.setString('user_token', userData.tokenid!);
+        
+        // Handle different email field names
+        final email = userData.emailId ?? userData.emailid;
+        if (email != null && email.isNotEmpty) {
+          await prefs.setString('user_email_id', email);
+          print('🚀 SplashScreen: Email saved: $email');
         }
-        if (userData.emailid != null) {
-          await prefs.setString('user_email_id', userData.emailid!);
+        
+        // Handle different user ID field names
+        final userId = userData.userId ?? userData.id;
+        if (userId != null && userId.toString().isNotEmpty) {
+          await prefs.setString('user_id', userId.toString());
+          print('🚀 SplashScreen: User ID saved: $userId');
+        }
+        
+        // Handle different token field names
+        final token = userData.token ?? userData.tokenid;
+        if (token != null && token.isNotEmpty) {
+          await prefs.setString('user_token', token);
+          print('🚀 SplashScreen: Token saved: $token');
+        }
+        
+        // Update additional fields if available
+        if (userData.logId != null && userData.logId!.isNotEmpty) {
+          await prefs.setString('user_log_id', userData.logId!);
+        }
+        
+        if (userData.gender != null && userData.gender!.isNotEmpty) {
+          await prefs.setString('user_gender', userData.gender!);
+        }
+        
+        if (userData.country != null && userData.country!.isNotEmpty) {
+          await prefs.setString('user_country', userData.country!);
+        }
+        
+        if (userData.age != null && userData.age!.isNotEmpty) {
+          await prefs.setString('user_age', userData.age!);
+        }
+        
+        if (userData.imagePath != null && userData.imagePath!.isNotEmpty) {
+          await prefs.setString('user_image_path', userData.imagePath!);
+        }
+        
+        if (userData.profilepicpath != null && userData.profilepicpath!.isNotEmpty) {
+          await prefs.setString('user_profile_pic_path', userData.profilepicpath!);
         }
         
         // Update devices count
         final devicesCount = userData.devices?.length ?? 0;
         await prefs.setInt('user_devices_count', devicesCount);
+        print('🚀 SplashScreen: Devices count saved: $devicesCount');
         
         // Update complete user data JSON
         await prefs.setString('user_data', jsonEncode(userDetails.toJson()));
+        print('🚀 SplashScreen: Complete user data JSON saved');
         
-        print('🚀 SplashScreen: Updated stored user data with latest information');
+        // Verify what was actually stored
+        final storedToken = prefs.getString('user_token');
+        final storedUserId = prefs.getString('user_id');
+        final storedEmail = prefs.getString('user_email_id');
+        final storedFirstName = prefs.getString('user_first_name');
+        final storedLastName = prefs.getString('user_last_name');
+        
+        print('🚀 SplashScreen: User data updated successfully');
+        print('🚀 SplashScreen: Verified stored token: "$storedToken"');
+        print('🚀 SplashScreen: Verified stored userId: "$storedUserId"');
+        print('🚀 SplashScreen: Verified stored email: "$storedEmail"');
+        print('🚀 SplashScreen: Verified stored first name: "$storedFirstName"');
+        print('🚀 SplashScreen: Verified stored last name: "$storedLastName"');
       }
     } catch (e) {
       print('🚀 SplashScreen: Error updating stored user data: $e');

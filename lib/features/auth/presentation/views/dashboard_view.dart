@@ -1795,7 +1795,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: !viewModel.isVerifyingOtp
-                          ? () {
+                          ? () async {
                               // Dismiss keyboard first
                               if (viewModel.otpVerificationMessage != null &&
                                   viewModel.otpVerificationMessage!.contains(
@@ -1804,8 +1804,11 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                                 return;
                               }
                               FocusScope.of(context).unfocus();
-                              Navigator.of(context).pop();
-                              viewModel.verifyOtpAndAddDevice();
+                              bool isGood = await viewModel
+                                  .verifyOtpAndAddDevice();
+                              if (isGood) {
+                                Navigator.of(context).pop();
+                              }
                             }
                           : null,
                       style: ElevatedButton.styleFrom(
