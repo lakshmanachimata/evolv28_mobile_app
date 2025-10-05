@@ -1696,13 +1696,43 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                   },
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
+
+                // Error/Success message
+                if (viewModel.otpVerificationMessage != null)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: viewModel.otpVerificationMessage!.contains('success') 
+                          ? Colors.green[50] 
+                          : Colors.red[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: viewModel.otpVerificationMessage!.contains('success') 
+                            ? Colors.green[300]! 
+                            : Colors.red[300]!,
+                      ),
+                    ),
+                    child: Text(
+                      viewModel.otpVerificationMessage!,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: viewModel.otpVerificationMessage!.contains('success') 
+                            ? Colors.green[700] 
+                            : Colors.red[700],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+
+                const SizedBox(height: 16),
 
                 // Verify button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: viewModel.otpCode.isNotEmpty
+                    onPressed: viewModel.otpCode.isNotEmpty && !viewModel.isVerifyingOtp
                         ? () {
                             // Dismiss keyboard first
                             FocusScope.of(context).unfocus();
@@ -1719,13 +1749,35 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                       ),
                       elevation: 0,
                     ),
-                    child: const Text(
-                      'Verify & Add Device',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    child: viewModel.isVerifyingOtp
+                        ? const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              ),
+                              SizedBox(width: 12),
+                              Text(
+                                'Verifying...',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          )
+                        : const Text(
+                            'Verify & Add Device',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
 

@@ -129,6 +129,10 @@ class DashboardViewModel extends ChangeNotifier {
   void setUnknownDeviceBottomSheetShown(bool value) {
     _unknownDeviceBottomSheetShown = value;
   }
+  
+  // OTP verification getters
+  bool get isVerifyingOtp => _isVerifyingOtp;
+  String? get otpVerificationMessage => _otpVerificationMessage;
   String get otpCode => _otpCode;
 
   // Static methods to manage minimized state
@@ -1195,6 +1199,10 @@ class DashboardViewModel extends ChangeNotifier {
   
   // Flag to prevent multiple unknown device bottom sheets
   bool _unknownDeviceBottomSheetShown = false;
+  
+  // OTP verification state
+  bool _isVerifyingOtp = false;
+  String? _otpVerificationMessage;
 
   void selectUnknownDevice(Map<String, dynamic> device) {
     _selectedUnknownDevice = device;
@@ -1243,8 +1251,14 @@ class DashboardViewModel extends ChangeNotifier {
   Future<void> verifyOtpAndAddDevice() async {
     if (_selectedUnknownDevice == null || _otpCode.isEmpty) {
       print('🎵 Dashboard: Cannot verify OTP - missing device or OTP code');
+      _otpVerificationMessage = 'Please enter OTP code';
+      notifyListeners();
       return;
     }
+
+    _isVerifyingOtp = true;
+    _otpVerificationMessage = null;
+    notifyListeners();
 
     try {
       print(
@@ -1257,6 +1271,9 @@ class DashboardViewModel extends ChangeNotifier {
 
       if (userEmail.isEmpty) {
         print('🎵 Dashboard: No user email found for OTP verification');
+        _otpVerificationMessage = 'User email not found';
+        _isVerifyingOtp = false;
+        notifyListeners();
         return;
       }
 
@@ -1266,6 +1283,8 @@ class DashboardViewModel extends ChangeNotifier {
       result.fold(
         (error) {
           print('🎵 Dashboard: OTP verification failed: $error');
+          _otpVerificationMessage = 'OTP verification failed: $error';
+          _isVerifyingOtp = false;
 
           // Log failed OTP verification
           _loggingService.sendLogs(
@@ -1274,10 +1293,9 @@ class DashboardViewModel extends ChangeNotifier {
             notes: 'Device: ${_selectedUnknownDevice!['name']}, Error: $error',
           );
 
-          // Show error message (you might want to add a snackbar or dialog here)
-          // For now, just print the error
+          notifyListeners();
         },
-        (success) {
+        (success) async {
           if (success) {
             print('🎵 Dashboard: OTP verification successful');
 
@@ -1295,18 +1313,26 @@ class DashboardViewModel extends ChangeNotifier {
             closeUnknownDeviceDialog();
 
             // Reload user data to get updated device list
-            _loadUserData();
+            await _loadUserData();
+            
+            // Update Bluetooth service with refreshed device list
+            _bluetoothService.setUserDevices(_userDevices);
+            print('🎵 Dashboard: Updated Bluetooth service with ${_userDevices.length} user devices');
 
             // Connect to the device
             final bluetoothDevice =
                 _selectedUnknownDevice!['device'] as ble.BluetoothDevice;
-            _bluetoothService.connectToDevice(bluetoothDevice);
+            await _bluetoothService.connectToDevice(bluetoothDevice);
 
             print(
               '🎵 Dashboard: Device added to account and connected successfully',
             );
+            
+            _otpVerificationMessage = 'Device added and connected successfully!';
           } else {
             print('🎵 Dashboard: OTP verification failed - invalid OTP');
+            _otpVerificationMessage = 'Invalid OTP code';
+            _isVerifyingOtp = false;
 
             // Log failed OTP verification
             _loggingService.sendLogs(
@@ -1316,10 +1342,13 @@ class DashboardViewModel extends ChangeNotifier {
                   'Device: ${_selectedUnknownDevice!['name']}, Error: Invalid OTP',
             );
           }
+          notifyListeners();
         },
       );
     } catch (e) {
       print('🎵 Dashboard: Error during OTP verification: $e');
+      _otpVerificationMessage = 'Error during verification: $e';
+      _isVerifyingOtp = false;
 
       // Log OTP verification error
       await _loggingService.sendLogs(
@@ -1327,9 +1356,9 @@ class DashboardViewModel extends ChangeNotifier {
         status: 'failed',
         notes: 'Device: ${_selectedUnknownDevice!['name']}, Error: $e',
       );
+      
+      notifyListeners();
     }
-
-    notifyListeners();
   }
 
   void skipUnknownDevice() {
