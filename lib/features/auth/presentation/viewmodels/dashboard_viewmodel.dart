@@ -123,13 +123,20 @@ class DashboardViewModel extends ChangeNotifier {
   List<Map<String, dynamic>> get unknownDevices => _unknownDevices;
   Map<String, dynamic>? get selectedUnknownDevice => _selectedUnknownDevice;
   bool get showOtpConfirmationDialog => _showOtpConfirmationDialog;
-  
+
   bool get unknownDeviceBottomSheetShown => _unknownDeviceBottomSheetShown;
-  
+
   void setUnknownDeviceBottomSheetShown(bool value) {
     _unknownDeviceBottomSheetShown = value;
   }
   
+  // OTP bottom sheet flag getter and setter
+  bool get otpBottomSheetShown => _otpBottomSheetShown;
+  
+  void setOtpBottomSheetShown(bool value) {
+    _otpBottomSheetShown = value;
+  }
+
   // OTP verification getters
   bool get isVerifyingOtp => _isVerifyingOtp;
   String? get otpVerificationMessage => _otpVerificationMessage;
@@ -354,23 +361,26 @@ class DashboardViewModel extends ChangeNotifier {
               '🎵 Dashboard: Current state - otpDialogClosed: $_otpDialogClosed, showOtpConfirmationDialog: $_showOtpConfirmationDialog, showUnknownDeviceDialog: $_showUnknownDeviceDialog',
             );
             // Only show unknown devices list dialog if OTP dialog hasn't been closed
-             _unknownDevices = unknownDevicesList
-                 .map(
-                   (device) => {
-                     'id': device.remoteId.toString(),
-                     'name': device.platformName.isNotEmpty
-                         ? device.platformName
-                         : device.remoteId.toString(),
-                     'signalStrength': _bluetoothService.getDeviceRssi(device), // Use actual RSSI from device
-                     'isConnected': false,
-                     'isUnknown': true,
-                     'device':
-                         device, // Store the actual BluetoothDevice for connection
-                   },
-                 )
-                 .toList();
+            _unknownDevices = unknownDevicesList
+                .map(
+                  (device) => {
+                    'id': device.remoteId.toString(),
+                    'name': device.platformName.isNotEmpty
+                        ? device.platformName
+                        : device.remoteId.toString(),
+                    'signalStrength': _bluetoothService.getDeviceRssi(
+                      device,
+                    ), // Use actual RSSI from device
+                    'isConnected': false,
+                    'isUnknown': true,
+                    'device':
+                        device, // Store the actual BluetoothDevice for connection
+                  },
+                )
+                .toList();
             _showUnknownDeviceDialog = true;
-            _unknownDeviceBottomSheetShown = false; // Reset flag when showing new dialog
+            _unknownDeviceBottomSheetShown =
+                false; // Reset flag when showing new dialog
           } else {
             // Show device selection dialog for all found devices (all are known)
             _scannedDevices = _bluetoothService.scannedDevices
@@ -380,7 +390,9 @@ class DashboardViewModel extends ChangeNotifier {
                     'name': device.platformName.isNotEmpty
                         ? device.platformName
                         : device.remoteId.toString(),
-                    'signalStrength': _bluetoothService.getDeviceRssi(device), // Use actual RSSI from device
+                    'signalStrength': _bluetoothService.getDeviceRssi(
+                      device,
+                    ), // Use actual RSSI from device
                     'isConnected': false,
                   },
                 )
@@ -1136,7 +1148,9 @@ class DashboardViewModel extends ChangeNotifier {
                 'name': device.platformName.isNotEmpty
                     ? device.platformName
                     : device.remoteId.toString(),
-                'signalStrength': _bluetoothService.getDeviceRssi(device), // Use actual RSSI from device
+                'signalStrength': _bluetoothService.getDeviceRssi(
+                  device,
+                ), // Use actual RSSI from device
                 'isConnected': false,
               },
             )
@@ -1196,10 +1210,13 @@ class DashboardViewModel extends ChangeNotifier {
 
   // Flag to prevent multiple simultaneous calls to _attemptAutoConnection
   bool _isAutoConnectionRunning = false;
-  
+
   // Flag to prevent multiple unknown device bottom sheets
   bool _unknownDeviceBottomSheetShown = false;
   
+  // Flag to prevent multiple OTP confirmation bottom sheets
+  bool _otpBottomSheetShown = false;
+
   // OTP verification state
   bool _isVerifyingOtp = false;
   String? _otpVerificationMessage;
@@ -1209,6 +1226,7 @@ class DashboardViewModel extends ChangeNotifier {
     _showOtpConfirmationDialog = true;
     _otpCode = '';
     _otpDialogClosed = false; // Reset flag when selecting device
+    _otpBottomSheetShown = false; // Reset flag when showing new OTP dialog
     // Keep the unknown device dialog visible - don't change its state
     print(
       '🎵 Dashboard: Selected unknown device for OTP verification: ${device['name']}',
@@ -1224,6 +1242,7 @@ class DashboardViewModel extends ChangeNotifier {
     _showOtpConfirmationDialog = false;
     _selectedUnknownDevice = null;
     _otpCode = '';
+    _otpBottomSheetShown = false; // Reset flag when closing OTP dialog
     // Don't automatically restore unknown device dialog - let it remain as is
     _otpDialogClosed = true;
     print('🎵 Dashboard: OTP confirmation dialog closed');
@@ -1246,6 +1265,7 @@ class DashboardViewModel extends ChangeNotifier {
   void updateOtpCode(String code) {
     _otpCode = code;
     // Don't call notifyListeners() here to avoid rebuilds during typing
+   notifyListeners(); // Call notifyListeners to update UI
   }
 
   Future<void> verifyOtpAndAddDevice() async {
@@ -1314,10 +1334,12 @@ class DashboardViewModel extends ChangeNotifier {
 
             // Reload user data to get updated device list
             await _loadUserData();
-            
+
             // Update Bluetooth service with refreshed device list
             _bluetoothService.setUserDevices(_userDevices);
-            print('🎵 Dashboard: Updated Bluetooth service with ${_userDevices.length} user devices');
+            print(
+              '🎵 Dashboard: Updated Bluetooth service with ${_userDevices.length} user devices',
+            );
 
             // Connect to the device
             final bluetoothDevice =
@@ -1327,8 +1349,9 @@ class DashboardViewModel extends ChangeNotifier {
             print(
               '🎵 Dashboard: Device added to account and connected successfully',
             );
-            
-            _otpVerificationMessage = 'Device added and connected successfully!';
+
+            _otpVerificationMessage =
+                'Device added and connected successfully!';
           } else {
             print('🎵 Dashboard: OTP verification failed - invalid OTP');
             _otpVerificationMessage = 'Invalid OTP code';
@@ -1356,7 +1379,7 @@ class DashboardViewModel extends ChangeNotifier {
         status: 'failed',
         notes: 'Device: ${_selectedUnknownDevice!['name']}, Error: $e',
       );
-      
+
       notifyListeners();
     }
   }
