@@ -244,30 +244,19 @@ class BluetoothService extends ChangeNotifier {
         notes: 'unable to find device',
       );
     } else {
-      // Check if any scanned devices match user's registered devices
-      final matchingDevices = _findMatchingUserDevices(_scannedDevices);
+      // Show all scanned Evolv28 devices for user selection
+      _connectionState = BluetoothConnectionState.disconnected;
+      _statusMessage = '${_scannedDevices.length} Evolv28 device(s) found';
+      _clearError();
       
-      if (matchingDevices.isEmpty) {
-        _connectionState = BluetoothConnectionState.disconnected;
-        _statusMessage = 'No authorized devices found';
-        _setError('No devices found that match your registered devices');
-        
-        // Log when no matching devices are found
-        _loggingService.sendLogs(
-          event: 'BLE Device Connect',
-          status: 'failed',
-          notes: 'no authorized devices found',
-        );
-      } else if (matchingDevices.length == 1) {
-        // Auto-connect to the single matching device
-        print('✅ Single authorized device found: ${matchingDevices.first.platformName}');
-        print('✅ Auto-connecting to authorized device...');
-        _connectToDevice(matchingDevices.first);
-      } else {
-        _connectionState = BluetoothConnectionState.disconnected;
-        _statusMessage = 'Multiple authorized devices found';
-        _setError('Multiple authorized devices found. Please select one.');
-      }
+      print('✅ Found ${_scannedDevices.length} Evolv28 devices for user selection');
+      
+      // Log device discovery
+      _loggingService.sendLogs(
+        event: 'BLE Device Connect',
+        status: 'success',
+        notes: '${_scannedDevices.length} devices found for selection',
+      );
     }
     
     notifyListeners();
@@ -317,6 +306,10 @@ class BluetoothService extends ChangeNotifier {
     }
     
     return matchingDevices;
+  }
+
+  Future<void> connectToDevice(ble.BluetoothDevice device) async {
+    await _connectToDevice(device);
   }
 
   Future<void> _connectToDevice(ble.BluetoothDevice device) async {

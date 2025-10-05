@@ -12,6 +12,7 @@ import '../../../../core/routing/app_router_config.dart';
 import '../../../../core/services/bluetooth_service.dart';
 import '../../../../core/services/logging_service.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../domain/usecases/verify_otp_usecase.dart';
 
 class DashboardViewModel extends ChangeNotifier {
   // Static variables to track minimized state
@@ -21,6 +22,7 @@ class DashboardViewModel extends ChangeNotifier {
   // Services
   final BluetoothService _bluetoothService = BluetoothService();
   final LoggingService _loggingService = sl<LoggingService>();
+  final VerifyOtpUseCase _verifyOtpUseCase = sl<VerifyOtpUseCase>();
 
   // State variables
   bool _isLoading = false;
@@ -41,16 +43,29 @@ class DashboardViewModel extends ChangeNotifier {
   // Permission dialog state
   bool _showBluetoothEnableDialog = false;
   bool _showBluetoothScanPermissionDialog = false;
+  bool _showLocationPermissionDialog = false;
   bool _showLocationPermissionErrorDialog = false;
   bool _showBluetoothPermissionErrorDialog = false;
+  bool _showDeviceSelectionDialog = false;
   
   // Permission dialog flags to prevent multiple dialogs
   bool _bluetoothDialogShown = false;
   bool _bluetoothScanPermissionDialogShown = false;
   bool _locationPermissionDialogShown = false;
   bool _permissionFlowInitiated = false;
+  
+  // Device selection state
+  String _selectedDeviceId = '';
+  List<Map<String, dynamic>> _scannedDevices = [];
   bool _bluetoothPermissionPermanentlyDenied = false;
   bool _bluetoothStatusChecked = false;
+  
+  // Unknown device details state
+  bool _showUnknownDeviceDialog = false;
+  List<Map<String, dynamic>> _unknownDevices = [];
+  Map<String, dynamic>? _selectedUnknownDevice;
+  bool _showOtpConfirmationDialog = false;
+  String _otpCode = '';
 
   // Getters
   bool get isLoading => _isLoading;
@@ -86,8 +101,21 @@ class DashboardViewModel extends ChangeNotifier {
   // Permission dialog getters
   bool get showBluetoothEnableDialog => _showBluetoothEnableDialog;
   bool get showBluetoothScanPermissionDialog => _showBluetoothScanPermissionDialog;
+  bool get showLocationPermissionDialog => _showLocationPermissionDialog;
   bool get showLocationPermissionErrorDialog => _showLocationPermissionErrorDialog;
   bool get showBluetoothPermissionErrorDialog => _showBluetoothPermissionErrorDialog;
+  bool get showDeviceSelectionDialog => _showDeviceSelectionDialog;
+  
+  // Device selection getters
+  String get selectedDeviceId => _selectedDeviceId;
+  List<Map<String, dynamic>> get scannedDevices => _scannedDevices;
+  
+  // Unknown device getters
+  bool get showUnknownDeviceDialog => _showUnknownDeviceDialog;
+  List<Map<String, dynamic>> get unknownDevices => _unknownDevices;
+  Map<String, dynamic>? get selectedUnknownDevice => _selectedUnknownDevice;
+  bool get showOtpConfirmationDialog => _showOtpConfirmationDialog;
+  String get otpCode => _otpCode;
 
   // Static methods to manage minimized state
   static void setMinimizedState(String programId) {
@@ -200,14 +228,9 @@ class DashboardViewModel extends ChangeNotifier {
       // Load user's devices array from stored JSON data
       await _loadUserDevices(prefs);
       
-      // Check if user has devices and should auto-connect
-      if (devicesCount > 0) {
-        print('🎵 Dashboard: User has $devicesCount devices - will attempt auto-connection after Bluetooth initialization');
-        _shouldAutoConnect = true;
-      } else {
-        print('🎵 Dashboard: User has no devices - skipping auto-connection');
-        _shouldAutoConnect = false;
-      }
+      // Always show device selection dialog after permissions are granted
+      print('🎵 Dashboard: Will show device selection dialog after Bluetooth initialization');
+      _shouldAutoConnect = true;
       
     } catch (e) {
       print('🎵 Dashboard: Error loading user data: $e');
@@ -251,14 +274,8 @@ class DashboardViewModel extends ChangeNotifier {
   // Attempt automatic device connection
   Future<void> _attemptAutoConnection() async {
     try {
-      print('🎵 Dashboard: Starting auto-connection process...');
+      print('🎵 Dashboard: Starting device scanning process...');
       print('🎵 Dashboard: User has ${_userDevices.length} devices in their account');
-      
-      // Check if user has devices in their account
-      if (_userDevices.isEmpty) {
-        print('🎵 Dashboard: User has no devices in their account - skipping auto-connection');
-        return;
-      }
       
       // Check if Bluetooth service is ready
       if (!_bluetoothService.isConnected) {
@@ -274,21 +291,32 @@ class DashboardViewModel extends ChangeNotifier {
         if (_bluetoothService.scannedDevices.isNotEmpty) {
           print('🎵 Dashboard: Found ${_bluetoothService.scannedDevices.length} devices during auto-scan');
           
-          // Check if any scanned devices match user's devices
-          final matchingDevices = _findMatchingUserDevices(_bluetoothService.scannedDevices);
+          // Check for unknown devices (not in user's registered devices)
+          final unknownDevicesList = _findUnknownDevices(_bluetoothService.scannedDevices);
           
-          if (matchingDevices.isNotEmpty) {
-            print('🎵 Dashboard: Found ${matchingDevices.length} devices that match user\'s devices');
-            
-            // If we found exactly one matching device, auto-connect to it
-            if (matchingDevices.length == 1) {
-              print('🎵 Dashboard: Single matching device found - auto-connection should be in progress');
-              // The BluetoothService should handle auto-connection for single devices
-            } else {
-              print('🎵 Dashboard: Multiple matching devices found - user will need to select');
-            }
+          if (unknownDevicesList.isNotEmpty) {
+            // Show unknown devices list dialog
+            _unknownDevices = unknownDevicesList.map((device) => {
+              'id': device.remoteId.toString(),
+              'name': device.platformName.isNotEmpty ? device.platformName : device.remoteId.toString(),
+              'signalStrength': 85, // Mock signal strength
+              'isConnected': false,
+              'isUnknown': true,
+              'device': device, // Store the actual BluetoothDevice for connection
+            }).toList();
+            _showUnknownDeviceDialog = true;
+            print('🎵 Dashboard: Found ${_unknownDevices.length} unknown devices');
           } else {
-            print('🎵 Dashboard: No scanned devices match user\'s devices - user will need to connect manually');
+            // Show device selection dialog for all found devices (all are known)
+            _scannedDevices = _bluetoothService.scannedDevices.map((device) => {
+              'id': device.remoteId.toString(),
+              'name': device.platformName.isNotEmpty ? device.platformName : device.remoteId.toString(),
+              'signalStrength': 85, // Mock signal strength
+              'isConnected': false,
+            }).toList();
+            
+            _showDeviceSelectionDialog = true;
+            print('🎵 Dashboard: Showing device selection dialog with ${_scannedDevices.length} devices');
           }
         } else {
           print('🎵 Dashboard: No devices found during auto-scan');
@@ -300,6 +328,51 @@ class DashboardViewModel extends ChangeNotifier {
     } catch (e) {
       print('🎵 Dashboard: Error during auto-connection: $e');
     }
+  }
+
+  // Added: Find unknown devices (not in user's registered devices)
+  List<ble.BluetoothDevice> _findUnknownDevices(List<ble.BluetoothDevice> scannedDevices) {
+    final unknownDevices = <ble.BluetoothDevice>[];
+    
+    for (final scannedDevice in scannedDevices) {
+      final deviceName = scannedDevice.platformName.toLowerCase();
+      bool isKnownDevice = false;
+      
+      // Check if this scanned device matches any of user's registered devices
+      for (final userDevice in _userDevices) {
+        if (userDevice is Map<String, dynamic>) {
+          // Check various possible device identifiers
+          final deviceId = userDevice['id']?.toString().toLowerCase() ?? '';
+          final deviceNameFromUser = userDevice['name']?.toString().toLowerCase() ?? '';
+          final deviceMac = userDevice['mac']?.toString().toLowerCase() ?? '';
+          final deviceSerial = userDevice['serial']?.toString().toLowerCase() ?? '';
+          
+          // Match by device name (most common case)
+          if (deviceName.contains('evolv28') && 
+              (deviceNameFromUser.contains('evolv28') || 
+               deviceId.contains('evolv28') ||
+               deviceMac.isNotEmpty ||
+               deviceSerial.isNotEmpty)) {
+            isKnownDevice = true;
+            break;
+          }
+        } else if (userDevice is String) {
+          // If user device is just a string, check if it contains evolv28
+          if (userDevice.toLowerCase().contains('evolv28') && deviceName.contains('evolv28')) {
+            isKnownDevice = true;
+            break;
+          }
+        }
+      }
+      
+      // If device is not known and is an Evolv28 device, add to unknown list
+      if (!isKnownDevice && deviceName.contains('evolv28')) {
+        unknownDevices.add(scannedDevice);
+        print('🎵 Dashboard: Found unknown Evolv28 device: ${scannedDevice.platformName}');
+      }
+    }
+    
+    return unknownDevices;
   }
 
   // Find devices that match user's devices
@@ -615,6 +688,8 @@ class DashboardViewModel extends ChangeNotifier {
       if (!hasLocationPermission && !_locationPermissionDialogShown) {
         print('🎵 Dashboard: Showing location permission dialog first');
         _locationPermissionDialogShown = true; // Prevent multiple requests
+        _permissionFlowInitiated = true; // Mark permission flow as initiated
+        _showLocationPermissionDialog = true; // Show location permission dialog
       } else if (hasLocationPermission) {
         // Location permission granted, check BLE scan permission
         bool hasBluetoothPermission = await _checkBluetoothScanPermission();
@@ -775,6 +850,7 @@ class DashboardViewModel extends ChangeNotifier {
   }
 
   Future<void> allowLocationPermission() async {
+    _showLocationPermissionDialog = false;
     print('🎵 Dashboard: User allowed location permission, requesting system permission');
     
     try {
@@ -835,6 +911,20 @@ class DashboardViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void denyLocationPermission() {
+    _showLocationPermissionDialog = false;
+    print('🎵 Dashboard: User denied location permission');
+    
+    // Log denied location permission
+    _loggingService.sendLogs(
+      event: 'Location Permission',
+      status: 'failed',
+      notes: 'user_denied',
+    );
+    
+    notifyListeners();
+  }
+
   Future<void> allowBluetoothScanPermission() async {
     _showBluetoothScanPermissionDialog = false;
     print('🎵 Dashboard: User allowed Bluetooth scan permission, requesting system permission');
@@ -854,7 +944,9 @@ class DashboardViewModel extends ChangeNotifier {
         if (status == PermissionStatus.granted) {
           print('🎵 Dashboard: Bluetooth scan permission granted');
           _isBluetoothScanPermissionGranted = true;
-          await _startBluetoothOperations();
+          
+          // Start scanning for devices and show device selection dialog
+          await _startDeviceScanning();
         } else if (status == PermissionStatus.permanentlyDenied) {
           print('🎵 Dashboard: Bluetooth scan permission permanently denied');
           _showBluetoothPermissionErrorDialog = true;
@@ -884,6 +976,207 @@ class DashboardViewModel extends ChangeNotifier {
       notes: 'user_denied',
     );
     
+    notifyListeners();
+  }
+
+  // Device selection methods
+  Future<void> _startDeviceScanning() async {
+    try {
+      print('🎵 Dashboard: Starting device scanning...');
+      _scannedDevices.clear();
+      _selectedDeviceId = '';
+      
+      // Start scanning
+      await _bluetoothService.startScanning();
+      
+      // Show device selection dialog immediately
+      _showDeviceSelectionDialog = true;
+      
+      // Listen to scanned devices and update the list
+      _bluetoothService.addListener(() {
+        _scannedDevices = _bluetoothService.scannedDevices.map((device) => {
+          'id': device.remoteId.toString(),
+          'name': device.platformName.isNotEmpty ? device.platformName : device.remoteId.toString(),
+          'signalStrength': 85, // Mock signal strength
+          'isConnected': false,
+        }).toList();
+        notifyListeners();
+      });
+      
+    } catch (e) {
+      print('🎵 Dashboard: Error starting device scanning: $e');
+    }
+    notifyListeners();
+  }
+
+  void selectDevice(String deviceId, String deviceName) {
+    _selectedDeviceId = deviceId;
+    print('🎵 Dashboard: Selected device: $deviceName ($deviceId)');
+    notifyListeners();
+  }
+
+  Future<void> connectToSelectedDevice() async {
+    if (_selectedDeviceId.isEmpty) return;
+    
+    try {
+      print('🎵 Dashboard: Connecting to selected device: $_selectedDeviceId');
+      _showDeviceSelectionDialog = false;
+      
+      // Find the selected device and connect
+      final selectedDevice = _bluetoothService.scannedDevices.firstWhere(
+        (device) => device.remoteId.toString() == _selectedDeviceId,
+      );
+      
+      // Connect to the device
+      await _bluetoothService.connectToDevice(selectedDevice);
+      
+    } catch (e) {
+      print('🎵 Dashboard: Error connecting to selected device: $e');
+    }
+    notifyListeners();
+  }
+
+  void closeDeviceSelectionDialog() {
+    _showDeviceSelectionDialog = false;
+    _selectedDeviceId = '';
+    print('🎵 Dashboard: Device selection dialog closed');
+    notifyListeners();
+  }
+
+  // Unknown device dialog methods
+  void closeUnknownDeviceDialog() {
+    _showUnknownDeviceDialog = false;
+    _unknownDevices.clear();
+    _selectedUnknownDevice = null;
+    print('🎵 Dashboard: Unknown device dialog closed');
+    notifyListeners();
+  }
+
+  void selectUnknownDevice(Map<String, dynamic> device) {
+    _selectedUnknownDevice = device;
+    _showOtpConfirmationDialog = true;
+    _otpCode = '';
+    print('🎵 Dashboard: Selected unknown device for OTP verification: ${device['name']}');
+    notifyListeners();
+  }
+
+  void closeOtpConfirmationDialog() {
+    _showOtpConfirmationDialog = false;
+    _selectedUnknownDevice = null;
+    _otpCode = '';
+    print('🎵 Dashboard: OTP confirmation dialog closed');
+    notifyListeners();
+  }
+
+  void updateOtpCode(String code) {
+    _otpCode = code;
+    // Don't call notifyListeners() here to avoid rebuilds during typing
+  }
+
+  Future<void> verifyOtpAndAddDevice() async {
+    if (_selectedUnknownDevice == null || _otpCode.isEmpty) {
+      print('🎵 Dashboard: Cannot verify OTP - missing device or OTP code');
+      return;
+    }
+
+    try {
+      print('🎵 Dashboard: Verifying OTP for device: ${_selectedUnknownDevice!['name']}');
+      
+      // Get user email from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final userEmail = prefs.getString('user_email') ?? '';
+      
+      if (userEmail.isEmpty) {
+        print('🎵 Dashboard: No user email found for OTP verification');
+        return;
+      }
+
+      // Verify OTP
+      final result = await _verifyOtpUseCase(userEmail, _otpCode);
+      
+      result.fold(
+        (error) {
+          print('🎵 Dashboard: OTP verification failed: $error');
+          
+          // Log failed OTP verification
+          _loggingService.sendLogs(
+            event: 'Device OTP Verification',
+            status: 'failed',
+            notes: 'Device: ${_selectedUnknownDevice!['name']}, Error: $error',
+          );
+          
+          // Show error message (you might want to add a snackbar or dialog here)
+          // For now, just print the error
+        },
+        (success) {
+          if (success) {
+            print('🎵 Dashboard: OTP verification successful');
+            
+            // Log successful OTP verification
+            _loggingService.sendLogs(
+              event: 'Device OTP Verification',
+              status: 'success',
+              notes: 'Device: ${_selectedUnknownDevice!['name']}',
+            );
+            
+            // Close OTP dialog
+            closeOtpConfirmationDialog();
+            
+            // Close unknown device dialog
+            closeUnknownDeviceDialog();
+            
+            // Reload user data to get updated device list
+            _loadUserData();
+            
+            // Connect to the device
+            final bluetoothDevice = _selectedUnknownDevice!['device'] as ble.BluetoothDevice;
+            _bluetoothService.connectToDevice(bluetoothDevice);
+            
+            print('🎵 Dashboard: Device added to account and connected successfully');
+          } else {
+            print('🎵 Dashboard: OTP verification failed - invalid OTP');
+            
+            // Log failed OTP verification
+            _loggingService.sendLogs(
+              event: 'Device OTP Verification',
+              status: 'failed',
+              notes: 'Device: ${_selectedUnknownDevice!['name']}, Error: Invalid OTP',
+            );
+          }
+        },
+      );
+      
+    } catch (e) {
+      print('🎵 Dashboard: Error during OTP verification: $e');
+      
+      // Log OTP verification error
+      await _loggingService.sendLogs(
+        event: 'Device OTP Verification',
+        status: 'failed',
+        notes: 'Device: ${_selectedUnknownDevice!['name']}, Error: $e',
+      );
+    }
+    
+    notifyListeners();
+  }
+
+  void skipUnknownDevice() {
+    print('🎵 Dashboard: Skipping unknown device');
+    closeUnknownDeviceDialog();
+  }
+
+  Future<void> rescanDevices() async {
+    try {
+      print('🎵 Dashboard: Rescanning devices...');
+      _scannedDevices.clear();
+      _selectedDeviceId = '';
+      
+      // Restart scanning
+      await _bluetoothService.startScanning();
+      
+    } catch (e) {
+      print('🎵 Dashboard: Error rescanning devices: $e');
+    }
     notifyListeners();
   }
 

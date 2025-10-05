@@ -31,9 +31,12 @@ class _DashboardViewBody extends StatefulWidget {
 }
 
 class _DashboardViewBodyState extends State<_DashboardViewBody> {
+  late TextEditingController _otpController;
+
   @override
   void initState() {
     super.initState();
+    _otpController = TextEditingController();
     print('🎵 Dashboard View: initState() called');
     // Initialize the dashboard
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -49,6 +52,12 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
       // Check Bluetooth permission
       await BluetoothPermissionHelper.checkAndRequestBluetoothPermission(context);
     });
+  }
+
+  @override
+  void dispose() {
+    _otpController.dispose();
+    super.dispose();
   }
 
   @override
@@ -95,6 +104,33 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                     enableDrag: false,
                     backgroundColor: Colors.transparent,
                     builder: (context) => _buildBluetoothScanPermissionDialog(context, viewModel),
+                  );
+                });
+              }
+
+              // Show unknown device list as bottom sheet
+              if (viewModel.showUnknownDeviceDialog) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  showModalBottomSheet<bool>(
+                    context: context,
+                    isDismissible: false,
+                    enableDrag: false,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => _buildUnknownDeviceBottomSheet(context, viewModel),
+                  );
+                });
+              }
+
+              // Show OTP confirmation as bottom sheet
+              if (viewModel.showOtpConfirmationDialog) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  showModalBottomSheet<bool>(
+                    context: context,
+                    isDismissible: false,
+                    enableDrag: false,
+                    backgroundColor: Colors.transparent,
+                    isScrollControlled: true,
+                    builder: (context) => _buildOtpConfirmationBottomSheet(context, viewModel),
                   );
                 });
               }
@@ -1268,6 +1304,443 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
       return 'Please enable Bluetooth on your device to connect with Evolv28';
     }
   }
+
+  Widget _buildUnknownDeviceBottomSheet(BuildContext context, DashboardViewModel viewModel) {
+    final unknownDevices = viewModel.unknownDevices;
+    if (unknownDevices.isEmpty) return SizedBox.shrink();
+
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.7,
+        minHeight: 400.0,
+      ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
+      child: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle bar
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Close button
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        viewModel.closeUnknownDeviceDialog();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.red[50],
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Icon(
+                          Icons.close,
+                          color: Colors.red[600],
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Title
+                Text(
+                  'New Devices Found (${unknownDevices.length})',
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                // Subtitle
+                const Text(
+                  'Tap on a device to add it to your account',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey,
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Device list
+                ...unknownDevices.map((device) => _buildUnknownDeviceItem(context, viewModel, device)).toList(),
+
+                const SizedBox(height: 24),
+
+                // Skip All button
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      viewModel.skipUnknownDevice();
+                    },
+                    child: const Text(
+                      'Skip All',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUnknownDeviceItem(BuildContext context, DashboardViewModel viewModel, Map<String, dynamic> device) {
+    return GestureDetector(
+      onTap: () {
+        viewModel.selectUnknownDevice(device);
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[200]!),
+        ),
+        child: Row(
+          children: [
+            // Device icon
+            Container(
+              width: 50,
+              height: 50,
+              decoration: const BoxDecoration(
+                color: Color(0xFF2C2C2C),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Image.asset(
+                  'assets/images/user_neck_device.png',
+                  width: 30,
+                  height: 30,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+
+            // Device info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    device['name'] ?? 'Unknown Device',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'ID: ${device['id']}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.signal_cellular_alt,
+                        size: 16,
+                        color: Colors.grey[600],
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${device['signalStrength']}%',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Arrow
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: Colors.grey[400],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOtpConfirmationBottomSheet(BuildContext context, DashboardViewModel viewModel) {
+    final selectedDevice = viewModel.selectedUnknownDevice;
+    if (selectedDevice == null) return SizedBox.shrink();
+
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.7,
+          minHeight: 500.0,
+        ),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                // Handle bar
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Close button
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        // Dismiss keyboard first
+                        FocusScope.of(context).unfocus();
+                        Navigator.of(context).pop();
+                        viewModel.closeOtpConfirmationDialog();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.red[50],
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Icon(
+                          Icons.close,
+                          color: Colors.red[600],
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Device info header
+                Row(
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF2C2C2C),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Image.asset(
+                          'assets/images/user_neck_device.png',
+                          width: 30,
+                          height: 30,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Add Device',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                          Text(
+                            selectedDevice['name'] ?? 'Unknown Device',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 32),
+
+                // Description
+                const Text(
+                  'Enter the OTP code to add this device to your account',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.black,
+                    height: 1.4,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+                const SizedBox(height: 24),
+
+                // OTP Input Field
+                TextFormField(
+                  controller: _otpController,
+                  onChanged: (value) {
+                    // Limit to 10 alphanumeric characters
+                    if (value.length <= 10 && RegExp(r'^[a-zA-Z0-9]*$').hasMatch(value)) {
+                      viewModel.updateOtpCode(value);
+                    }
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Enter OTP (up to 10 characters)',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey[300]!),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFF17961), width: 2),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  ),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 2,
+                  ),
+                  maxLength: 10,
+                  autofocus: true,
+                  buildCounter: (context, {required currentLength, required isFocused, maxLength}) {
+                    return Text(
+                      '$currentLength/$maxLength',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 32),
+
+                // Verify button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: viewModel.otpCode.isNotEmpty
+                        ? () {
+                            // Dismiss keyboard first
+                            FocusScope.of(context).unfocus();
+                            Navigator.of(context).pop();
+                            viewModel.verifyOtpAndAddDevice();
+                          }
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF17961),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'Verify & Add Device',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Cancel button
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () {
+                      // Dismiss keyboard first
+                      FocusScope.of(context).unfocus();
+                      Navigator.of(context).pop();
+                      viewModel.closeOtpConfirmationDialog();
+                    },
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+        ),
+      ),
+      ),
+    );
+  }
 }
 
 class _BlinkingBluetoothIcon extends StatefulWidget {
@@ -1319,5 +1792,5 @@ class _BlinkingBluetoothIconState extends State<_BlinkingBluetoothIcon>
       },
     );
   }
-
 }
+
