@@ -1797,9 +1797,10 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                       onPressed: !viewModel.isVerifyingOtp
                           ? () {
                               // Dismiss keyboard first
-                              if (viewModel.otpVerificationMessage!.contains(
-                                'success',
-                              )) {
+                              if (viewModel.otpVerificationMessage != null &&
+                                  viewModel.otpVerificationMessage!.contains(
+                                    'success',
+                                  )) {
                                 return;
                               }
                               FocusScope.of(context).unfocus();

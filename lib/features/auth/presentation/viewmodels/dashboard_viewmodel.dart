@@ -170,6 +170,15 @@ class DashboardViewModel extends ChangeNotifier {
     // Set user devices for validation
     _bluetoothService.setUserDevices(_userDevices);
 
+    // Set callback for unknown devices found during scanning
+    _bluetoothService.setOnUnknownDevicesFoundCallback((unknownDevices) {
+      print('🎵 Dashboard: Unknown devices found: ${unknownDevices.length}');
+      _unknownDevices = unknownDevices;
+      _showUnknownDeviceDialog = true;
+      _unknownDeviceBottomSheetShown = false; // Reset flag for new dialog
+      notifyListeners();
+    });
+
     print(
       '🎵 Dashboard: Bluetooth service initialized with ${_userDevices.length} user devices',
     );
@@ -1338,6 +1347,16 @@ class DashboardViewModel extends ChangeNotifier {
 
             // Update Bluetooth service with refreshed device list
             _bluetoothService.setUserDevices(_userDevices);
+            
+            // Re-set callback for unknown devices (in case it was lost)
+            _bluetoothService.setOnUnknownDevicesFoundCallback((unknownDevices) {
+              print('🎵 Dashboard: Unknown devices found: ${unknownDevices.length}');
+              _unknownDevices = unknownDevices;
+              _showUnknownDeviceDialog = true;
+              _unknownDeviceBottomSheetShown = false; // Reset flag for new dialog
+              notifyListeners();
+            });
+            
             print(
               '🎵 Dashboard: Updated Bluetooth service with ${_userDevices.length} user devices',
             );
