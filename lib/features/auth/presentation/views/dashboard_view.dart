@@ -117,11 +117,11 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
               }
 
               // Show unknown device list as bottom sheet
-              if (viewModel.showUnknownDeviceDialog) {
+              if (viewModel.showUnknownDeviceDialog && !viewModel.unknownDeviceBottomSheetShown) {
                 print('🎵 Dashboard UI: Showing unknown device bottom sheet');
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   // Double-check the state before showing the bottom sheet
-                  if (viewModel.showUnknownDeviceDialog) {
+                  if (viewModel.showUnknownDeviceDialog && !viewModel.unknownDeviceBottomSheetShown) {
                     print('🎵 Dashboard UI: Confirmed showing unknown device bottom sheet');
                     showModalBottomSheet<bool>(
                       context: context,
@@ -130,6 +130,8 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                       backgroundColor: Colors.transparent,
                       builder: (context) => _buildUnknownDeviceBottomSheet(context, viewModel),
                     );
+                    // Mark that the bottom sheet has been shown
+                    viewModel.setUnknownDeviceBottomSheetShown(true);
                   }
                 });
               }

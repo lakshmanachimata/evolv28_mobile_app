@@ -123,6 +123,12 @@ class DashboardViewModel extends ChangeNotifier {
   List<Map<String, dynamic>> get unknownDevices => _unknownDevices;
   Map<String, dynamic>? get selectedUnknownDevice => _selectedUnknownDevice;
   bool get showOtpConfirmationDialog => _showOtpConfirmationDialog;
+  
+  bool get unknownDeviceBottomSheetShown => _unknownDeviceBottomSheetShown;
+  
+  void setUnknownDeviceBottomSheetShown(bool value) {
+    _unknownDeviceBottomSheetShown = value;
+  }
   String get otpCode => _otpCode;
 
   // Static methods to manage minimized state
@@ -360,6 +366,7 @@ class DashboardViewModel extends ChangeNotifier {
                  )
                  .toList();
             _showUnknownDeviceDialog = true;
+            _unknownDeviceBottomSheetShown = false; // Reset flag when showing new dialog
           } else {
             // Show device selection dialog for all found devices (all are known)
             _scannedDevices = _bluetoothService.scannedDevices
@@ -1185,6 +1192,9 @@ class DashboardViewModel extends ChangeNotifier {
 
   // Flag to prevent multiple simultaneous calls to _attemptAutoConnection
   bool _isAutoConnectionRunning = false;
+  
+  // Flag to prevent multiple unknown device bottom sheets
+  bool _unknownDeviceBottomSheetShown = false;
 
   void selectUnknownDevice(Map<String, dynamic> device) {
     _selectedUnknownDevice = device;
@@ -1221,6 +1231,7 @@ class DashboardViewModel extends ChangeNotifier {
     _showUnknownDeviceDialog = false;
     _unknownDevices.clear();
     _selectedUnknownDevice = null;
+    _unknownDeviceBottomSheetShown = false; // Reset flag when closing dialog
     notifyListeners();
   }
 
