@@ -129,10 +129,10 @@ class DashboardViewModel extends ChangeNotifier {
   void setUnknownDeviceBottomSheetShown(bool value) {
     _unknownDeviceBottomSheetShown = value;
   }
-  
+
   // OTP bottom sheet flag getter and setter
   bool get otpBottomSheetShown => _otpBottomSheetShown;
-  
+
   void setOtpBottomSheetShown(bool value) {
     _otpBottomSheetShown = value;
   }
@@ -227,7 +227,7 @@ class DashboardViewModel extends ChangeNotifier {
     // when the command sequence completes
 
     // Simulate loading time
-    await Future.delayed(const Duration(milliseconds: 500));
+    // await Future.delayed(const Duration(milliseconds: 500));
 
     _isLoading = false;
     print('🎵 Dashboard: initialize() completed');
@@ -269,7 +269,8 @@ class DashboardViewModel extends ChangeNotifier {
       print(
         '🎵 Dashboard: Will show device selection dialog after Bluetooth initialization',
       );
-      _shouldAutoConnect = true;
+
+      _shouldAutoConnect = false;
     } catch (e) {
       print('🎵 Dashboard: Error loading user data: $e');
       // Keep default values if loading fails
@@ -1213,7 +1214,7 @@ class DashboardViewModel extends ChangeNotifier {
 
   // Flag to prevent multiple unknown device bottom sheets
   bool _unknownDeviceBottomSheetShown = false;
-  
+
   // Flag to prevent multiple OTP confirmation bottom sheets
   bool _otpBottomSheetShown = false;
 
@@ -1265,7 +1266,7 @@ class DashboardViewModel extends ChangeNotifier {
   void updateOtpCode(String code) {
     _otpCode = code;
     // Don't call notifyListeners() here to avoid rebuilds during typing
-   notifyListeners(); // Call notifyListeners to update UI
+    notifyListeners(); // Call notifyListeners to update UI
   }
 
   Future<void> verifyOtpAndAddDevice() async {

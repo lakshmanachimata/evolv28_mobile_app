@@ -1013,7 +1013,9 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
     return Container(
       width: double.infinity,
       height: double.infinity,
-      color: Colors.black.withOpacity(0.3), // Semi-transparent overlay
+      color: Colors.black.withOpacity(
+        0.3,
+      ), // Completely transparent to show all background content
       child: Center(
         child: Container(
           width: MediaQuery.of(context).size.width * 0.8, // 80% of screen width
@@ -1689,14 +1691,16 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                     onChanged: (value) {
                       // Convert alphabetic characters to uppercase
                       final upperValue = value.toUpperCase();
-                      
+
                       // Limit to 10 alphanumeric characters
                       if (upperValue.length <= 10 &&
                           RegExp(r'^[A-Z0-9]*$').hasMatch(upperValue)) {
                         // Update the controller with uppercase value
                         _otpController.value = _otpController.value.copyWith(
                           text: upperValue,
-                          selection: TextSelection.collapsed(offset: upperValue.length),
+                          selection: TextSelection.collapsed(
+                            offset: upperValue.length,
+                          ),
                         );
                         viewModel.updateOtpCode(upperValue);
                       }
@@ -1724,6 +1728,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 2,
+                      color: Colors.black,
                     ),
                     maxLength: 10,
                     autofocus: true,
