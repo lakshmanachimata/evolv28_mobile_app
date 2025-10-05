@@ -98,40 +98,64 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
               // Show Bluetooth scan permission as bottom sheet
               if (viewModel.showBluetoothScanPermissionDialog) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  showModalBottomSheet<bool>(
-                    context: context,
-                    isDismissible: false,
-                    enableDrag: false,
-                    backgroundColor: Colors.transparent,
-                    builder: (context) => _buildBluetoothScanPermissionDialog(context, viewModel),
-                  );
+                  // Double-check the state before showing the bottom sheet
+                  if (viewModel.showBluetoothScanPermissionDialog) {
+                    showModalBottomSheet<bool>(
+                      context: context,
+                      isDismissible: false,
+                      enableDrag: false,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => _buildBluetoothScanPermissionDialog(context, viewModel),
+                    ).then((_) {
+                      // Ensure state is reset when bottom sheet is dismissed
+                      if (viewModel.showBluetoothScanPermissionDialog) {
+                        viewModel.denyBluetoothScanPermission();
+                      }
+                    });
+                  }
                 });
               }
 
               // Show unknown device list as bottom sheet
               if (viewModel.showUnknownDeviceDialog) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  showModalBottomSheet<bool>(
-                    context: context,
-                    isDismissible: false,
-                    enableDrag: false,
-                    backgroundColor: Colors.transparent,
-                    builder: (context) => _buildUnknownDeviceBottomSheet(context, viewModel),
-                  );
+                  // Double-check the state before showing the bottom sheet
+                  if (viewModel.showUnknownDeviceDialog) {
+                    showModalBottomSheet<bool>(
+                      context: context,
+                      isDismissible: false,
+                      enableDrag: false,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => _buildUnknownDeviceBottomSheet(context, viewModel),
+                    ).then((_) {
+                      // Ensure state is reset when bottom sheet is dismissed
+                      if (viewModel.showUnknownDeviceDialog) {
+                        viewModel.closeUnknownDeviceDialog();
+                      }
+                    });
+                  }
                 });
               }
 
               // Show OTP confirmation as bottom sheet
               if (viewModel.showOtpConfirmationDialog) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  showModalBottomSheet<bool>(
-                    context: context,
-                    isDismissible: false,
-                    enableDrag: false,
-                    backgroundColor: Colors.transparent,
-                    isScrollControlled: true,
-                    builder: (context) => _buildOtpConfirmationBottomSheet(context, viewModel),
-                  );
+                  // Double-check the state before showing the bottom sheet
+                  if (viewModel.showOtpConfirmationDialog) {
+                    showModalBottomSheet<bool>(
+                      context: context,
+                      isDismissible: false,
+                      enableDrag: false,
+                      backgroundColor: Colors.transparent,
+                      isScrollControlled: true,
+                      builder: (context) => _buildOtpConfirmationBottomSheet(context, viewModel),
+                    ).then((_) {
+                      // Ensure state is reset when bottom sheet is dismissed
+                      if (viewModel.showOtpConfirmationDialog) {
+                        viewModel.closeOtpConfirmationDialog();
+                      }
+                    });
+                  }
                 });
               }
               
