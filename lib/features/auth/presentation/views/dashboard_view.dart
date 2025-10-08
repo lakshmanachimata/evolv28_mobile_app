@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -58,39 +59,85 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
   }
 
   /// Start permission flow in the exact sequence requested:
+  /// 1. Check if Bluetooth is enabled first
+  /// 2. If Bluetooth is disabled, show popup and wait for user acknowledgment
+  /// 3. Only start permission flow after Bluetooth is enabled
+  Future<void> _startPermissionFlow(BuildContext context) async {
+    print('🎵 Dashboard View: Checking Bluetooth state before starting permission flow...');
+    
+    // Check if permission flow is already in progress
+    final viewModel = Provider.of<DashboardViewModel>(context, listen: false);
+    if (viewModel.permissionFlowInProgress) {
+      print('🎵 Dashboard View: Permission flow already in progress, skipping...');
+      return;
+    }
+    
+    // Check if Bluetooth is enabled first
+    final isBluetoothEnabled = await _checkBluetoothEnabled();
+    
+    if (!isBluetoothEnabled) {
+      print('🎵 Dashboard View: Bluetooth is disabled - permission flow will be triggered after user enables Bluetooth');
+      return; // Don't start permission flow, wait for Bluetooth to be enabled
+    }
+    
+    print('🎵 Dashboard View: Bluetooth is enabled - starting permission flow sequence...');
+    await _executePermissionFlow(context);
+  }
+
+  /// Execute the actual permission flow sequence
+  /// Always shows all 4 dialogs in sequence:
   /// 1. Location permission app dialog
   /// 2. Location permission system dialog
   /// 3. Bluetooth permission app dialog
   /// 4. Bluetooth permission system dialog
-  /// 5. If both allowed, scan for devices
-  Future<void> _startPermissionFlow(BuildContext context) async {
-    print('🎵 Dashboard View: Starting permission flow sequence...');
+  Future<void> _executePermissionFlow(BuildContext context) async {
+    print('🎵 Dashboard View: Starting full permission flow sequence...');
     
-    // Step 1 & 2: Location permission (app dialog -> system dialog)
-    print('🎵 Dashboard View: Step 1-2: Requesting location permission...');
-    final locationGranted = await LocationPermissionHelper.checkAndRequestLocationPermission(context);
-    
-    if (!locationGranted) {
-      print('🎵 Dashboard View: Location permission denied, stopping flow');
-      return;
-    }
-    
-    print('🎵 Dashboard View: Location permission granted, proceeding to Bluetooth...');
-    
-    // Step 3 & 4: Bluetooth permission (app dialog -> system dialog)
-    print('🎵 Dashboard View: Step 3-4: Requesting Bluetooth permission...');
-    final bluetoothGranted = await BluetoothPermissionHelper.checkAndRequestBluetoothPermission(context);
-    
-    if (!bluetoothGranted) {
-      print('🎵 Dashboard View: Bluetooth permission denied, stopping flow');
-      return;
-    }
-    
-    print('🎵 Dashboard View: Both permissions granted, starting device scanning...');
-    
-    // Step 5: Both permissions granted, start scanning
     final viewModel = Provider.of<DashboardViewModel>(context, listen: false);
-    await viewModel.startAutomaticDeviceScanning();
+    
+    // Set permission flow in progress flag
+    viewModel.setPermissionFlowInProgress(true);
+    
+    try {
+      // Step 1 & 2: Location permission (app dialog -> system dialog)
+      print('🎵 Dashboard View: Step 1-2: Requesting location permission...');
+      final locationGranted = await LocationPermissionHelper.checkAndRequestLocationPermission(context);
+      
+      if (!locationGranted) {
+        print('🎵 Dashboard View: Location permission denied, stopping flow');
+        return;
+      }
+      
+      print('🎵 Dashboard View: Location permission granted, proceeding to Bluetooth...');
+      
+      // Step 3 & 4: Bluetooth permission (app dialog -> system dialog)
+      print('🎵 Dashboard View: Step 3-4: Requesting Bluetooth permission...');
+      final bluetoothGranted = await BluetoothPermissionHelper.checkAndRequestBluetoothPermission(context);
+      
+      if (!bluetoothGranted) {
+        print('🎵 Dashboard View: Bluetooth permission denied, stopping flow');
+        return;
+      }
+      
+      print('🎵 Dashboard View: Both permissions granted, starting device scanning...');
+      
+      // Step 5: Both permissions granted, start scanning
+      await viewModel.startAutomaticDeviceScanning();
+    } finally {
+      // Clear permission flow in progress flag
+      viewModel.setPermissionFlowInProgress(false);
+    }
+  }
+
+  // Check if Bluetooth is enabled
+  Future<bool> _checkBluetoothEnabled() async {
+    try {
+      final state = await FlutterBluePlus.adapterState.first;
+      return state == BluetoothAdapterState.on;
+    } catch (e) {
+      print('🎵 Dashboard View: Error checking Bluetooth state: $e');
+      return false;
+    }
   }
 
   @override
@@ -103,6 +150,20 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
 
           // Main Content
           _buildMainContent(context),
+
+          // Permission Flow Trigger Listener
+          Consumer<DashboardViewModel>(
+            builder: (context, viewModel, child) {
+              if (viewModel.shouldTriggerPermissionFlow && !viewModel.permissionFlowInProgress) {
+                // Clear the flag and trigger permission flow
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  viewModel.clearPermissionFlowTrigger();
+                  _executePermissionFlow(context);
+                });
+              }
+              return SizedBox.shrink();
+            },
+          ),
 
           // Loading Overlay
           Consumer<DashboardViewModel>(

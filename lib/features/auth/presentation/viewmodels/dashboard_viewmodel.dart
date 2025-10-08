@@ -48,6 +48,10 @@ class DashboardViewModel extends ChangeNotifier {
   bool _isBluetoothStateMonitoring = false;
   StreamSubscription<ble.BluetoothAdapterState>? _bluetoothStateSubscription;
 
+  // Permission flow trigger
+  bool _shouldTriggerPermissionFlow = false;
+  bool _permissionFlowInProgress = false;
+
   // Permission state variables
   bool _isBluetoothEnabled = false;
   bool _isBluetoothScanPermissionGranted = false;
@@ -111,6 +115,10 @@ class DashboardViewModel extends ChangeNotifier {
   // Music data getters
   List<dynamic> get musicData => _musicData;
   bool get isLoadingMusic => _isLoadingMusic;
+
+  // Permission flow trigger getter
+  bool get shouldTriggerPermissionFlow => _shouldTriggerPermissionFlow;
+  bool get permissionFlowInProgress => _permissionFlowInProgress;
 
   // Permission getters
   bool get isBluetoothEnabled => _isBluetoothEnabled;
@@ -490,8 +498,8 @@ class DashboardViewModel extends ChangeNotifier {
 
   // Handle Bluetooth turned off
   void _handleBluetoothTurnedOff() {
-    // Set error message to show on the first card
-    _bluetoothService.setErrorMessage('Bluetooth is turned off. Please enable Bluetooth to connect to your device.');
+    // Use existing popup system
+    _showBluetoothEnableDialog = true;
     notifyListeners();
   }
 
@@ -501,21 +509,63 @@ class DashboardViewModel extends ChangeNotifier {
       // Clear any existing error messages
       _bluetoothService.clearErrorMessage();
       
+      // Always start the full permission flow when Bluetooth is turned on
+      print('🎵 Dashboard: Bluetooth turned on - starting full permission flow');
+      await _startFullPermissionFlow();
+    } catch (e) {
+      print('🎵 Dashboard: Error handling Bluetooth turned on: $e');
+    }
+  }
+
+  // Start full permission flow (all 4 dialogs in sequence)
+  Future<void> _startFullPermissionFlow() async {
+    try {
+      // Check if permission flow is already in progress
+      if (_permissionFlowInProgress) {
+        print('🎵 Dashboard: Permission flow already in progress, skipping...');
+        return;
+      }
+      
+      print('🎵 Dashboard: Starting full permission flow sequence...');
+      
+      // Set flag to trigger permission flow in UI layer
+      _shouldTriggerPermissionFlow = true;
+      notifyListeners();
+    } catch (e) {
+      print('🎵 Dashboard: Error starting full permission flow: $e');
+    }
+  }
+
+  // Clear permission flow trigger flag
+  void clearPermissionFlowTrigger() {
+    _shouldTriggerPermissionFlow = false;
+    notifyListeners();
+  }
+
+  // Set permission flow in progress flag
+  void setPermissionFlowInProgress(bool inProgress) {
+    _permissionFlowInProgress = inProgress;
+    notifyListeners();
+  }
+
+  // Start permission flow after Bluetooth is enabled
+  Future<void> _startPermissionFlowAfterBluetoothEnabled() async {
+    try {
       // Check if Bluetooth permission exists
       final hasPermission = await _checkBluetoothPermission();
       
       if (hasPermission) {
-        print('🎵 Dashboard: Bluetooth permission exists - clearing error and showing scan option');
-        // Permission exists, just clear error and show "click here to scan"
-        _bluetoothService.setStatusMessage('Click here to scan for devices');
-        notifyListeners();
+        print('🎵 Dashboard: Bluetooth permission exists - starting scan');
+        await _bluetoothService.startScanning();
+        _bluetoothService.setStatusMessage('Scanning for devices...');
       } else {
-        print('🎵 Dashboard: Bluetooth permission missing - requesting permission');
-        // Permission doesn't exist, ask for permission
-        await _requestBluetoothPermissionAndScan();
+        print('🎵 Dashboard: Bluetooth permission missing - will be handled by UI layer');
+        _bluetoothService.setStatusMessage('Click here to scan for devices');
       }
+      
+      notifyListeners();
     } catch (e) {
-      print('🎵 Dashboard: Error handling Bluetooth turned on: $e');
+      print('🎵 Dashboard: Error starting permission flow after Bluetooth enabled: $e');
     }
   }
 
