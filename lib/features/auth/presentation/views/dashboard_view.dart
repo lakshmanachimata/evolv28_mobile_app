@@ -46,13 +46,8 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
       await viewModel.initialize();
       print('🎵 Dashboard View: viewModel.initialize() completed');
 
-      // Check location permission
-      await LocationPermissionHelper.checkAndRequestLocationPermission(context);
-
-      // Check Bluetooth permission
-      await BluetoothPermissionHelper.checkAndRequestBluetoothPermission(
-        context,
-      );
+      // Start permission flow in sequence: Location -> Bluetooth -> Scan
+      await _startPermissionFlow(context);
     });
   }
 
@@ -60,6 +55,42 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
   void dispose() {
     _otpController.dispose();
     super.dispose();
+  }
+
+  /// Start permission flow in the exact sequence requested:
+  /// 1. Location permission app dialog
+  /// 2. Location permission system dialog
+  /// 3. Bluetooth permission app dialog
+  /// 4. Bluetooth permission system dialog
+  /// 5. If both allowed, scan for devices
+  Future<void> _startPermissionFlow(BuildContext context) async {
+    print('🎵 Dashboard View: Starting permission flow sequence...');
+    
+    // Step 1 & 2: Location permission (app dialog -> system dialog)
+    print('🎵 Dashboard View: Step 1-2: Requesting location permission...');
+    final locationGranted = await LocationPermissionHelper.checkAndRequestLocationPermission(context);
+    
+    if (!locationGranted) {
+      print('🎵 Dashboard View: Location permission denied, stopping flow');
+      return;
+    }
+    
+    print('🎵 Dashboard View: Location permission granted, proceeding to Bluetooth...');
+    
+    // Step 3 & 4: Bluetooth permission (app dialog -> system dialog)
+    print('🎵 Dashboard View: Step 3-4: Requesting Bluetooth permission...');
+    final bluetoothGranted = await BluetoothPermissionHelper.checkAndRequestBluetoothPermission(context);
+    
+    if (!bluetoothGranted) {
+      print('🎵 Dashboard View: Bluetooth permission denied, stopping flow');
+      return;
+    }
+    
+    print('🎵 Dashboard View: Both permissions granted, starting device scanning...');
+    
+    // Step 5: Both permissions granted, start scanning
+    final viewModel = Provider.of<DashboardViewModel>(context, listen: false);
+    await viewModel.startAutomaticDeviceScanning();
   }
 
   @override

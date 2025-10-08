@@ -215,6 +215,54 @@ class LocationPermissionHelper {
         return false;
       }
 
+      // Always show app dialog first, regardless of permission status
+      final userAccepted = await showLocationPermissionDialog(context);
+      if (!userAccepted) {
+        return false;
+      }
+
+      // Then check if permission is granted
+      final isPermissionGranted = await isLocationPermissionGranted();
+      if (!isPermissionGranted) {
+        // User accepted app dialog, now request the actual system permission
+        final granted = await requestLocationPermission();
+        if (!granted) {
+          // If permission was denied, open settings
+          await openLocationSettings();
+        }
+        return granted;
+      }
+
+      return true;
+    } catch (e) {
+      print('❌ LocationPermissionHelper: Error in checkAndRequestLocationPermission: $e');
+      // Show custom dialog on error
+      final userAccepted = await showLocationPermissionDialog(context);
+      if (userAccepted) {
+        await openLocationSettings();
+      }
+      return false;
+    }
+  }
+
+  /// Check location permission and show dialog if needed with callback
+  static Future<bool> checkAndRequestLocationPermissionWithCallback(
+    BuildContext context, {
+    VoidCallback? onPermissionGranted,
+  }) async {
+    try {
+      // First check if location services are enabled
+      final isServiceEnabled = await isLocationServiceEnabled();
+      if (!isServiceEnabled) {
+        // Show custom dialog first
+        final userAccepted = await showLocationPermissionDialog(context);
+        if (userAccepted) {
+          // User accepted, open settings to enable location services
+          await openLocationSettings();
+        }
+        return false;
+      }
+
       // Then check if permission is granted
       final isPermissionGranted = await isLocationPermissionGranted();
       if (!isPermissionGranted) {
@@ -226,15 +274,21 @@ class LocationPermissionHelper {
           if (!granted) {
             // If permission was denied, open settings
             await openLocationSettings();
+          } else {
+            // Permission granted, call the callback
+            onPermissionGranted?.call();
           }
           return granted;
         }
         return false;
+      } else {
+        // Permission already granted, call the callback
+        onPermissionGranted?.call();
       }
 
       return true;
     } catch (e) {
-      print('❌ LocationPermissionHelper: Error in checkAndRequestLocationPermission: $e');
+      print('❌ LocationPermissionHelper: Error in checkAndRequestLocationPermissionWithCallback: $e');
       // Show custom dialog on error
       final userAccepted = await showLocationPermissionDialog(context);
       if (userAccepted) {

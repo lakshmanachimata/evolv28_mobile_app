@@ -980,6 +980,20 @@ class DashboardViewModel extends ChangeNotifier {
     }
   }
 
+  /// Start automatic device scanning when both permissions are granted
+  Future<void> startAutomaticDeviceScanning() async {
+    print('🎵 Dashboard: Starting automatic device scanning after permissions granted...');
+    
+    // Mark permissions as granted
+    _isLocationPermissionGranted = true;
+    _isBluetoothScanPermissionGranted = true;
+    
+    // Start Bluetooth operations which includes scanning
+    await _startBluetoothOperations();
+    
+    notifyListeners();
+  }
+
   // Permission dialog handlers
   Future<void> handleBluetoothEnableOk() async {
     _showBluetoothEnableDialog = false;

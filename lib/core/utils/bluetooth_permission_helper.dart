@@ -229,6 +229,42 @@ class BluetoothPermissionHelper {
   /// Check Bluetooth permission and show dialog if needed
   static Future<bool> checkAndRequestBluetoothPermission(BuildContext context) async {
     try {
+      // Always show app dialog first, regardless of permission status
+      final userAccepted = await showBluetoothPermissionDialog(context);
+      if (!userAccepted) {
+        return false;
+      }
+
+      // Check if Bluetooth is enabled
+      final isEnabled = await isBluetoothEnabled();
+      if (!isEnabled) {
+        // User accepted app dialog, now request the actual system permission
+        final granted = await requestBluetoothPermission();
+        if (!granted) {
+          // If permission was denied, open settings
+          await openBluetoothSettings();
+        }
+        return granted;
+      }
+
+      return true;
+    } catch (e) {
+      print('❌ BluetoothPermissionHelper: Error in checkAndRequestBluetoothPermission: $e');
+      // Show custom dialog on error
+      final userAccepted = await showBluetoothPermissionDialog(context);
+      if (userAccepted) {
+        await openBluetoothSettings();
+      }
+      return false;
+    }
+  }
+
+  /// Check Bluetooth permission and show dialog if needed with callback
+  static Future<bool> checkAndRequestBluetoothPermissionWithCallback(
+    BuildContext context, {
+    VoidCallback? onPermissionGranted,
+  }) async {
+    try {
       // Check if Bluetooth is enabled
       final isEnabled = await isBluetoothEnabled();
       if (!isEnabled) {
@@ -240,15 +276,21 @@ class BluetoothPermissionHelper {
           if (!granted) {
             // If permission was denied, open settings
             await openBluetoothSettings();
+          } else {
+            // Permission granted, call the callback
+            onPermissionGranted?.call();
           }
           return granted;
         }
         return false;
+      } else {
+        // Permission already granted, call the callback
+        onPermissionGranted?.call();
       }
 
       return true;
     } catch (e) {
-      print('❌ BluetoothPermissionHelper: Error in checkAndRequestBluetoothPermission: $e');
+      print('❌ BluetoothPermissionHelper: Error in checkAndRequestBluetoothPermissionWithCallback: $e');
       // Show custom dialog on error
       final userAccepted = await showBluetoothPermissionDialog(context);
       if (userAccepted) {
