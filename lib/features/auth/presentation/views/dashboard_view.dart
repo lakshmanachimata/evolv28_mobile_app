@@ -62,6 +62,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
   /// 1. Check if Bluetooth is enabled first
   /// 2. If Bluetooth is disabled, show popup and wait for user acknowledgment
   /// 3. Only start permission flow after Bluetooth is enabled
+  /// 4. Skip permission flow if both permissions are already granted
   Future<void> _startPermissionFlow(BuildContext context) async {
     print('🎵 Dashboard View: Checking Bluetooth state before starting permission flow...');
     
@@ -80,7 +81,17 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
       return; // Don't start permission flow, wait for Bluetooth to be enabled
     }
     
-    print('🎵 Dashboard View: Bluetooth is enabled - starting permission flow sequence...');
+    // Check if both permissions are already granted
+    final hasLocationPermission = await LocationPermissionHelper.isLocationPermissionGranted();
+    final hasBluetoothPermission = await BluetoothPermissionHelper.isBluetoothEnabled();
+    
+    if (hasLocationPermission && hasBluetoothPermission) {
+      print('🎵 Dashboard View: Both permissions already granted, skipping permission flow and starting device scanning...');
+      await viewModel.startAutomaticDeviceScanning();
+      return;
+    }
+    
+    print('🎵 Dashboard View: Bluetooth is enabled but permissions missing - starting permission flow sequence...');
     await _executePermissionFlow(context);
   }
 

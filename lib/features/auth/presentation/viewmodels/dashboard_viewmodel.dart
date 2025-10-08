@@ -13,6 +13,8 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/routing/app_router_config.dart';
 import '../../../../core/services/bluetooth_service.dart';
 import '../../../../core/services/logging_service.dart';
+import '../../../../core/utils/location_permission_helper.dart';
+import '../../../../core/utils/bluetooth_permission_helper.dart';
 import '../../domain/usecases/verify_otp_usecase.dart';
 import '../../domain/usecases/get_all_music_usecase.dart';
 
@@ -523,6 +525,18 @@ class DashboardViewModel extends ChangeNotifier {
       // Check if permission flow is already in progress
       if (_permissionFlowInProgress) {
         print('🎵 Dashboard: Permission flow already in progress, skipping...');
+        return;
+      }
+      
+      // Check if both permissions are already granted
+      final hasLocationPermission = await LocationPermissionHelper.isLocationPermissionGranted();
+      final hasBluetoothPermission = await BluetoothPermissionHelper.isBluetoothEnabled();
+      
+      if (hasLocationPermission && hasBluetoothPermission) {
+        print('🎵 Dashboard: Both permissions already granted, skipping permission flow and starting device scanning...');
+        await _bluetoothService.startScanning();
+        _bluetoothService.setStatusMessage('Scanning for devices...');
+        notifyListeners();
         return;
       }
       
