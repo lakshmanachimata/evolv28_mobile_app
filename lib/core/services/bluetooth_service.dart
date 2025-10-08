@@ -966,6 +966,21 @@ class BluetoothService extends ChangeNotifier {
     _errorMessage = '';
   }
 
+  // Public methods for error handling
+  void setErrorMessage(String error) {
+    _setError(error);
+  }
+
+  void clearErrorMessage() {
+    _clearError();
+    notifyListeners();
+  }
+
+  void setStatusMessage(String message) {
+    _statusMessage = message;
+    notifyListeners();
+  }
+
   Future<void> disconnect() async {
     try {
       if (_connectedDevice != null && _connectedDevice!.isConnected) {

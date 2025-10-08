@@ -220,6 +220,10 @@ class _SplashScreenState extends State<SplashScreen>
             final data = musicData['data'];
             if (data is List && data.isNotEmpty) {
               print('🚀 SplashScreen: User has ${data.length} music items');
+              
+              // Save music data to SharedPreferences
+              _saveMusicDataToPrefs(data);
+              
               return true;
             } else {
               print('🚀 SplashScreen: User has no music items (empty data array)');
@@ -234,6 +238,18 @@ class _SplashScreenState extends State<SplashScreen>
     } catch (e) {
       print('🚀 SplashScreen: Error fetching all music: $e');
       return false;
+    }
+  }
+
+  // Save music data to SharedPreferences
+  Future<void> _saveMusicDataToPrefs(List<dynamic> musicData) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final musicDataString = jsonEncode(musicData);
+      await prefs.setString('user_music_data', musicDataString);
+      print('🚀 SplashScreen: Saved ${musicData.length} music items to SharedPreferences');
+    } catch (e) {
+      print('🚀 SplashScreen: Error saving music data to SharedPreferences: $e');
     }
   }
 

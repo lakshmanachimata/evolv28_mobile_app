@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart' as ble;
@@ -13,6 +14,7 @@ import '../../../../core/routing/app_router_config.dart';
 import '../../../../core/services/bluetooth_service.dart';
 import '../../../../core/services/logging_service.dart';
 import '../../domain/usecases/verify_otp_usecase.dart';
+import '../../domain/usecases/get_all_music_usecase.dart';
 
 class DashboardViewModel extends ChangeNotifier {
   // Static variables to track minimized state
@@ -23,6 +25,7 @@ class DashboardViewModel extends ChangeNotifier {
   final BluetoothService _bluetoothService = BluetoothService();
   final LoggingService _loggingService = sl<LoggingService>();
   final VerifyOtpUseCase _verifyOtpUseCase = sl<VerifyOtpUseCase>();
+  final GetAllMusicUseCase _getAllMusicUseCase = sl<GetAllMusicUseCase>();
 
   // State variables
   bool _isLoading = false;
@@ -36,6 +39,14 @@ class DashboardViewModel extends ChangeNotifier {
   bool _showPlayerCard = false; // Track if player card should be shown
   String? _currentPlayingProgramId; // Track which program is playing
   late VoidCallback _bluetoothListener;
+
+  // Music data
+  List<dynamic> _musicData = []; // User's music data from server
+  bool _isLoadingMusic = false; // Track if music data is being loaded
+
+  // Bluetooth state monitoring
+  bool _isBluetoothStateMonitoring = false;
+  StreamSubscription<ble.BluetoothAdapterState>? _bluetoothStateSubscription;
 
   // Permission state variables
   bool _isBluetoothEnabled = false;
@@ -96,6 +107,10 @@ class DashboardViewModel extends ChangeNotifier {
   List<String> get bluetoothProgramIds => _bluetoothService.programIds;
   List<String> get bluetoothAvailablePrograms =>
       _bluetoothService.availablePrograms;
+
+  // Music data getters
+  List<dynamic> get musicData => _musicData;
+  bool get isLoadingMusic => _isLoadingMusic;
 
   // Permission getters
   bool get isBluetoothEnabled => _isBluetoothEnabled;
@@ -163,6 +178,9 @@ class DashboardViewModel extends ChangeNotifier {
     // Load user data from SharedPreferences
     await _loadUserData();
 
+    // Load music data from SharedPreferences and fetch if needed
+    await _loadMusicData();
+
     // Initialize Bluetooth service
     print('🎵 Dashboard: Initializing Bluetooth service...');
     await _bluetoothService.initialize();
@@ -198,6 +216,9 @@ class DashboardViewModel extends ChangeNotifier {
       notifyListeners();
     };
     _bluetoothService.addListener(_bluetoothListener);
+
+    // Start Bluetooth state monitoring
+    _startBluetoothStateMonitoring();
 
     // Check permissions before starting Bluetooth operations
     print('🎵 Dashboard: Checking permissions before Bluetooth operations...');
@@ -319,6 +340,210 @@ class DashboardViewModel extends ChangeNotifier {
     } catch (e) {
       print('🎵 Dashboard: Error loading user devices: $e');
       _userDevices = [];
+    }
+  }
+
+  // Load music data from SharedPreferences and fetch if needed
+  Future<void> _loadMusicData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Try to load music data from SharedPreferences first
+      final musicDataString = prefs.getString('user_music_data');
+      if (musicDataString != null && musicDataString.isNotEmpty) {
+        final musicData = jsonDecode(musicDataString);
+        if (musicData is List && musicData.isNotEmpty) {
+          _musicData = musicData;
+          print('🎵 Dashboard: Loaded ${musicData.length} music items from SharedPreferences');
+          return;
+        }
+      }
+
+      // If no music data in SharedPreferences, fetch from API
+      print('🎵 Dashboard: No music data in SharedPreferences, fetching from API...');
+      await _fetchMusicData();
+    } catch (e) {
+      print('🎵 Dashboard: Error loading music data: $e');
+      _musicData = [];
+    }
+  }
+
+  // Fetch music data from API
+  Future<void> _fetchMusicData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userIdString = prefs.getString('user_id');
+      
+      if (userIdString == null || userIdString.isEmpty) {
+        print('🎵 Dashboard: No user ID found for fetching music data');
+        return;
+      }
+
+      final userId = int.tryParse(userIdString);
+      if (userId == null) {
+        print('🎵 Dashboard: Invalid user ID format for fetching music data: $userIdString');
+        return;
+      }
+
+      _isLoadingMusic = true;
+      notifyListeners();
+
+      print('🎵 Dashboard: Fetching music data for userId: $userId');
+      
+      final result = await _getAllMusicUseCase(userId);
+      
+      result.fold(
+        (error) {
+          print('🎵 Dashboard: Failed to fetch music data: $error');
+          _musicData = [];
+        },
+        (musicData) {
+          print('🎵 Dashboard: Successfully fetched music data');
+          
+          // Check if the data array is non-empty
+          if (musicData is Map<String, dynamic> && musicData.containsKey('data')) {
+            final data = musicData['data'];
+            if (data is List && data.isNotEmpty) {
+              _musicData = data;
+              print('🎵 Dashboard: User has ${data.length} music items');
+              
+              // Save to SharedPreferences
+              _saveMusicDataToPrefs(data);
+            } else {
+              print('🎵 Dashboard: User has no music items (empty data array)');
+              _musicData = [];
+            }
+          } else {
+            print('🎵 Dashboard: Invalid music data format');
+            _musicData = [];
+          }
+        },
+      );
+    } catch (e) {
+      print('🎵 Dashboard: Error fetching music data: $e');
+      _musicData = [];
+    } finally {
+      _isLoadingMusic = false;
+      notifyListeners();
+    }
+  }
+
+  // Save music data to SharedPreferences
+  Future<void> _saveMusicDataToPrefs(List<dynamic> musicData) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final musicDataString = jsonEncode(musicData);
+      await prefs.setString('user_music_data', musicDataString);
+      print('🎵 Dashboard: Saved ${musicData.length} music items to SharedPreferences');
+    } catch (e) {
+      print('🎵 Dashboard: Error saving music data to SharedPreferences: $e');
+    }
+  }
+
+  // Start Bluetooth state monitoring
+  Future<void> _startBluetoothStateMonitoring() async {
+    if (_isBluetoothStateMonitoring) return;
+    
+    _isBluetoothStateMonitoring = true;
+    print('🎵 Dashboard: Starting Bluetooth state monitoring...');
+    
+    try {
+      _bluetoothStateSubscription = ble.FlutterBluePlus.adapterState.listen((state) {
+        print('🎵 Dashboard: Bluetooth state changed to: $state');
+        _handleBluetoothStateChange(state);
+      });
+    } catch (e) {
+      print('🎵 Dashboard: Error starting Bluetooth state monitoring: $e');
+      _isBluetoothStateMonitoring = false;
+    }
+  }
+
+  // Handle Bluetooth state changes
+  void _handleBluetoothStateChange(ble.BluetoothAdapterState state) {
+    switch (state) {
+      case ble.BluetoothAdapterState.off:
+        print('🎵 Dashboard: Bluetooth turned OFF - showing error');
+        _handleBluetoothTurnedOff();
+        break;
+      case ble.BluetoothAdapterState.on:
+        print('🎵 Dashboard: Bluetooth turned ON - checking permissions');
+        _handleBluetoothTurnedOn();
+        break;
+      case ble.BluetoothAdapterState.turningOn:
+        print('🎵 Dashboard: Bluetooth turning ON...');
+        break;
+      case ble.BluetoothAdapterState.turningOff:
+        print('🎵 Dashboard: Bluetooth turning OFF...');
+        break;
+      case ble.BluetoothAdapterState.unknown:
+        print('🎵 Dashboard: Bluetooth state unknown');
+        break;
+      case ble.BluetoothAdapterState.unavailable:
+        print('🎵 Dashboard: Bluetooth unavailable');
+        break;
+      case ble.BluetoothAdapterState.unauthorized:
+        print('🎵 Dashboard: Bluetooth unauthorized');
+        _handleBluetoothTurnedOff(); // Treat as turned off
+        break;
+    }
+  }
+
+  // Handle Bluetooth turned off
+  void _handleBluetoothTurnedOff() {
+    // Set error message to show on the first card
+    _bluetoothService.setErrorMessage('Bluetooth is turned off. Please enable Bluetooth to connect to your device.');
+    notifyListeners();
+  }
+
+  // Handle Bluetooth turned on
+  Future<void> _handleBluetoothTurnedOn() async {
+    try {
+      // Clear any existing error messages
+      _bluetoothService.clearErrorMessage();
+      
+      // Check if Bluetooth permission exists
+      final hasPermission = await _checkBluetoothPermission();
+      
+      if (hasPermission) {
+        print('🎵 Dashboard: Bluetooth permission exists - clearing error and showing scan option');
+        // Permission exists, just clear error and show "click here to scan"
+        _bluetoothService.setStatusMessage('Click here to scan for devices');
+        notifyListeners();
+      } else {
+        print('🎵 Dashboard: Bluetooth permission missing - requesting permission');
+        // Permission doesn't exist, ask for permission
+        await _requestBluetoothPermissionAndScan();
+      }
+    } catch (e) {
+      print('🎵 Dashboard: Error handling Bluetooth turned on: $e');
+    }
+  }
+
+  // Check if Bluetooth permission exists
+  Future<bool> _checkBluetoothPermission() async {
+    try {
+      // Check if Bluetooth is enabled (this includes permission check)
+      final state = await ble.FlutterBluePlus.adapterState.first;
+      return state == ble.BluetoothAdapterState.on;
+    } catch (e) {
+      print('🎵 Dashboard: Error checking Bluetooth permission: $e');
+      return false;
+    }
+  }
+
+  // Request Bluetooth permission and start scanning
+  Future<void> _requestBluetoothPermissionAndScan() async {
+    try {
+      // For now, just start scanning since we can't access context here
+      // The permission should be handled by the UI layer
+      print('🎵 Dashboard: Starting scan after Bluetooth turned on');
+      await _bluetoothService.startScanning();
+      _bluetoothService.setStatusMessage('Scanning for devices...');
+      notifyListeners();
+    } catch (e) {
+      print('🎵 Dashboard: Error starting scan after Bluetooth turned on: $e');
+      _bluetoothService.setErrorMessage('Error starting scan. Please try again.');
+      notifyListeners();
     }
   }
 
@@ -1466,6 +1691,7 @@ class DashboardViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _bluetoothService.removeListener(_bluetoothListener);
+    _bluetoothStateSubscription?.cancel();
     super.dispose();
   }
 }
