@@ -229,25 +229,26 @@ class BluetoothPermissionHelper {
   /// Check Bluetooth permission and show dialog if needed
   static Future<bool> checkAndRequestBluetoothPermission(BuildContext context) async {
     try {
-      // Always show app dialog first, regardless of permission status
+      // Check if Bluetooth permission is already granted
+      final isEnabled = await isBluetoothEnabled();
+      if (isEnabled) {
+        print('🔵 BluetoothPermissionHelper: Bluetooth permission already granted, skipping dialogs');
+        return true;
+      }
+
+      // Permission not granted, show app dialog first
       final userAccepted = await showBluetoothPermissionDialog(context);
       if (!userAccepted) {
         return false;
       }
 
-      // Check if Bluetooth is enabled
-      final isEnabled = await isBluetoothEnabled();
-      if (!isEnabled) {
-        // User accepted app dialog, now request the actual system permission
-        final granted = await requestBluetoothPermission();
-        if (!granted) {
-          // If permission was denied, open settings
-          await openBluetoothSettings();
-        }
-        return granted;
+      // User accepted app dialog, now request the actual system permission
+      final granted = await requestBluetoothPermission();
+      if (!granted) {
+        // If permission was denied, open settings
+        await openBluetoothSettings();
       }
-
-      return true;
+      return granted;
     } catch (e) {
       print('❌ BluetoothPermissionHelper: Error in checkAndRequestBluetoothPermission: $e');
       // Show custom dialog on error
@@ -265,30 +266,31 @@ class BluetoothPermissionHelper {
     VoidCallback? onPermissionGranted,
   }) async {
     try {
-      // Check if Bluetooth is enabled
+      // Check if Bluetooth permission is already granted
       final isEnabled = await isBluetoothEnabled();
-      if (!isEnabled) {
-        // Show custom dialog first
-        final userAccepted = await showBluetoothPermissionDialog(context);
-        if (userAccepted) {
-          // User accepted, now request the actual system permission
-          final granted = await requestBluetoothPermission();
-          if (!granted) {
-            // If permission was denied, open settings
-            await openBluetoothSettings();
-          } else {
-            // Permission granted, call the callback
-            onPermissionGranted?.call();
-          }
-          return granted;
-        }
-        return false;
-      } else {
+      if (isEnabled) {
+        print('🔵 BluetoothPermissionHelper: Bluetooth permission already granted, skipping dialogs');
         // Permission already granted, call the callback
         onPermissionGranted?.call();
+        return true;
       }
 
-      return true;
+      // Permission not granted, show app dialog first
+      final userAccepted = await showBluetoothPermissionDialog(context);
+      if (!userAccepted) {
+        return false;
+      }
+
+      // User accepted app dialog, now request the actual system permission
+      final granted = await requestBluetoothPermission();
+      if (!granted) {
+        // If permission was denied, open settings
+        await openBluetoothSettings();
+      } else {
+        // Permission granted, call the callback
+        onPermissionGranted?.call();
+      }
+      return granted;
     } catch (e) {
       print('❌ BluetoothPermissionHelper: Error in checkAndRequestBluetoothPermissionWithCallback: $e');
       // Show custom dialog on error

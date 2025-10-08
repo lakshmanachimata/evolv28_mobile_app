@@ -54,7 +54,7 @@ class BluetoothService extends ChangeNotifier {
 
   // User devices for validation
   List<dynamic> _userDevices = [];
-  
+
   // Callback for unknown devices
   Function(List<Map<String, dynamic>>)? _onUnknownDevicesFound;
 
@@ -95,7 +95,7 @@ class BluetoothService extends ChangeNotifier {
     // Convert to percentage (0-100)
     if (rssi >= -30) return 100;
     if (rssi <= -100) return 0;
-    
+
     // Linear interpolation between -100 and -30
     return ((rssi + 100) * 100 / 70).round().clamp(0, 100);
   }
@@ -175,7 +175,9 @@ class BluetoothService extends ChangeNotifier {
   }
 
   /// Set callback for when unknown devices are found
-  void setOnUnknownDevicesFoundCallback(Function(List<Map<String, dynamic>>) callback) {
+  void setOnUnknownDevicesFoundCallback(
+    Function(List<Map<String, dynamic>>) callback,
+  ) {
     _onUnknownDevicesFound = callback;
   }
 
@@ -292,37 +294,40 @@ class BluetoothService extends ChangeNotifier {
       );
     } else {
       print('✅ Found ${_scannedDevices.length} Evolv28 devices');
-      
+
       // Find devices that match user's registered devices
       final matchingDevices = _findMatchingUserDevices(_scannedDevices);
-      
+
       if (matchingDevices.isNotEmpty) {
         // Auto-connect to the first matching device
         final deviceToConnect = matchingDevices.first;
-        print('🔗 Auto-connecting to registered device: ${deviceToConnect.platformName}');
-        
+        print(
+          '🔗 Auto-connecting to registered device: ${deviceToConnect.platformName}',
+        );
+
         _connectionState = BluetoothConnectionState.connecting;
         _statusMessage = 'Connecting to ${deviceToConnect.platformName}...';
         _clearError();
         notifyListeners();
-        
+
         // Connect to the device
         _connectToDevice(deviceToConnect);
-        
+
         // Log auto-connection
         _loggingService.sendLogs(
           event: 'BLE Device Connect',
           status: 'success',
-          notes: 'auto-connected to registered device: ${deviceToConnect.platformName}',
+          notes:
+              'auto-connected to registered device: ${deviceToConnect.platformName}',
         );
       } else {
         // No matching devices found - show unknown devices
         final unknownDevices = <Map<String, dynamic>>[];
-        
+
         for (final device in _scannedDevices) {
           final rssi = getDeviceRssi(device);
           final signalStrength = _calculateSignalStrength(rssi);
-          
+
           unknownDevices.add({
             'device': device,
             'name': device.platformName,
@@ -331,18 +336,18 @@ class BluetoothService extends ChangeNotifier {
             'signalStrength': signalStrength,
           });
         }
-        
+
         print('🔍 Found ${unknownDevices.length} unknown devices');
-        
+
         // Call the callback to show unknown device bottom sheet
         if (_onUnknownDevicesFound != null) {
           _onUnknownDevicesFound!(unknownDevices);
         }
-        
+
         _connectionState = BluetoothConnectionState.disconnected;
         _statusMessage = '${_scannedDevices.length} unknown device(s) found';
         _clearError();
-        
+
         // Log unknown device discovery
         _loggingService.sendLogs(
           event: 'BLE Device Connect',
@@ -371,6 +376,11 @@ class BluetoothService extends ChangeNotifier {
 
     for (final scannedDevice in scannedDevices) {
       final deviceName = scannedDevice.platformName.toLowerCase();
+      print('🔵 BluetoothService: Checking scanned device: $deviceName');
+
+      // Extract last 6 alphanumeric characters from scanned device name
+      final scannedDeviceSuffix = _extractLast6Alphanumeric(deviceName);
+      print('🔵 BluetoothService: Scanned device suffix: $scannedDeviceSuffix');
 
       // Check if this scanned device matches any of user's registered devices
       for (final userDevice in _userDevices) {
@@ -378,12 +388,33 @@ class BluetoothService extends ChangeNotifier {
           // Check various possible device identifiers
           final deviceId = userDevice['id']?.toString().toLowerCase() ?? '';
           final deviceNameFromUser =
-              userDevice['name']?.toString().toLowerCase() ?? '';
+              userDevice['devicename']?.toString().toLowerCase() ?? '';
           final deviceMac = userDevice['mac']?.toString().toLowerCase() ?? '';
           final deviceSerial =
               userDevice['serial']?.toString().toLowerCase() ?? '';
 
-          // Match by device name (most common case)
+          print(
+            '🔵 BluetoothService: Checking user device: $deviceNameFromUser',
+          );
+
+          // Extract last 6 alphanumeric characters from user device name
+          final userDeviceSuffix = _extractLast6Alphanumeric(
+            deviceNameFromUser,
+          );
+          print('🔵 BluetoothService: User device suffix: $userDeviceSuffix');
+
+          // Match by last 6 alphanumeric characters
+          if (scannedDeviceSuffix.isNotEmpty &&
+              userDeviceSuffix.isNotEmpty &&
+              scannedDeviceSuffix == userDeviceSuffix) {
+            matchingDevices.add(scannedDevice);
+            print(
+              '🔵 BluetoothService: Found matching authorized device by suffix match: ${scannedDevice.platformName} (suffix: $scannedDeviceSuffix)',
+            );
+            break; // Don't add the same device multiple times
+          }
+
+          // Fallback: Match by device name (most common case) - keep existing logic as backup
           if (deviceName.contains('evolv28') &&
               (deviceNameFromUser.contains('evolv28') ||
                   deviceId.contains('evolv28') ||
@@ -391,17 +422,31 @@ class BluetoothService extends ChangeNotifier {
                   deviceSerial.isNotEmpty)) {
             matchingDevices.add(scannedDevice);
             print(
-              '🔵 BluetoothService: Found matching authorized device: ${scannedDevice.platformName}',
+              '🔵 BluetoothService: Found matching authorized device by name match: ${scannedDevice.platformName}',
             );
             break; // Don't add the same device multiple times
           }
         } else if (userDevice is String) {
           // If user device is just a string, check if it contains evolv28
-          if (userDevice.toLowerCase().contains('evolv28') &&
+          final userDeviceString = userDevice.toLowerCase();
+          final userDeviceSuffix = _extractLast6Alphanumeric(userDeviceString);
+
+          if (scannedDeviceSuffix.isNotEmpty &&
+              userDeviceSuffix.isNotEmpty &&
+              scannedDeviceSuffix == userDeviceSuffix) {
+            matchingDevices.add(scannedDevice);
+            print(
+              '🔵 BluetoothService: Found matching authorized device by string suffix match: ${scannedDevice.platformName} (suffix: $scannedDeviceSuffix)',
+            );
+            break;
+          }
+
+          // Fallback: original string matching logic
+          if (userDeviceString.contains('evolv28') &&
               deviceName.contains('evolv28')) {
             matchingDevices.add(scannedDevice);
             print(
-              '🔵 BluetoothService: Found matching authorized device by string: ${scannedDevice.platformName}',
+              '🔵 BluetoothService: Found matching authorized device by string name match: ${scannedDevice.platformName}',
             );
             break;
           }
@@ -410,6 +455,22 @@ class BluetoothService extends ChangeNotifier {
     }
 
     return matchingDevices;
+  }
+
+  /// Extract last 6 alphanumeric characters from device name
+  String _extractLast6Alphanumeric(String deviceName) {
+    if (deviceName.isEmpty) return '';
+
+    // Remove all non-alphanumeric characters and get last 6 characters
+    final alphanumericOnly = deviceName.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+
+    if (alphanumericOnly.length >= 6) {
+      return alphanumericOnly
+          .substring(alphanumericOnly.length - 6)
+          .toLowerCase();
+    } else {
+      return alphanumericOnly.toLowerCase();
+    }
   }
 
   Future<void> connectToDevice(ble.BluetoothDevice device) async {
