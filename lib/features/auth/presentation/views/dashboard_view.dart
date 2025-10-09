@@ -1749,34 +1749,6 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const SizedBox(height: 10),
-
-                // Close button
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        viewModel.closeUnknownDeviceDialog();
-                      },
-                      child: Container(
-                        margin: const EdgeInsets.only(right: 24),
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.red[50],
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Icon(
-                          Icons.close,
-                          color: Colors.red[600],
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
                 // Main content
                 Expanded(
                   child: Padding(
@@ -1808,8 +1780,38 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
     StateSetter setModalState,
   ) {
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
       children: [
+        const SizedBox(height: 10),
+        // Close button
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            GestureDetector(
+              onTap: () {
+                Navigator.of(context).pop();
+                viewModel.closeUnknownDeviceDialog();
+              },
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red[50],
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Icon(
+                  Icons.close,
+                  color: Colors.red[600],
+                  size: 20,
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        // Main content
+        Expanded(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
         // "Can't find your Device" message with info icon - clickable
         GestureDetector(
           onTap: () {
@@ -1879,6 +1881,9 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
         ),
 
         const SizedBox(height: 24),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -1938,34 +1943,11 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
 
           // Action buttons
           Row(
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              // Try Again button (white background)
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    // Trigger device scan again
-                    viewModel.connectBluetoothDevice();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.grey[700],
-                    side: BorderSide(color: Colors.grey[300]!),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'Try again',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ),
-
-              const SizedBox(width: 16),
-
               // Back button (orange-red background)
-              Expanded(
+              SizedBox(
+                width: 100,
                 child: ElevatedButton(
                   onPressed: () {
                     viewModel.closeTroubleshootingScreen();
