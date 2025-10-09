@@ -231,10 +231,13 @@ class DashboardViewModel extends ChangeNotifier {
     // Set callback for unknown devices found during scanning
     _bluetoothService.setOnUnknownDevicesFoundCallback((unknownDevices) {
       print('🎵 Dashboard: Unknown devices found: ${unknownDevices.length}');
-      _unknownDevices = unknownDevices;
-      _showUnknownDeviceDialog = true;
-      _unknownDeviceBottomSheetShown = false; // Reset flag for new dialog
-      notifyListeners();
+      // Prevent multiple rapid calls
+      if (!_showUnknownDeviceDialog) {
+        _unknownDevices = unknownDevices;
+        _showUnknownDeviceDialog = true;
+        _unknownDeviceBottomSheetShown = false; // Reset flag for new dialog
+        notifyListeners();
+      }
     });
 
     // Set callback for when no devices are found during scanning
@@ -1701,6 +1704,7 @@ class DashboardViewModel extends ChangeNotifier {
     _showUnknownDeviceDialog = false;
     _unknownDevices.clear();
     _selectedUnknownDevice = null;
+    _unknownDeviceBottomSheetShown = false; // Reset bottom sheet flag
     // Reset connection states
     _selectedDeviceIds.clear();
     _isConnecting = false;
@@ -2005,11 +2009,14 @@ class DashboardViewModel extends ChangeNotifier {
               print(
                 '🎵 Dashboard: Unknown devices found: ${unknownDevices.length}',
               );
-              _unknownDevices = unknownDevices;
-              _showUnknownDeviceDialog = true;
-              _unknownDeviceBottomSheetShown =
-                  false; // Reset flag for new dialog
-              notifyListeners();
+              // Prevent multiple rapid calls
+              if (!_showUnknownDeviceDialog) {
+                _unknownDevices = unknownDevices;
+                _showUnknownDeviceDialog = true;
+                _unknownDeviceBottomSheetShown =
+                    false; // Reset flag for new dialog
+                notifyListeners();
+              }
             });
 
             print(
