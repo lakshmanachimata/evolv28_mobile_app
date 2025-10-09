@@ -1858,7 +1858,10 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
           width: 120,
           child: ElevatedButton(
             onPressed: () {
-              // Trigger device scan again
+              // Close the bottom sheet first
+              Navigator.of(context).pop();
+              viewModel.closeUnknownDeviceDialog();
+              // Then trigger device scan again
               viewModel.connectBluetoothDevice();
             },
             style: ElevatedButton.styleFrom(
