@@ -158,7 +158,7 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
             ),
           ),
           child: TextFormField(
-            initialValue: 'lakshmana.chimata@gmail.com',
+            initialValue: '',
             onChanged: viewModel.setEmail,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,

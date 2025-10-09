@@ -35,7 +35,7 @@ class LoginViewModel extends ChangeNotifier {
   });
 
   // Form fields
-  String _email = 'lakshmana.chimata@gmail.com';
+  String _email = '';
   String _password = '';
   bool _rememberMe = false;
   bool _transactionalAlerts = true;
