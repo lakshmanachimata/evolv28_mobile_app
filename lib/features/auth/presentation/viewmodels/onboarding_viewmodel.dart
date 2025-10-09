@@ -203,27 +203,11 @@ class OnboardingViewModel extends ChangeNotifier {
   // Get navigation route after saving profile
   Future<String> getNavigationRouteAfterProfileSave() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final devicesCount = prefs.getInt('user_devices_count') ?? 0;
-
-      print(
-        '🔐 OnboardingViewModel: Checking devices count after profile save: $devicesCount',
-      );
-
-      if (devicesCount > 0) {
-        print(
-          '🔐 OnboardingViewModel: User has devices - navigating to dashboard',
-        );
-        return 'dashboard';
-      } else {
-        print(
-          '🔐 OnboardingViewModel: User has no devices - navigating to onboard device',
-        );
-        return 'onboardDevice';
-      }
+      print('🔐 OnboardingViewModel: Profile created successfully - navigating to dashboard');
+      return 'dashboard';
     } catch (e) {
-      print('🔐 OnboardingViewModel: Error checking devices count: $e');
-      return 'onboardDevice'; // Default to onboard device if there's an error
+      print('🔐 OnboardingViewModel: Error determining navigation route: $e');
+      return 'dashboard'; // Always go to dashboard after profile creation
     }
   }
 

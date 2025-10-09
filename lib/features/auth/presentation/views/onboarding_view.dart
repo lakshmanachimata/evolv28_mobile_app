@@ -253,16 +253,8 @@ class _OnboardingViewBody extends StatelessWidget {
               // Save user profile data before navigating
               final success = await viewModel.saveUserProfile();
               if (success) {
-                // Determine navigation route based on devices
-                final navigationRoute = await viewModel.getNavigationRouteAfterProfileSave();
-                
-                if (navigationRoute == 'dashboard') {
-                  print('🔐 OnboardingView: Navigating to dashboard');
-                  context.go(AppRoutes.dashboard);
-                } else {
-                  print('🔐 OnboardingView: Navigating to onboard device');
-                  context.go(AppRoutes.onboardDevice);
-                }
+                print('🔐 OnboardingView: Profile created successfully - navigating to dashboard');
+                context.go(AppRoutes.dashboard);
               } else {
                 // Show error message
                 ScaffoldMessenger.of(context).showSnackBar(
