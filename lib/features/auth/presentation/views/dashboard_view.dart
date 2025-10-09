@@ -1727,127 +1727,273 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
     BuildContext context,
     DashboardViewModel viewModel,
   ) {
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.4,
-        minHeight: 300.0,
-      ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-      ),
-      child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 10),
-
-            // Close button
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+    return StatefulBuilder(
+      builder: (context, setModalState) {
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: viewModel.showTroubleshootingScreen
+                ? MediaQuery.of(context).size.height * 0.8
+                : MediaQuery.of(context).size.height * 0.4,
+            minHeight: viewModel.showTroubleshootingScreen
+                ? MediaQuery.of(context).size.height * 0.6
+                : MediaQuery.of(context).size.height * 0.3,
+          ),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                GestureDetector(
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    viewModel.closeUnknownDeviceDialog();
-                  },
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 24),
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.red[50],
-                      borderRadius: BorderRadius.circular(20),
+                const SizedBox(height: 10),
+
+                // Close button
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        viewModel.closeUnknownDeviceDialog();
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 24),
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.red[50],
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Icon(
+                          Icons.close,
+                          color: Colors.red[600],
+                          size: 20,
+                        ),
+                      ),
                     ),
-                    child: Icon(Icons.close, color: Colors.red[600], size: 20),
+                  ],
+                ),
+
+                // Main content
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: viewModel.showTroubleshootingScreen
+                        ? _buildTroubleshootingContent(
+                            context,
+                            viewModel,
+                            setModalState,
+                          )
+                        : _buildNoDeviceFoundContent(
+                            context,
+                            viewModel,
+                            setModalState,
+                          ),
                   ),
                 ),
               ],
             ),
+          ),
+        );
+      },
+    );
+  }
 
-            // Main content
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // "Can't find your Device" message with info icon
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[200],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text(
-                            "Can't find your Device",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: const Icon(
-                              Icons.info_outline,
-                              color: Colors.grey,
-                              fontWeight: FontWeight.w900,
-                              size: 20,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Try Again button
-                    SizedBox(
-                      width: 120,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          // Trigger device scan again
-                          viewModel.connectBluetoothDevice();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(
-                            0xFFF17961,
-                          ), // Orange-red
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          'Try Again',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-                  ],
+  Widget _buildNoDeviceFoundContent(
+    BuildContext context,
+    DashboardViewModel viewModel,
+    StateSetter setModalState,
+  ) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // "Can't find your Device" message with info icon - clickable
+        GestureDetector(
+          onTap: () {
+            viewModel.openTroubleshootingScreen();
+            setModalState(() {});
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.grey[200],
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  "Can't find your Device",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black,
+                  ),
                 ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: const Icon(
+                    Icons.info_outline,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w900,
+                    size: 20,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Try Again button
+        SizedBox(
+          width: 120,
+          child: ElevatedButton(
+            onPressed: () {
+              // Trigger device scan again
+              viewModel.connectBluetoothDevice();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF17961), // Orange-red
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
-          ],
+            child: const Text(
+              'Try Again',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ),
         ),
+
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _buildTroubleshootingContent(
+    BuildContext context,
+    DashboardViewModel viewModel,
+    StateSetter setModalState,
+  ) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 20),
+
+          // Title
+          const Text(
+            "Can't find your device?",
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+            textAlign: TextAlign.center,
+          ),
+
+          const SizedBox(height: 32),
+
+          // Troubleshooting instructions
+          const Text(
+            "Make sure the Bluetooth is turned on your mobile phone.",
+            style: TextStyle(fontSize: 16, color: Colors.black),
+          ),
+
+          const SizedBox(height: 16),
+
+          const Text(
+            "Make sure the Bluetooth is turned on the evolv28 device.",
+            style: TextStyle(fontSize: 16, color: Colors.black),
+          ),
+
+          const SizedBox(height: 16),
+
+          const Text(
+            "Make sure your mobile phone and the evolv28 device are in each other's range.",
+            style: TextStyle(fontSize: 16, color: Colors.black),
+          ),
+
+          const SizedBox(height: 16),
+
+          const Text(
+            "Click on the learn more button to see how to turn on the Bluetooth of the evolv28-device.",
+            style: TextStyle(fontSize: 16, color: Colors.black),
+          ),
+
+          const SizedBox(height: 40),
+
+          // Action buttons
+          Row(
+            children: [
+              // Try Again button (white background)
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    // Trigger device scan again
+                    viewModel.connectBluetoothDevice();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.grey[700],
+                    side: BorderSide(color: Colors.grey[300]!),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Try again',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 16),
+
+              // Back button (orange-red background)
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    viewModel.closeTroubleshootingScreen();
+                    setModalState(() {});
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFF17961), // Orange-red
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Back',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+        ],
       ),
     );
   }

@@ -90,6 +90,7 @@ class DashboardViewModel extends ChangeNotifier {
   Set<String> _selectedDeviceIds = {}; // Track multiple selected devices
   bool _isConnecting = false; // Track connection state
   bool _connectionSuccessful = false; // Track successful connection
+  bool _showTroubleshootingScreen = false; // Track troubleshooting screen state
 
   // Getters
   bool get isLoading => _isLoading;
@@ -162,6 +163,7 @@ class DashboardViewModel extends ChangeNotifier {
   bool get isConnecting => _isConnecting;
   bool get connectionSuccessful => _connectionSuccessful;
   bool get hasSelectedDevices => _selectedDeviceIds.isNotEmpty;
+  bool get showTroubleshootingScreen => _showTroubleshootingScreen;
 
   bool get unknownDeviceBottomSheetShown => _unknownDeviceBottomSheetShown;
 
@@ -1689,6 +1691,7 @@ class DashboardViewModel extends ChangeNotifier {
     _selectedDeviceIds.clear();
     _isConnecting = false;
     _connectionSuccessful = false;
+    _showTroubleshootingScreen = false; // Reset troubleshooting screen state
     print('🎵 Dashboard: Unknown device dialog closed');
     notifyListeners();
   }
@@ -1767,6 +1770,17 @@ class DashboardViewModel extends ChangeNotifier {
       print('🎵 Dashboard: Error connecting to devices: $e');
       notifyListeners();
     }
+  }
+
+  // Troubleshooting screen methods
+  void openTroubleshootingScreen() {
+    _showTroubleshootingScreen = true;
+    notifyListeners();
+  }
+
+  void closeTroubleshootingScreen() {
+    _showTroubleshootingScreen = false;
+    notifyListeners();
   }
 
   void closeOtpConfirmationDialog() {
