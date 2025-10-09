@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/routing/app_router_config.dart';
@@ -250,6 +251,17 @@ class LoginViewModel extends ChangeNotifier {
       return null;
     } finally {
       _setLoading(false);
+    }
+  }
+
+  // Save email for new user when TermsRequiredResponse is received
+  Future<void> saveEmailForNewUser() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_email_id', _email);
+      print('🔐 LoginViewModel: Saved email for new user: $_email');
+    } catch (e) {
+      print('🔐 LoginViewModel: Error saving email for new user: $e');
     }
   }
 

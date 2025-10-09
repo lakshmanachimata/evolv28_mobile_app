@@ -12,7 +12,14 @@ class OnboardingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => OnboardingViewModel(),
+      create: (context) {
+        final viewModel = OnboardingViewModel();
+        // Refresh email data when view is created
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          viewModel.refreshEmailData();
+        });
+        return viewModel;
+      },
       child: const _OnboardingViewBody(),
     );
   }
@@ -39,59 +46,33 @@ class _OnboardingViewBody extends StatelessWidget {
               height: double.infinity,
             ),
 
-            // Header Section with evolv28 logo (outside overlay)
-            SafeArea(
-              child: Column(children: [_buildHeader(context), const Spacer()]),
-            ),
-
-            // Main overlay with rounded top corners
+            // Header Section with evolv28 logo
             Positioned(
-              bottom: 0,
+              top: 30,
               left: 0,
               right: 0,
+              child: SafeArea(
+                child: _buildHeader(context),
+              ),
+            ),
+
+            // Main form content - starts at 35% from top
+            Positioned(
+              top: MediaQuery.of(context).size.height * 0.2,
+              left: 24,
+              right: 24,
               child: Container(
-                height:
-                    MediaQuery.of(context).size.height *
-                    0.75, // 75% of screen height
                 decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage('assets/images/modal-background.png'),
-                    fit: BoxFit.cover,
-                    opacity: 0.9,
-                  ),
-                  color: Colors.black.withOpacity(
-                    0.6,
-                  ), // Semi-transparent dark overlay
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(32),
-                    topRight: Radius.circular(32),
-                  ),
+                  color: Colors.grey.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(16.0),
                 ),
-                child: SafeArea(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    keyboardDismissBehavior:
-                        ScrollViewKeyboardDismissBehavior.onDrag,
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight:
-                            MediaQuery.of(context).size.height * 0.75 -
-                            MediaQuery.of(context).padding.top -
-                            MediaQuery.of(context).padding.bottom -
-                            48,
-                      ),
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 24),
-
-                          // Step content based on current step
-                          _buildCurrentStepContent(context),
-
-                          const SizedBox(height: 24),
-                        ],
-                      ),
-                    ),
-                  ),
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    _buildProfileSetupForm(context),
+                    const SizedBox(height: 24),
+                    _buildContinueButton(context),
+                  ],
                 ),
               ),
             ),
@@ -123,11 +104,193 @@ class _OnboardingViewBody extends StatelessWidget {
     );
   }
 
-  Widget _buildCurrentStepContent(BuildContext context) {
+  Widget _buildProfileSetupForm(BuildContext context) {
     return Consumer<OnboardingViewModel>(
       builder: (context, viewModel, child) {
-        // Always show profile setup card
-        return _buildProfileSetupCard(context, viewModel);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Title
+            Text(
+              'Perfect! Now let\'s set up your profile.',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Subtitle
+            Text(
+              'What should we call you?',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Email Field (uneditable)
+            Text(
+              'EMAIL',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: TextFormField(
+                enabled: false,
+                controller: TextEditingController(text: viewModel.userEmail.isNotEmpty ? viewModel.userEmail : 'john@doe.com'),
+                style: const TextStyle(color: Colors.black),
+                decoration: InputDecoration(
+                  hintText: 'john@doe.com',
+                  hintStyle: TextStyle(color: Colors.grey.shade600),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
+                  border: InputBorder.none,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // First Name Field
+            Text(
+              'FIRST NAME*',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: TextFormField(
+                controller: viewModel.firstNameController,
+                keyboardType: TextInputType.name,
+                textInputAction: TextInputAction.next,
+                style: const TextStyle(color: Colors.black),
+                decoration: InputDecoration(
+                  hintText: 'Jane',
+                  hintStyle: TextStyle(color: Colors.grey.shade600),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
+                  border: InputBorder.none,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Last Name Field
+            Text(
+              'LAST NAME*',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: TextFormField(
+                controller: viewModel.lastNameController,
+                keyboardType: TextInputType.name,
+                textInputAction: TextInputAction.done,
+                style: const TextStyle(color: Colors.black),
+                decoration: InputDecoration(
+                  hintText: 'Doe',
+                  hintStyle: TextStyle(color: Colors.grey.shade600),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
+                  border: InputBorder.none,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildContinueButton(BuildContext context) {
+    return Consumer<OnboardingViewModel>(
+      builder: (context, viewModel, child) {
+        return SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: ElevatedButton(
+            onPressed: () async {
+              // Save user profile data before navigating
+              final success = await viewModel.saveUserProfile();
+              if (success) {
+                // Determine navigation route based on devices
+                final navigationRoute = await viewModel.getNavigationRouteAfterProfileSave();
+                
+                if (navigationRoute == 'dashboard') {
+                  print('🔐 OnboardingView: Navigating to dashboard');
+                  context.go(AppRoutes.dashboard);
+                } else {
+                  print('🔐 OnboardingView: Navigating to onboard device');
+                  context.go(AppRoutes.onboardDevice);
+                }
+              } else {
+                // Show error message
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Failed to save profile. Please try again.'),
+                    backgroundColor: Colors.red,
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF17961), // Orange-red color
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
+            child: Text(
+              'Continue',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        );
       },
     );
   }

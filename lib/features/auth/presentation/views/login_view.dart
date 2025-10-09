@@ -1051,6 +1051,11 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
           // Check if this is a TermsRequiredResponse
           if (otpValidationResponse is TermsRequiredResponse) {
             print('🔐 LoginView: Terms and Conditions acceptance required');
+            
+            // Save email for new user before navigating to Terms and Conditions
+            final viewModel = Provider.of<LoginViewModel>(context, listen: false);
+            await viewModel.saveEmailForNewUser();
+            
             // Navigate to Terms and Conditions screen
             context.go(AppRoutes.termsAndConditions);
           } else {

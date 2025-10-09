@@ -12,6 +12,7 @@ class OnboardingViewModel extends ChangeNotifier {
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _otpController = TextEditingController();
+  String _userEmail = '';
   late CreateProfileUseCase _createProfileUseCase;
 
   // Getters
@@ -20,6 +21,7 @@ class OnboardingViewModel extends ChangeNotifier {
   TextEditingController get firstNameController => _firstNameController;
   TextEditingController get lastNameController => _lastNameController;
   TextEditingController get otpController => _otpController;
+  String get userEmail => _userEmail;
 
   // Computed properties
   bool get canProceedFromStep0 => _agreedToPrivacyPolicy;
@@ -36,14 +38,33 @@ class OnboardingViewModel extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final existingFirstName = prefs.getString('user_first_name')?.trim() ?? '';
     final existingLastName = prefs.getString('user_last_name')?.trim() ?? '';
+    final existingEmail = prefs.getString('user_email_id')?.trim() ?? '';
 
     _firstNameController.text = existingFirstName;
     _lastNameController.text = existingLastName;
+    _userEmail = existingEmail;
     _otpController.text = '';
 
     print(
-      '🔐 OnboardingViewModel: Initialized with existing data - FirstName: "$existingFirstName", LastName: "$existingLastName"',
+      '🔐 OnboardingViewModel: Initialized with existing data - FirstName: "$existingFirstName", LastName: "$existingLastName", Email: "$existingEmail"',
     );
+    
+    // Debug: Check all stored keys
+    final keys = prefs.getKeys();
+    print('🔐 OnboardingViewModel: All stored keys: $keys');
+    for (final key in keys) {
+      final value = prefs.getString(key);
+      print('🔐 OnboardingViewModel: Key: "$key" = Value: "$value"');
+    }
+  }
+
+  // Refresh email data from SharedPreferences
+  Future<void> refreshEmailData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final existingEmail = prefs.getString('user_email_id')?.trim() ?? '';
+    _userEmail = existingEmail;
+    print('🔐 OnboardingViewModel: Refreshed email data: "$existingEmail"');
+    notifyListeners();
   }
 
   void togglePrivacyPolicyAgreement() {
