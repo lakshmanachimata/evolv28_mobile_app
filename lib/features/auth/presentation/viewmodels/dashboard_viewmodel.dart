@@ -1,6 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart' as ble;
@@ -13,13 +13,12 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/routing/app_router_config.dart';
 import '../../../../core/services/bluetooth_service.dart';
 import '../../../../core/services/logging_service.dart';
-import 'package:flutter_blue_plus/flutter_blue_plus.dart' as ble;
-import '../../../../core/utils/location_permission_helper.dart';
 import '../../../../core/utils/bluetooth_permission_helper.dart';
-import '../../domain/usecases/verify_otp_usecase.dart';
+import '../../../../core/utils/location_permission_helper.dart';
+import '../../domain/entities/device_mapping_request.dart';
 import '../../domain/usecases/get_all_music_usecase.dart';
 import '../../domain/usecases/map_device_without_otp_usecase.dart';
-import '../../domain/entities/device_mapping_request.dart';
+import '../../domain/usecases/verify_otp_usecase.dart';
 
 class DashboardViewModel extends ChangeNotifier {
   // Static variables to track minimized state
@@ -31,7 +30,8 @@ class DashboardViewModel extends ChangeNotifier {
   final LoggingService _loggingService = sl<LoggingService>();
   final VerifyOtpUseCase _verifyOtpUseCase = sl<VerifyOtpUseCase>();
   final GetAllMusicUseCase _getAllMusicUseCase = sl<GetAllMusicUseCase>();
-  final MapDeviceWithoutOtpUseCase _mapDeviceWithoutOtpUseCase = sl<MapDeviceWithoutOtpUseCase>();
+  final MapDeviceWithoutOtpUseCase _mapDeviceWithoutOtpUseCase =
+      sl<MapDeviceWithoutOtpUseCase>();
 
   // State variables
   bool _isLoading = false;
@@ -89,17 +89,21 @@ class DashboardViewModel extends ChangeNotifier {
   Map<String, dynamic>? _selectedUnknownDevice;
   bool _showOtpConfirmationDialog = false;
   String _otpCode = '';
-  
+
   // Device selection state for new UI
   Set<String> _selectedDeviceIds = {}; // Track multiple selected devices
   bool _isConnecting = false; // Track connection state
   bool _connectionSuccessful = false; // Track successful connection
   bool _showTroubleshootingScreen = false; // Track troubleshooting screen state
-  
+
   // Device mapping error state
   bool _showDeviceMappingErrorDialog = false;
   String _deviceMappingError = '';
   String? _pendingDeviceMappingError; // Store error to be handled by UI
+
+  // Debounce mechanism to prevent bottom sheet from reopening immediately
+  DateTime? _lastBottomSheetCloseTime;
+  static const Duration _bottomSheetDebounceDuration = Duration(seconds: 2);
 
   // Getters
   bool get isLoading => _isLoading;
@@ -166,14 +170,14 @@ class DashboardViewModel extends ChangeNotifier {
   List<Map<String, dynamic>> get unknownDevices => _unknownDevices;
   Map<String, dynamic>? get selectedUnknownDevice => _selectedUnknownDevice;
   bool get showOtpConfirmationDialog => _showOtpConfirmationDialog;
-  
+
   // Device selection getters
   Set<String> get selectedDeviceIds => _selectedDeviceIds;
   bool get isConnecting => _isConnecting;
   bool get connectionSuccessful => _connectionSuccessful;
   bool get hasSelectedDevices => _selectedDeviceIds.isNotEmpty;
   bool get showTroubleshootingScreen => _showTroubleshootingScreen;
-  
+
   // Device mapping error getters
   bool get showDeviceMappingErrorDialog => _showDeviceMappingErrorDialog;
   String get deviceMappingError => _deviceMappingError;
@@ -212,7 +216,7 @@ class DashboardViewModel extends ChangeNotifier {
   // Initialize the dashboard
   Future<void> initialize() async {
     print('🎵 Dashboard: initialize() called');
-    _isLoading = true;
+    _isLoading = false;
     notifyListeners();
 
     // Load user data from SharedPreferences
@@ -231,8 +235,8 @@ class DashboardViewModel extends ChangeNotifier {
     // Set callback for unknown devices found during scanning
     _bluetoothService.setOnUnknownDevicesFoundCallback((unknownDevices) {
       print('🎵 Dashboard: Unknown devices found: ${unknownDevices.length}');
-      // Prevent multiple rapid calls
-      if (!_showUnknownDeviceDialog) {
+      // Prevent multiple rapid calls and respect debounce period
+      if (!_showUnknownDeviceDialog && _shouldShowBottomSheet()) {
         _unknownDevices = unknownDevices;
         _showUnknownDeviceDialog = true;
         _unknownDeviceBottomSheetShown = false; // Reset flag for new dialog
@@ -399,20 +403,24 @@ class DashboardViewModel extends ChangeNotifier {
   Future<void> _loadMusicData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      
+
       // Try to load music data from SharedPreferences first
       final musicDataString = prefs.getString('user_music_data');
       if (musicDataString != null && musicDataString.isNotEmpty) {
         final musicData = jsonDecode(musicDataString);
         if (musicData is List && musicData.isNotEmpty) {
           _musicData = musicData;
-          print('🎵 Dashboard: Loaded ${musicData.length} music items from SharedPreferences');
+          print(
+            '🎵 Dashboard: Loaded ${musicData.length} music items from SharedPreferences',
+          );
           return;
         }
       }
 
       // If no music data in SharedPreferences, fetch from API
-      print('🎵 Dashboard: No music data in SharedPreferences, fetching from API...');
+      print(
+        '🎵 Dashboard: No music data in SharedPreferences, fetching from API...',
+      );
       await _fetchMusicData();
     } catch (e) {
       print('🎵 Dashboard: Error loading music data: $e');
@@ -425,7 +433,7 @@ class DashboardViewModel extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final userIdString = prefs.getString('user_id');
-      
+
       if (userIdString == null || userIdString.isEmpty) {
         print('🎵 Dashboard: No user ID found for fetching music data');
         return;
@@ -433,7 +441,9 @@ class DashboardViewModel extends ChangeNotifier {
 
       final userId = int.tryParse(userIdString);
       if (userId == null) {
-        print('🎵 Dashboard: Invalid user ID format for fetching music data: $userIdString');
+        print(
+          '🎵 Dashboard: Invalid user ID format for fetching music data: $userIdString',
+        );
         return;
       }
 
@@ -441,9 +451,9 @@ class DashboardViewModel extends ChangeNotifier {
       notifyListeners();
 
       print('🎵 Dashboard: Fetching music data for userId: $userId');
-      
+
       final result = await _getAllMusicUseCase(userId);
-      
+
       result.fold(
         (error) {
           print('🎵 Dashboard: Failed to fetch music data: $error');
@@ -451,14 +461,15 @@ class DashboardViewModel extends ChangeNotifier {
         },
         (musicData) {
           print('🎵 Dashboard: Successfully fetched music data');
-          
+
           // Check if the data array is non-empty
-          if (musicData is Map<String, dynamic> && musicData.containsKey('data')) {
+          if (musicData is Map<String, dynamic> &&
+              musicData.containsKey('data')) {
             final data = musicData['data'];
             if (data is List && data.isNotEmpty) {
               _musicData = data;
               print('🎵 Dashboard: User has ${data.length} music items');
-              
+
               // Save to SharedPreferences
               _saveMusicDataToPrefs(data);
             } else {
@@ -486,7 +497,9 @@ class DashboardViewModel extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final musicDataString = jsonEncode(musicData);
       await prefs.setString('user_music_data', musicDataString);
-      print('🎵 Dashboard: Saved ${musicData.length} music items to SharedPreferences');
+      print(
+        '🎵 Dashboard: Saved ${musicData.length} music items to SharedPreferences',
+      );
     } catch (e) {
       print('🎵 Dashboard: Error saving music data to SharedPreferences: $e');
     }
@@ -495,49 +508,63 @@ class DashboardViewModel extends ChangeNotifier {
   // Get filtered programs (union of music data and Bluetooth programs)
   List<dynamic> _getFilteredPrograms() {
     try {
-      print('🎵 Dashboard: Creating union between music data and Bluetooth programs...');
-      
+      print(
+        '🎵 Dashboard: Creating union between music data and Bluetooth programs...',
+      );
+
       // Get Bluetooth programs from the service
       final bluetoothPrograms = _bluetoothService.availablePrograms;
-      print('🎵 Dashboard: Bluetooth programs: ${bluetoothPrograms.length} items');
-      
+      print(
+        '🎵 Dashboard: Bluetooth programs: ${bluetoothPrograms.length} items',
+      );
+
       // Get music data
       print('🎵 Dashboard: Music data: ${_musicData.length} items');
-      
+
       // If no music data or no Bluetooth programs, return empty list
       if (_musicData.isEmpty || bluetoothPrograms.isEmpty) {
         print('🎵 Dashboard: No music data or Bluetooth programs available');
         return [];
       }
-      
+
       // Create union by matching music data with Bluetooth programs
       final filteredPrograms = <dynamic>[];
-      
+
       for (final musicItem in _musicData) {
         if (musicItem is Map<String, dynamic>) {
           // Extract relevant fields from music data
           final musicName = _extractMusicName(musicItem);
           final musicId = _extractMusicId(musicItem);
-          
+
           if (musicName != null && musicId != null) {
             // Check if this music item matches any Bluetooth program
-            final matchingBluetoothProgram = _findMatchingBluetoothProgram(musicName, musicId, bluetoothPrograms);
-            
+            final matchingBluetoothProgram = _findMatchingBluetoothProgram(
+              musicName,
+              musicId,
+              bluetoothPrograms,
+            );
+
             if (matchingBluetoothProgram != null) {
               // Create enhanced music item with Bluetooth program info
               final enhancedMusicItem = Map<String, dynamic>.from(musicItem);
               enhancedMusicItem['bluetoothProgram'] = matchingBluetoothProgram;
-              enhancedMusicItem['bluetoothProgramName'] = matchingBluetoothProgram.split('|')[0];
-              enhancedMusicItem['bluetoothProgramId'] = matchingBluetoothProgram.split('|')[1];
-              
+              enhancedMusicItem['bluetoothProgramName'] =
+                  matchingBluetoothProgram.split('|')[0];
+              enhancedMusicItem['bluetoothProgramId'] = matchingBluetoothProgram
+                  .split('|')[1];
+
               filteredPrograms.add(enhancedMusicItem);
-              print('🎵 Dashboard: Matched music "$musicName" with Bluetooth program "$matchingBluetoothProgram"');
+              print(
+                '🎵 Dashboard: Matched music "$musicName" with Bluetooth program "$matchingBluetoothProgram"',
+              );
             }
           }
         }
       }
-      
-      print('🎵 Dashboard: Created union with ${filteredPrograms.length} filtered programs');
+
+      print(
+        '🎵 Dashboard: Created union with ${filteredPrograms.length} filtered programs',
+      );
       return filteredPrograms;
     } catch (e) {
       print('🎵 Dashboard: Error creating filtered programs: $e');
@@ -548,39 +575,43 @@ class DashboardViewModel extends ChangeNotifier {
   // Extract music name from music data item
   String? _extractMusicName(Map<String, dynamic> musicItem) {
     // Try different possible field names for music name
-    return musicItem['name'] ?? 
-           musicItem['title'] ?? 
-           musicItem['musicName'] ?? 
-           musicItem['programName'] ??
-           musicItem['fileName'] ??
-           musicItem['file_name'];
+    return musicItem['name'] ??
+        musicItem['title'] ??
+        musicItem['musicName'] ??
+        musicItem['programName'] ??
+        musicItem['fileName'] ??
+        musicItem['file_name'];
   }
 
   // Extract music ID from music data item
   String? _extractMusicId(Map<String, dynamic> musicItem) {
     // Try different possible field names for music ID
-    return musicItem['id']?.toString() ?? 
-           musicItem['musicId']?.toString() ?? 
-           musicItem['programId']?.toString() ??
-           musicItem['fileId']?.toString() ??
-           musicItem['file_id']?.toString();
+    return musicItem['id']?.toString() ??
+        musicItem['musicId']?.toString() ??
+        musicItem['programId']?.toString() ??
+        musicItem['fileId']?.toString() ??
+        musicItem['file_id']?.toString();
   }
 
   // Find matching Bluetooth program for a music item
-  String? _findMatchingBluetoothProgram(String musicName, String musicId, List<String> bluetoothPrograms) {
+  String? _findMatchingBluetoothProgram(
+    String musicName,
+    String musicId,
+    List<String> bluetoothPrograms,
+  ) {
     try {
       // Normalize music name for comparison
       final normalizedMusicName = _normalizeName(musicName);
-      
+
       for (final bluetoothProgram in bluetoothPrograms) {
         final parts = bluetoothProgram.split('|');
         if (parts.length >= 2) {
           final bluetoothProgramName = parts[0];
           final bluetoothProgramId = parts[1];
-          
+
           // Normalize Bluetooth program name for comparison
           final normalizedBluetoothName = _normalizeName(bluetoothProgramName);
-          
+
           // Check for exact match or partial match
           if (_isNameMatch(normalizedMusicName, normalizedBluetoothName) ||
               _isIdMatch(musicId, bluetoothProgramId)) {
@@ -588,7 +619,7 @@ class DashboardViewModel extends ChangeNotifier {
           }
         }
       }
-      
+
       return null;
     } catch (e) {
       print('🎵 Dashboard: Error finding matching Bluetooth program: $e');
@@ -609,17 +640,19 @@ class DashboardViewModel extends ChangeNotifier {
   bool _isNameMatch(String musicName, String bluetoothName) {
     // Exact match
     if (musicName == bluetoothName) return true;
-    
+
     // Check if one contains the other (for partial matches)
-    if (musicName.contains(bluetoothName) || bluetoothName.contains(musicName)) return true;
-    
+    if (musicName.contains(bluetoothName) || bluetoothName.contains(musicName))
+      return true;
+
     // Check for word-level matches
     final musicWords = musicName.split(' ');
     final bluetoothWords = bluetoothName.split(' ');
-    
+
     // If any significant word matches, consider it a match
     for (final musicWord in musicWords) {
-      if (musicWord.length > 2) { // Only consider words longer than 2 chars
+      if (musicWord.length > 2) {
+        // Only consider words longer than 2 chars
         for (final bluetoothWord in bluetoothWords) {
           if (bluetoothWord.length > 2 && musicWord == bluetoothWord) {
             return true;
@@ -627,7 +660,7 @@ class DashboardViewModel extends ChangeNotifier {
         }
       }
     }
-    
+
     return false;
   }
 
@@ -636,19 +669,22 @@ class DashboardViewModel extends ChangeNotifier {
     // Remove file extensions for comparison
     final normalizedMusicId = musicId.replaceAll(RegExp(r'\.\w+$'), '');
     final normalizedBluetoothId = bluetoothId.replaceAll(RegExp(r'\.\w+$'), '');
-    
-    return normalizedMusicId.toLowerCase() == normalizedBluetoothId.toLowerCase();
+
+    return normalizedMusicId.toLowerCase() ==
+        normalizedBluetoothId.toLowerCase();
   }
 
   // Start Bluetooth state monitoring
   Future<void> _startBluetoothStateMonitoring() async {
     if (_isBluetoothStateMonitoring) return;
-    
+
     _isBluetoothStateMonitoring = true;
     print('🎵 Dashboard: Starting Bluetooth state monitoring...');
-    
+
     try {
-      _bluetoothStateSubscription = ble.FlutterBluePlus.adapterState.listen((state) {
+      _bluetoothStateSubscription = ble.FlutterBluePlus.adapterState.listen((
+        state,
+      ) {
         print('🎵 Dashboard: Bluetooth state changed to: $state');
         _handleBluetoothStateChange(state);
       });
@@ -700,9 +736,11 @@ class DashboardViewModel extends ChangeNotifier {
     try {
       // Clear any existing error messages
       _bluetoothService.clearErrorMessage();
-      
+
       // Always start the full permission flow when Bluetooth is turned on
-      print('🎵 Dashboard: Bluetooth turned on - starting full permission flow');
+      print(
+        '🎵 Dashboard: Bluetooth turned on - starting full permission flow',
+      );
       await _startFullPermissionFlow();
     } catch (e) {
       print('🎵 Dashboard: Error handling Bluetooth turned on: $e');
@@ -717,21 +755,25 @@ class DashboardViewModel extends ChangeNotifier {
         print('🎵 Dashboard: Permission flow already in progress, skipping...');
         return;
       }
-      
+
       // Check if both permissions are already granted
-      final hasLocationPermission = await LocationPermissionHelper.isLocationPermissionGranted();
-      final hasBluetoothPermission = await BluetoothPermissionHelper.isBluetoothEnabled();
-      
+      final hasLocationPermission =
+          await LocationPermissionHelper.isLocationPermissionGranted();
+      final hasBluetoothPermission =
+          await BluetoothPermissionHelper.isBluetoothEnabled();
+
       if (hasLocationPermission && hasBluetoothPermission) {
-        print('🎵 Dashboard: Both permissions already granted, skipping permission flow and starting device scanning...');
+        print(
+          '🎵 Dashboard: Both permissions already granted, skipping permission flow and starting device scanning...',
+        );
         await _bluetoothService.startScanning();
         _bluetoothService.setStatusMessage('Scanning for devices...');
         notifyListeners();
         return;
       }
-      
+
       print('🎵 Dashboard: Starting full permission flow sequence...');
-      
+
       // Set flag to trigger permission flow in UI layer
       _shouldTriggerPermissionFlow = true;
       notifyListeners();
@@ -757,19 +799,23 @@ class DashboardViewModel extends ChangeNotifier {
     try {
       // Check if Bluetooth permission exists
       final hasPermission = await _checkBluetoothPermission();
-      
+
       if (hasPermission) {
         print('🎵 Dashboard: Bluetooth permission exists - starting scan');
         await _bluetoothService.startScanning();
         _bluetoothService.setStatusMessage('Scanning for devices...');
       } else {
-        print('🎵 Dashboard: Bluetooth permission missing - will be handled by UI layer');
+        print(
+          '🎵 Dashboard: Bluetooth permission missing - will be handled by UI layer',
+        );
         _bluetoothService.setStatusMessage('Click here to scan for devices');
       }
-      
+
       notifyListeners();
     } catch (e) {
-      print('🎵 Dashboard: Error starting permission flow after Bluetooth enabled: $e');
+      print(
+        '🎵 Dashboard: Error starting permission flow after Bluetooth enabled: $e',
+      );
     }
   }
 
@@ -796,7 +842,9 @@ class DashboardViewModel extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       print('🎵 Dashboard: Error starting scan after Bluetooth turned on: $e');
-      _bluetoothService.setErrorMessage('Error starting scan. Please try again.');
+      _bluetoothService.setErrorMessage(
+        'Error starting scan. Please try again.',
+      );
       notifyListeners();
     }
   }
@@ -849,27 +897,29 @@ class DashboardViewModel extends ChangeNotifier {
             print(
               '🎵 Dashboard: Current state - otpDialogClosed: $_otpDialogClosed, showOtpConfirmationDialog: $_showOtpConfirmationDialog, showUnknownDeviceDialog: $_showUnknownDeviceDialog',
             );
-            // Only show unknown devices list dialog if OTP dialog hasn't been closed
-            _unknownDevices = unknownDevicesList
-                .map(
-                  (device) => {
-                    'id': device.remoteId.toString(),
-                    'name': device.platformName.isNotEmpty
-                        ? device.platformName
-                        : device.remoteId.toString(),
-                    'signalStrength': _bluetoothService.getDeviceRssi(
-                      device,
-                    ), // Use actual RSSI from device
-                    'isConnected': false,
-                    'isUnknown': true,
-                    'device':
-                        device, // Store the actual BluetoothDevice for connection
-                  },
-                )
-                .toList();
-            _showUnknownDeviceDialog = true;
-            _unknownDeviceBottomSheetShown =
-                false; // Reset flag when showing new dialog
+            // Only show unknown devices list dialog if OTP dialog hasn't been closed and not already showing and debounce period has passed
+            if (!_showUnknownDeviceDialog && _shouldShowBottomSheet()) {
+              _unknownDevices = unknownDevicesList
+                  .map(
+                    (device) => {
+                      'id': device.remoteId.toString(),
+                      'name': device.platformName.isNotEmpty
+                          ? device.platformName
+                          : device.remoteId.toString(),
+                      'signalStrength': _bluetoothService.getDeviceRssi(
+                        device,
+                      ), // Use actual RSSI from device
+                      'isConnected': false,
+                      'isUnknown': true,
+                      'device':
+                          device, // Store the actual BluetoothDevice for connection
+                    },
+                  )
+                  .toList();
+              _showUnknownDeviceDialog = true;
+              _unknownDeviceBottomSheetShown =
+                  false; // Reset flag when showing new dialog
+            }
           } else {
             // Show device selection dialog for all found devices (all are known)
             _scannedDevices = _bluetoothService.scannedDevices
@@ -1461,15 +1511,17 @@ class DashboardViewModel extends ChangeNotifier {
 
   /// Start automatic device scanning when both permissions are granted
   Future<void> startAutomaticDeviceScanning() async {
-    print('🎵 Dashboard: Starting automatic device scanning after permissions granted...');
-    
+    print(
+      '🎵 Dashboard: Starting automatic device scanning after permissions granted...',
+    );
+
     // Mark permissions as granted
     _isLocationPermissionGranted = true;
     _isBluetoothScanPermissionGranted = true;
-    
+
     // Start Bluetooth operations which includes scanning
     await _startBluetoothOperations();
-    
+
     notifyListeners();
   }
 
@@ -1710,6 +1762,8 @@ class DashboardViewModel extends ChangeNotifier {
     _isConnecting = false;
     _connectionSuccessful = false;
     _showTroubleshootingScreen = false; // Reset troubleshooting screen state
+    // Record close time for debouncing
+    _lastBottomSheetCloseTime = DateTime.now();
     print('🎵 Dashboard: Unknown device dialog closed');
     notifyListeners();
   }
@@ -1750,7 +1804,9 @@ class DashboardViewModel extends ChangeNotifier {
     } else {
       _selectedDeviceIds.add(deviceId);
     }
-    print('🎵 Dashboard: Toggled device selection: $deviceId, Selected: $_selectedDeviceIds');
+    print(
+      '🎵 Dashboard: Toggled device selection: $deviceId, Selected: $_selectedDeviceIds',
+    );
     notifyListeners();
   }
 
@@ -1766,46 +1822,51 @@ class DashboardViewModel extends ChangeNotifier {
       _connectionSuccessful = false;
       notifyListeners();
 
-      print('🎵 Dashboard: Connecting to selected devices: $_selectedDeviceIds');
+      print(
+        '🎵 Dashboard: Connecting to selected devices: $_selectedDeviceIds',
+      );
 
       // Connect to the first selected device (for now, connect to one device)
       final selectedDeviceId = _selectedDeviceIds.first;
-      
+
       // Find the selected device from unknown devices
       final selectedDeviceData = _unknownDevices.firstWhere(
         (device) => device['id'] == selectedDeviceId,
       );
-      
+
       // Get the actual BluetoothDevice from the device data
       final bluetoothDevice = selectedDeviceData['device'];
-      
+
       if (bluetoothDevice != null) {
         // First, map the device to user account using API
         print('🎵 Dashboard: Mapping device to user account...');
-        
+
         // Get user ID from SharedPreferences
         final prefs = await SharedPreferences.getInstance();
         final userId = prefs.getString('user_id') ?? '';
-        
+
         if (userId.isEmpty) {
           throw Exception('User ID not found');
         }
-        
+
         // Get the actual MAC address from the Bluetooth device
-        final bluetoothDevice = selectedDeviceData['device'] as ble.BluetoothDevice;
+        final bluetoothDevice =
+            selectedDeviceData['device'] as ble.BluetoothDevice;
         final macAddress = bluetoothDevice.remoteId.toString();
-        
+
         // Create device mapping request
         final mappingRequest = DeviceMappingRequest(
           userid: userId,
           maddress: macAddress, // Use actual MAC address from Bluetooth device
         );
-        
-        print('🎵 Dashboard: Device mapping request - UserID: $userId, MAC: ${mappingRequest.maddress}');
-        
+
+        print(
+          '🎵 Dashboard: Device mapping request - UserID: $userId, MAC: ${mappingRequest.maddress}',
+        );
+
         // Call device mapping API
         final mappingResult = await _mapDeviceWithoutOtpUseCase(mappingRequest);
-        
+
         await mappingResult.fold(
           (error) {
             print('🎵 Dashboard: Device mapping failed: $error');
@@ -1815,40 +1876,45 @@ class DashboardViewModel extends ChangeNotifier {
             throw Exception('Device mapping failed: $error');
           },
           (response) {
-            print('🎵 Dashboard: Device mapped successfully: ${response.message}');
+            print(
+              '🎵 Dashboard: Device mapped successfully: ${response.message}',
+            );
             return Future.value();
           },
         );
-        
+
         // After successful mapping, connect to the device
         print('🎵 Dashboard: Connecting to mapped device...');
-        await _bluetoothService.connectToDeviceWithoutCommandSequence(bluetoothDevice);
-        
+        await _bluetoothService.connectToDeviceWithoutCommandSequence(
+          bluetoothDevice,
+        );
+
         // Wait for connection to complete
         int attempts = 0;
         const maxAttempts = 10;
-        
+
         while (attempts < maxAttempts && !_bluetoothService.isConnected) {
           await Future.delayed(const Duration(milliseconds: 500));
           attempts++;
         }
-        
+
         if (_bluetoothService.isConnected) {
           _isConnecting = false;
           _connectionSuccessful = true;
-          print('🎵 Dashboard: Successfully connected to mapped device: $selectedDeviceId');
+          print(
+            '🎵 Dashboard: Successfully connected to mapped device: $selectedDeviceId',
+          );
         } else {
           throw Exception('Connection timeout');
         }
       } else {
         throw Exception('Device not found');
       }
-      
+
       notifyListeners();
 
       // Don't close the bottom sheet - show success UI instead
       // The success UI will be shown in the bottom sheet
-      
     } catch (e) {
       _isConnecting = false;
       _connectionSuccessful = false;
@@ -1874,7 +1940,7 @@ class DashboardViewModel extends ChangeNotifier {
     if (context != null && Navigator.of(context).canPop()) {
       Navigator.of(context).pop();
     }
-    
+
     // Store error message for display
     _deviceMappingError = errorMessage;
     _showDeviceMappingErrorDialog = true;
@@ -1888,7 +1954,10 @@ class DashboardViewModel extends ChangeNotifier {
   }
 
   // Public method to show device mapping error with context
-  void showDeviceMappingErrorWithContext(String errorMessage, BuildContext context) {
+  void showDeviceMappingErrorWithContext(
+    String errorMessage,
+    BuildContext context,
+  ) {
     _showDeviceMappingError(errorMessage, context: context);
   }
 
@@ -1896,6 +1965,18 @@ class DashboardViewModel extends ChangeNotifier {
   void clearPendingDeviceMappingError() {
     _pendingDeviceMappingError = null;
     notifyListeners();
+  }
+
+  // Check if we should show the bottom sheet (considering debounce)
+  bool _shouldShowBottomSheet() {
+    if (_lastBottomSheetCloseTime == null) {
+      return true;
+    }
+
+    final timeSinceClose = DateTime.now().difference(
+      _lastBottomSheetCloseTime!,
+    );
+    return timeSinceClose > _bottomSheetDebounceDuration;
   }
 
   void closeOtpConfirmationDialog() {
@@ -2009,8 +2090,8 @@ class DashboardViewModel extends ChangeNotifier {
               print(
                 '🎵 Dashboard: Unknown devices found: ${unknownDevices.length}',
               );
-              // Prevent multiple rapid calls
-              if (!_showUnknownDeviceDialog) {
+              // Prevent multiple rapid calls and respect debounce period
+              if (!_showUnknownDeviceDialog && _shouldShowBottomSheet()) {
                 _unknownDevices = unknownDevices;
                 _showUnknownDeviceDialog = true;
                 _unknownDeviceBottomSheetShown =
