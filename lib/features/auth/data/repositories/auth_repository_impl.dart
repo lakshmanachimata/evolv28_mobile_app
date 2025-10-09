@@ -14,6 +14,8 @@ import '../../domain/entities/social_login_request.dart';
 import '../../domain/entities/social_login_response.dart';
 import '../../domain/entities/terms_required_response.dart';
 import '../../domain/entities/user.dart';
+import '../../domain/entities/device_mapping_request.dart';
+import '../../domain/entities/device_mapping_response.dart';
 import '../../domain/repositories/auth_repository.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
@@ -966,6 +968,95 @@ class AuthRepositoryImpl implements AuthRepository {
         }
       }
       return Left('Create profile failed: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<Either<String, DeviceMappingResponse>> mapDeviceWithoutOtp(
+    DeviceMappingRequest request,
+  ) async {
+    try {
+      print(
+        '🔐 AuthRepository: Device mapping request for user: ${request.userid}, device: ${request.maddress}',
+      );
+      print('🔐 AuthRepository: Request JSON: ${request.toJson()}');
+
+      // Get authorization token
+      final token = sharedPreferences.getString('user_token');
+      if (token == null || token.isEmpty) {
+        print('🔐 AuthRepository: No authorization token found for device mapping');
+        return const Left('No authorization token found');
+      }
+      
+      print('🔐 AuthRepository: Using token: ${token.substring(0, 20)}...');
+
+      final response = await _dio.post(
+        '${ApiConstants.baseUrl}${ApiConstants.deviceMappingWithoutOtp}',
+        data: request.toJson(),
+        options: Options(
+          headers: {
+            'Authorization': token,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      print(
+        '🔐 AuthRepository: Device mapping API response: ${response.statusCode}',
+      );
+      print('🔐 AuthRepository: Device mapping API data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        final deviceMappingResponse = DeviceMappingResponse.fromJson(
+          response.data,
+        );
+        print(
+          '🔐 AuthRepository: Device mapping success: ${deviceMappingResponse.error}',
+        );
+
+        if (deviceMappingResponse.error == false) {
+          print('🔐 AuthRepository: Device mapped successfully');
+          return Right(deviceMappingResponse);
+        } else {
+          print(
+            '🔐 AuthRepository: Device mapping failed: ${deviceMappingResponse.message}',
+          );
+          return Left(deviceMappingResponse.message);
+        }
+      } else {
+        print(
+          '🔐 AuthRepository: Device mapping failed with status: ${response.statusCode}',
+        );
+        return Left(
+          'Device mapping failed with status: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      print('🔐 AuthRepository: Device mapping error: $e');
+      if (e is DioException) {
+        if (e.response != null) {
+          print('🔐 AuthRepository: Server error: ${e.response!.statusCode}');
+          print('🔐 AuthRepository: Server response: ${e.response!.data}');
+          
+          // Try to extract error message from response
+          final responseData = e.response!.data;
+          String errorMessage = 'Server error: ${e.response!.statusCode}';
+          
+          if (responseData is Map<String, dynamic>) {
+            if (responseData.containsKey('message')) {
+              errorMessage = responseData['message'];
+            } else if (responseData.containsKey('error')) {
+              errorMessage = responseData['error'].toString();
+            }
+          }
+          
+          return Left(errorMessage);
+        } else {
+          return Left('Network error: ${e.message}');
+        }
+      }
+      return Left('Device mapping failed: ${e.toString()}');
     }
   }
 }

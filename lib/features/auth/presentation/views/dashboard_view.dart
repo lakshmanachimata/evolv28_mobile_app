@@ -304,6 +304,9 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
 
                   if (viewModel.showBluetoothPermissionErrorDialog)
                     _buildBluetoothPermissionErrorDialog(context, viewModel),
+
+                  if (viewModel.showDeviceMappingErrorDialog)
+                    _buildDeviceMappingErrorDialog(context, viewModel),
                 ],
               );
             },
@@ -2452,6 +2455,97 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDeviceMappingErrorDialog(
+    BuildContext context,
+    DashboardViewModel viewModel,
+  ) {
+    return Container(
+      color: Colors.black.withOpacity(0.5),
+      child: Center(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Error icon
+              Container(
+                width: 60,
+                height: 60,
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.error,
+                  color: Colors.white,
+                  size: 30,
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Error title
+              const Text(
+                'Device Mapping Failed',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+                textAlign: TextAlign.center,
+              ),
+
+              const SizedBox(height: 12),
+
+              // Error message
+              Text(
+                viewModel.deviceMappingError,
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+
+              const SizedBox(height: 24),
+
+              // OK button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    viewModel.closeDeviceMappingErrorDialog();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFF17961), // Orange-red
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'OK',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

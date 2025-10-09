@@ -13,10 +13,13 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/routing/app_router_config.dart';
 import '../../../../core/services/bluetooth_service.dart';
 import '../../../../core/services/logging_service.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart' as ble;
 import '../../../../core/utils/location_permission_helper.dart';
 import '../../../../core/utils/bluetooth_permission_helper.dart';
 import '../../domain/usecases/verify_otp_usecase.dart';
 import '../../domain/usecases/get_all_music_usecase.dart';
+import '../../domain/usecases/map_device_without_otp_usecase.dart';
+import '../../domain/entities/device_mapping_request.dart';
 
 class DashboardViewModel extends ChangeNotifier {
   // Static variables to track minimized state
@@ -28,6 +31,7 @@ class DashboardViewModel extends ChangeNotifier {
   final LoggingService _loggingService = sl<LoggingService>();
   final VerifyOtpUseCase _verifyOtpUseCase = sl<VerifyOtpUseCase>();
   final GetAllMusicUseCase _getAllMusicUseCase = sl<GetAllMusicUseCase>();
+  final MapDeviceWithoutOtpUseCase _mapDeviceWithoutOtpUseCase = sl<MapDeviceWithoutOtpUseCase>();
 
   // State variables
   bool _isLoading = false;
@@ -91,6 +95,10 @@ class DashboardViewModel extends ChangeNotifier {
   bool _isConnecting = false; // Track connection state
   bool _connectionSuccessful = false; // Track successful connection
   bool _showTroubleshootingScreen = false; // Track troubleshooting screen state
+  
+  // Device mapping error state
+  bool _showDeviceMappingErrorDialog = false;
+  String _deviceMappingError = '';
 
   // Getters
   bool get isLoading => _isLoading;
@@ -164,6 +172,10 @@ class DashboardViewModel extends ChangeNotifier {
   bool get connectionSuccessful => _connectionSuccessful;
   bool get hasSelectedDevices => _selectedDeviceIds.isNotEmpty;
   bool get showTroubleshootingScreen => _showTroubleshootingScreen;
+  
+  // Device mapping error getters
+  bool get showDeviceMappingErrorDialog => _showDeviceMappingErrorDialog;
+  String get deviceMappingError => _deviceMappingError;
 
   bool get unknownDeviceBottomSheetShown => _unknownDeviceBottomSheetShown;
 
@@ -1762,7 +1774,47 @@ class DashboardViewModel extends ChangeNotifier {
       final bluetoothDevice = selectedDeviceData['device'];
       
       if (bluetoothDevice != null) {
-        // Connect to the device using Bluetooth service without command sequence
+        // First, map the device to user account using API
+        print('🎵 Dashboard: Mapping device to user account...');
+        
+        // Get user ID from SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        final userId = prefs.getString('user_id') ?? '';
+        
+        if (userId.isEmpty) {
+          throw Exception('User ID not found');
+        }
+        
+        // Get the actual MAC address from the Bluetooth device
+        final bluetoothDevice = selectedDeviceData['device'] as ble.BluetoothDevice;
+        final macAddress = bluetoothDevice.remoteId.toString();
+        
+        // Create device mapping request
+        final mappingRequest = DeviceMappingRequest(
+          userid: userId,
+          maddress: macAddress, // Use actual MAC address from Bluetooth device
+        );
+        
+        print('🎵 Dashboard: Device mapping request - UserID: $userId, MAC: ${mappingRequest.maddress}');
+        
+        // Call device mapping API
+        final mappingResult = await _mapDeviceWithoutOtpUseCase(mappingRequest);
+        
+        await mappingResult.fold(
+          (error) {
+            print('🎵 Dashboard: Device mapping failed: $error');
+            // Show error popup to user
+            _showDeviceMappingError(error);
+            throw Exception('Device mapping failed: $error');
+          },
+          (response) {
+            print('🎵 Dashboard: Device mapped successfully: ${response.message}');
+            return Future.value();
+          },
+        );
+        
+        // After successful mapping, connect to the device
+        print('🎵 Dashboard: Connecting to mapped device...');
         await _bluetoothService.connectToDeviceWithoutCommandSequence(bluetoothDevice);
         
         // Wait for connection to complete
@@ -1777,7 +1829,7 @@ class DashboardViewModel extends ChangeNotifier {
         if (_bluetoothService.isConnected) {
           _isConnecting = false;
           _connectionSuccessful = true;
-          print('🎵 Dashboard: Successfully connected to unknown device: $selectedDeviceId');
+          print('🎵 Dashboard: Successfully connected to mapped device: $selectedDeviceId');
         } else {
           throw Exception('Connection timeout');
         }
@@ -1806,6 +1858,30 @@ class DashboardViewModel extends ChangeNotifier {
 
   void closeTroubleshootingScreen() {
     _showTroubleshootingScreen = false;
+    notifyListeners();
+  }
+
+  // Device mapping error handling
+  void _showDeviceMappingError(String errorMessage) {
+    // Close the bottom sheet first
+    _showUnknownDeviceDialog = false;
+    _unknownDevices.clear();
+    _selectedUnknownDevice = null;
+    _selectedDeviceIds.clear();
+    _isConnecting = false;
+    _connectionSuccessful = false;
+    _showTroubleshootingScreen = false;
+    _unknownDeviceBottomSheetShown = false; // Reset bottom sheet flag
+    
+    // Store error message for display
+    _deviceMappingError = errorMessage;
+    _showDeviceMappingErrorDialog = true;
+    notifyListeners();
+  }
+
+  void closeDeviceMappingErrorDialog() {
+    _showDeviceMappingErrorDialog = false;
+    _deviceMappingError = '';
     notifyListeners();
   }
 

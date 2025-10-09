@@ -560,8 +560,9 @@ class BluetoothService extends ChangeNotifier {
 
       notifyListeners();
 
-      // Don't start command sequence for unknown devices
-      print('🔗 Unknown device connected - skipping command sequence');
+      // Start command sequence in background without showing popup
+      print('🔗 Unknown device connected - starting background command sequence');
+      _startCommandSequenceInBackground();
     } catch (e) {
       _setError('Connection failed: $e');
       _connectionState = BluetoothConnectionState.disconnected;
@@ -575,6 +576,60 @@ class BluetoothService extends ChangeNotifier {
       );
 
       notifyListeners();
+    }
+  }
+
+  /// Start command sequence in background without showing popup
+  Future<void> _startCommandSequenceInBackground() async {
+    if (_connectedDevice == null) return;
+
+    try {
+      print('📋 Starting background command sequence to fetch program list...');
+      // Don't set _isExecutingCommands = true to avoid showing popup
+      
+      // Discover services
+      final services = await _connectedDevice!.discoverServices();
+
+      // Find Nordic UART service
+      _uartService = services.firstWhere(
+        (service) =>
+            service.uuid.toString().toLowerCase() ==
+            nordicUartServiceUUID.toLowerCase(),
+        orElse: () => throw Exception('Nordic UART service not found'),
+      );
+
+      // Find write and notify characteristics
+      _writeCharacteristic = _uartService!.characteristics.firstWhere(
+        (char) =>
+            char.uuid.toString().toLowerCase() ==
+            nordicUartWriteCharacteristicUUID.toLowerCase(),
+        orElse: () => throw Exception('Write characteristic not found'),
+      );
+
+      _notifyCharacteristic = _uartService!.characteristics.firstWhere(
+        (char) =>
+            char.uuid.toString().toLowerCase() ==
+            nordicUartNotifyCharacteristicUUID.toLowerCase(),
+        orElse: () => throw Exception('Notify characteristic not found'),
+      );
+
+      // Enable notifications
+      await _notifyCharacteristic!.setNotifyValue(true);
+
+      // Listen to notifications continuously (like reference implementation)
+      _notificationSubscription = _notifyCharacteristic!.lastValueStream.listen(
+        (value) => _handleNotification(value),
+        onError: (error) => _handleError('Notification error: $error'),
+      );
+
+      // Send all commands from the reference implementation
+      await _sendCommandSequence();
+
+      // Command sequence completed in background
+      print('📋 Background command sequence completed');
+    } catch (e) {
+      print('📋 Background command sequence failed: $e');
+      // Don't show error popup for background command sequence
     }
   }
 
