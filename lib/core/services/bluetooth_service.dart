@@ -57,6 +57,9 @@ class BluetoothService extends ChangeNotifier {
 
   // Callback for unknown devices
   Function(List<Map<String, dynamic>>)? _onUnknownDevicesFound;
+  
+  // Callback for when no devices are found
+  VoidCallback? _onNoDevicesFound;
 
   // Nordic UART Service UUIDs
   static const String nordicUartServiceUUID =
@@ -181,6 +184,11 @@ class BluetoothService extends ChangeNotifier {
     _onUnknownDevicesFound = callback;
   }
 
+  /// Set callback for when no devices are found
+  void setOnNoDevicesFoundCallback(VoidCallback callback) {
+    _onNoDevicesFound = callback;
+  }
+
   Future<void> startScanning() async {
     if (_connectionState == BluetoothConnectionState.scanning) return;
 
@@ -285,6 +293,11 @@ class BluetoothService extends ChangeNotifier {
       _connectionState = BluetoothConnectionState.disconnected;
       _statusMessage = 'No Evolv28 devices found';
       _setError('No Evolv28 devices found nearby');
+
+      // Call the callback to show no device found bottom sheet
+      if (_onNoDevicesFound != null) {
+        _onNoDevicesFound!();
+      }
 
       // Log when no devices are found
       _loggingService.sendLogs(

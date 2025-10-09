@@ -221,6 +221,15 @@ class DashboardViewModel extends ChangeNotifier {
       notifyListeners();
     });
 
+    // Set callback for when no devices are found during scanning
+    _bluetoothService.setOnNoDevicesFoundCallback(() {
+      print('🎵 Dashboard: No devices found during scanning');
+      _unknownDevices = []; // Empty list to trigger no device found UI
+      _showUnknownDeviceDialog = true;
+      _unknownDeviceBottomSheetShown = false; // Reset flag for new dialog
+      notifyListeners();
+    });
+
     print(
       '🎵 Dashboard: Bluetooth service initialized with ${_userDevices.length} user devices',
     );
