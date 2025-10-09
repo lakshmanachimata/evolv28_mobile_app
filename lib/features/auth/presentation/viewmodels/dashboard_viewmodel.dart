@@ -1750,19 +1750,45 @@ class DashboardViewModel extends ChangeNotifier {
 
       print('🎵 Dashboard: Connecting to selected devices: $_selectedDeviceIds');
 
-      // Simulate connection process (replace with actual Bluetooth connection logic)
-      await Future.delayed(const Duration(seconds: 2));
-
-      // For now, just mark as successful
-      _isConnecting = false;
-      _connectionSuccessful = true;
+      // Connect to the first selected device (for now, connect to one device)
+      final selectedDeviceId = _selectedDeviceIds.first;
       
-      print('🎵 Dashboard: Successfully connected to devices');
+      // Find the selected device from unknown devices
+      final selectedDeviceData = _unknownDevices.firstWhere(
+        (device) => device['id'] == selectedDeviceId,
+      );
+      
+      // Get the actual BluetoothDevice from the device data
+      final bluetoothDevice = selectedDeviceData['device'];
+      
+      if (bluetoothDevice != null) {
+        // Connect to the device using Bluetooth service
+        await _bluetoothService.connectToDevice(bluetoothDevice);
+        
+        // Wait for connection to complete
+        int attempts = 0;
+        const maxAttempts = 10;
+        
+        while (attempts < maxAttempts && !_bluetoothService.isConnected) {
+          await Future.delayed(const Duration(milliseconds: 500));
+          attempts++;
+        }
+        
+        if (_bluetoothService.isConnected) {
+          _isConnecting = false;
+          _connectionSuccessful = true;
+          print('🎵 Dashboard: Successfully connected to device: $selectedDeviceId');
+        } else {
+          throw Exception('Connection timeout');
+        }
+      } else {
+        throw Exception('Device not found');
+      }
+      
       notifyListeners();
 
-      // Close the bottom sheet after successful connection
-      await Future.delayed(const Duration(seconds: 1));
-      closeUnknownDeviceDialog();
+      // Don't close the bottom sheet - show success UI instead
+      // The success UI will be shown in the bottom sheet
       
     } catch (e) {
       _isConnecting = false;

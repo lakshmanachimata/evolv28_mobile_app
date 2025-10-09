@@ -1630,14 +1630,14 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                           ),
                           const SizedBox(height: 20),
                           Container(
-                            width: 80,
-                            height: 80,
+                            width: 40,
+                            height: 40,
                             decoration: const BoxDecoration(
                               color: Colors.green,
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
-                              Icons.check,
+                              Icons.check_circle,
                               color: Colors.white,
                               size: 40,
                             ),
