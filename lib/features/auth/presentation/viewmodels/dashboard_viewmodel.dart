@@ -99,6 +99,7 @@ class DashboardViewModel extends ChangeNotifier {
   // Device mapping error state
   bool _showDeviceMappingErrorDialog = false;
   String _deviceMappingError = '';
+  String? _pendingDeviceMappingError; // Store error to be handled by UI
 
   // Getters
   bool get isLoading => _isLoading;
@@ -176,6 +177,7 @@ class DashboardViewModel extends ChangeNotifier {
   // Device mapping error getters
   bool get showDeviceMappingErrorDialog => _showDeviceMappingErrorDialog;
   String get deviceMappingError => _deviceMappingError;
+  String? get pendingDeviceMappingError => _pendingDeviceMappingError;
 
   bool get unknownDeviceBottomSheetShown => _unknownDeviceBottomSheetShown;
 
@@ -1803,8 +1805,9 @@ class DashboardViewModel extends ChangeNotifier {
         await mappingResult.fold(
           (error) {
             print('🎵 Dashboard: Device mapping failed: $error');
-            // Show error popup to user
-            _showDeviceMappingError(error);
+            // Set pending error to be handled by UI
+            _pendingDeviceMappingError = error;
+            notifyListeners();
             throw Exception('Device mapping failed: $error');
           },
           (response) {
@@ -1862,16 +1865,11 @@ class DashboardViewModel extends ChangeNotifier {
   }
 
   // Device mapping error handling
-  void _showDeviceMappingError(String errorMessage) {
-    // Close the bottom sheet first
-    _showUnknownDeviceDialog = false;
-    _unknownDevices.clear();
-    _selectedUnknownDevice = null;
-    _selectedDeviceIds.clear();
-    _isConnecting = false;
-    _connectionSuccessful = false;
-    _showTroubleshootingScreen = false;
-    _unknownDeviceBottomSheetShown = false; // Reset bottom sheet flag
+  void _showDeviceMappingError(String errorMessage, {BuildContext? context}) {
+    // Close the bottom sheet if context is provided and we can pop
+    if (context != null && Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
     
     // Store error message for display
     _deviceMappingError = errorMessage;
@@ -1882,6 +1880,17 @@ class DashboardViewModel extends ChangeNotifier {
   void closeDeviceMappingErrorDialog() {
     _showDeviceMappingErrorDialog = false;
     _deviceMappingError = '';
+    notifyListeners();
+  }
+
+  // Public method to show device mapping error with context
+  void showDeviceMappingErrorWithContext(String errorMessage, BuildContext context) {
+    _showDeviceMappingError(errorMessage, context: context);
+  }
+
+  // Clear pending device mapping error
+  void clearPendingDeviceMappingError() {
+    _pendingDeviceMappingError = null;
     notifyListeners();
   }
 

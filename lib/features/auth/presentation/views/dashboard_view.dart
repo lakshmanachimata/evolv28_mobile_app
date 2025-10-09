@@ -263,12 +263,15 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                     );
                     showModalBottomSheet<bool>(
                       context: context,
-                      isDismissible: false,
+                      isDismissible: true, // Allow dismissal for error cases
                       enableDrag: false,
                       backgroundColor: Colors.transparent,
                       builder: (context) =>
                           _buildUnknownDeviceBottomSheet(context, viewModel),
-                    );
+                    ).then((_) {
+                      // Handle bottom sheet dismissal
+                      viewModel.setUnknownDeviceBottomSheetShown(false);
+                    });
                     // Mark that the bottom sheet has been shown
                     viewModel.setUnknownDeviceBottomSheetShown(true);
                   }
@@ -294,6 +297,22 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                     // Mark that the OTP bottom sheet has been shown
                     viewModel.setOtpBottomSheetShown(true);
                   }
+                });
+              }
+
+              // Handle pending device mapping error
+              if (viewModel.pendingDeviceMappingError != null) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  // Only pop if there's a modal to dismiss and we can pop
+                  if (viewModel.showUnknownDeviceDialog && Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop();
+                  }
+                  viewModel.closeUnknownDeviceDialog();
+                  viewModel.showDeviceMappingErrorWithContext(
+                    viewModel.pendingDeviceMappingError!,
+                    context,
+                  );
+                  viewModel.clearPendingDeviceMappingError();
                 });
               }
 
