@@ -534,6 +534,50 @@ class BluetoothService extends ChangeNotifier {
     }
   }
 
+  /// Connect to device without starting command sequence (for unknown devices)
+  Future<void> connectToDeviceWithoutCommandSequence(ble.BluetoothDevice device) async {
+    try {
+      print('🔗 Connecting to unknown device: ${device.platformName}');
+      _connectionState = BluetoothConnectionState.connecting;
+      _statusMessage = 'Connecting...';
+      _clearError();
+      notifyListeners();
+
+      // Connect to device
+      await device.connect(timeout: const Duration(seconds: 10));
+
+      _connectedDevice = device;
+      _connectionState = BluetoothConnectionState.connected;
+      _statusMessage = '${device.platformName} is connected';
+      print('✅ Unknown device connected: ${device.platformName}');
+
+      // Log successful device connection
+      _loggingService.sendLogs(
+        event: 'BLE Device Connect',
+        status: 'success',
+        notes: 'unknown device connected',
+      );
+
+      notifyListeners();
+
+      // Don't start command sequence for unknown devices
+      print('🔗 Unknown device connected - skipping command sequence');
+    } catch (e) {
+      _setError('Connection failed: $e');
+      _connectionState = BluetoothConnectionState.disconnected;
+      _statusMessage = 'Connect';
+
+      // Log failed device connection
+      _loggingService.sendLogs(
+        event: 'BLE Device Connect',
+        status: 'failed',
+        notes: 'not able to connect to unknown device',
+      );
+
+      notifyListeners();
+    }
+  }
+
   Future<void> _startCommandSequence() async {
     if (_connectedDevice == null) return;
 

@@ -1762,8 +1762,8 @@ class DashboardViewModel extends ChangeNotifier {
       final bluetoothDevice = selectedDeviceData['device'];
       
       if (bluetoothDevice != null) {
-        // Connect to the device using Bluetooth service
-        await _bluetoothService.connectToDevice(bluetoothDevice);
+        // Connect to the device using Bluetooth service without command sequence
+        await _bluetoothService.connectToDeviceWithoutCommandSequence(bluetoothDevice);
         
         // Wait for connection to complete
         int attempts = 0;
@@ -1777,7 +1777,7 @@ class DashboardViewModel extends ChangeNotifier {
         if (_bluetoothService.isConnected) {
           _isConnecting = false;
           _connectionSuccessful = true;
-          print('🎵 Dashboard: Successfully connected to device: $selectedDeviceId');
+          print('🎵 Dashboard: Successfully connected to unknown device: $selectedDeviceId');
         } else {
           throw Exception('Connection timeout');
         }
