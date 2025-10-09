@@ -7,7 +7,7 @@ class ValidateOtpUseCase {
 
   ValidateOtpUseCase(this.repository);
 
-  Future<Either<String, OtpValidationResponse>> call(String email, String otp) async {
+  Future<Either<String, dynamic>> call(String email, String otp) async {
     return await repository.validateOtp(email, otp);
   }
 }

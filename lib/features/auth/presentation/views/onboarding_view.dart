@@ -33,7 +33,7 @@ class _OnboardingViewBody extends StatelessWidget {
           children: [
             // Background PNG
             Image.asset(
-              'assets/images/term-background.png',
+              'assets/images/login-background.png',
               fit: BoxFit.cover,
               width: double.infinity,
               height: double.infinity,
@@ -126,24 +126,8 @@ class _OnboardingViewBody extends StatelessWidget {
   Widget _buildCurrentStepContent(BuildContext context) {
     return Consumer<OnboardingViewModel>(
       builder: (context, viewModel, child) {
-        switch (viewModel.currentStep) {
-          case 0:
-            return _buildPrivacyPolicyCard(context, viewModel);
-          case 1:
-            return _buildProfileSetupCard(context, viewModel);
-          case 2:
-            return Column(
-              children: [
-                _buildConnectDeviceCard(context, viewModel),
-                const SizedBox(height: 32),
-                _buildConnectBottom(context, viewModel),
-              ],
-            );
-          case 3:
-            return _buildOtpVerificationCard(context, viewModel);
-          default:
-            return _buildPrivacyPolicyCard(context, viewModel);
-        }
+        // Always show profile setup card
+        return _buildProfileSetupCard(context, viewModel);
       },
     );
   }

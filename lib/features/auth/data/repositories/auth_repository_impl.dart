@@ -12,6 +12,7 @@ import '../../domain/entities/otp_response.dart';
 import '../../domain/entities/otp_validation_response.dart';
 import '../../domain/entities/social_login_request.dart';
 import '../../domain/entities/social_login_response.dart';
+import '../../domain/entities/terms_required_response.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 
@@ -399,7 +400,7 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Either<String, OtpValidationResponse>> validateOtp(
+  Future<Either<String, dynamic>> validateOtp(
     String email,
     String otp,
   ) async {
@@ -446,9 +447,9 @@ class AuthRepositoryImpl implements AuthRepository {
           if (otpValidationResponse.data.userId == null ||
               otpValidationResponse.data.token == null) {
             print(
-              '🔐 AuthRepository: User does not exist - userId and token are null',
+              '🔐 AuthRepository: User does not exist - userId and token are null, showing Terms and Conditions',
             );
-            return Left('User does not exist. Please register first.');
+            return Right(TermsRequiredResponse.termsRequired());
           }
 
           // Store user data in SharedPreferences
@@ -918,7 +919,7 @@ class AuthRepositoryImpl implements AuthRepository {
         data: request.toJson(),
         options: Options(
           headers: {
-            'Authorization': token,
+            // 'Authorization': token,
             'Accept': 'application/json',
             'Content-Type': 'application/json',
           },

@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/routing/app_router_config.dart';
+import '../../domain/entities/terms_required_response.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/send_otp_usecase.dart';
@@ -671,7 +672,7 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
                   const SizedBox(height: 24),
 
                   // Terms and Conditions section
-                  _buildTermsAndConditionsSection(context),
+                  // _buildTermsAndConditionsSection(context),
                 ],
               ),
             ),
@@ -1047,29 +1048,36 @@ class _LoginViewBodyState extends State<_LoginViewBody> {
         Navigator.of(context).pop(); // Close loading dialog
 
         if (otpValidationResponse != null) {
-          // Success - OTP validated
-          print('🔐 LoginView: OTP validated successfully');
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('OTP verified successfully!'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 3),
-            ),
-          );
-
-          // Determine navigation based on user profile state
-          final viewModel = Provider.of<LoginViewModel>(context, listen: false);
-          final navigationRoute = await viewModel.getNavigationRoute();
-
-          if (navigationRoute == 'dashboard') {
-            print('🔐 LoginView: Navigating to dashboard screen');
-            context.go(AppRoutes.dashboard);
-          } else if (navigationRoute == 'onboardDevice') {
-            print('🔐 LoginView: Navigating to onboard device screen');
-            context.go(AppRoutes.onboardDevice);
+          // Check if this is a TermsRequiredResponse
+          if (otpValidationResponse is TermsRequiredResponse) {
+            print('🔐 LoginView: Terms and Conditions acceptance required');
+            // Navigate to Terms and Conditions screen
+            context.go(AppRoutes.termsAndConditions);
           } else {
-            print('🔐 LoginView: Navigating to onboarding screen');
-            context.go(AppRoutes.onboarding);
+            // Success - OTP validated, user exists
+            print('🔐 LoginView: OTP validated successfully');
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('OTP verified successfully!'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 3),
+              ),
+            );
+
+            // Determine navigation based on user profile state
+            final viewModel = Provider.of<LoginViewModel>(context, listen: false);
+            final navigationRoute = await viewModel.getNavigationRoute();
+
+            if (navigationRoute == 'dashboard') {
+              print('🔐 LoginView: Navigating to dashboard screen');
+              context.go(AppRoutes.dashboard);
+            } else if (navigationRoute == 'onboardDevice') {
+              print('🔐 LoginView: Navigating to onboard device screen');
+              context.go(AppRoutes.onboardDevice);
+            } else {
+              print('🔐 LoginView: Navigating to onboarding screen');
+              context.go(AppRoutes.onboarding);
+            }
           }
         } else {
           // Error - increment failed attempts

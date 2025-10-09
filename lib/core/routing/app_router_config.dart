@@ -4,6 +4,7 @@ class AppRoutes {
   // Auth
   static const String login = '/login';
   static const String onboarding = '/onboarding';
+  static const String termsAndConditions = '/terms-and-conditions';
   static const String devices = '/devices';
   static const String deviceConnected = '/device-connected';
   static const String onboardDevice = '/onboard-device';
@@ -36,6 +37,7 @@ class AppRouteNames {
   // Auth
   static const String login = 'login';
   static const String onboarding = 'onboarding';
+  static const String termsAndConditions = 'termsAndConditions';
   static const String devices = 'devices';
   static const String deviceConnected = 'deviceConnected';
   static const String onboardDevice = 'onboardDevice';

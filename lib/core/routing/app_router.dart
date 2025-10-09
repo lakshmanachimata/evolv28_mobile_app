@@ -4,6 +4,7 @@ import 'app_router_config.dart';
 import '../../shared/widgets/splash_screen.dart';
 import '../../features/auth/presentation/views/login_view.dart';
 import '../../features/auth/presentation/views/onboarding_view.dart';
+import '../../features/auth/presentation/views/terms_and_conditions_view.dart';
 import '../../features/auth/presentation/views/onboard_device_view.dart';
 import '../../features/auth/presentation/views/devices_view.dart';
 import '../../features/auth/presentation/views/device_connected_view.dart';
@@ -48,6 +49,12 @@ class AppRouter {
         path: AppRoutes.onboarding,
         name: AppRouteNames.onboarding,
         builder: (context, state) => const OnboardingView(),
+      ),
+      // Terms and Conditions Route
+      GoRoute(
+        path: AppRoutes.termsAndConditions,
+        name: AppRouteNames.termsAndConditions,
+        builder: (context, state) => const TermsAndConditionsView(),
       ),
       // Onboard Device Route
       GoRoute(

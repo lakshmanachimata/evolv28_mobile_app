@@ -10,6 +10,7 @@ import '../../domain/entities/otp_response.dart';
 import '../../domain/entities/otp_validation_response.dart';
 import '../../domain/entities/social_login_request.dart';
 import '../../domain/entities/social_login_response.dart';
+import '../../domain/entities/terms_required_response.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/send_otp_usecase.dart';
@@ -212,8 +213,8 @@ class LoginViewModel extends ChangeNotifier {
     }
   }
 
-  // Validate OTP
-  Future<OtpValidationResponse?> validateOtp(String otp) async {
+  // Validate OTP - returns dynamic to handle both OtpValidationResponse and TermsRequiredResponse
+  Future<dynamic> validateOtp(String otp) async {
     if (_email.isEmpty) {
       _setError('Email is required for OTP validation');
       return null;
@@ -238,10 +239,10 @@ class LoginViewModel extends ChangeNotifier {
           }
           return null;
         },
-        (otpValidationResponse) {
+        (response) {
           _setLoading(false);
           _userDoesNotExist = false; // Reset flag on success
-          return otpValidationResponse;
+          return response;
         },
       );
     } catch (e) {

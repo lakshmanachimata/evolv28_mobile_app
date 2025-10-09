@@ -13,6 +13,7 @@ import '../../features/auth/domain/usecases/get_user_details_usecase.dart';
 import '../../features/auth/domain/usecases/get_all_music_usecase.dart';
 import '../../features/auth/domain/usecases/social_login_usecase.dart';
 import '../../features/auth/domain/usecases/create_profile_usecase.dart';
+import '../../features/auth/presentation/viewmodels/terms_and_conditions_viewmodel.dart';
 
 final sl = GetIt.instance;
 
@@ -40,4 +41,7 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => GetAllMusicUseCase(sl()));
   sl.registerLazySingleton(() => SocialLoginUseCase(sl()));
   sl.registerLazySingleton(() => CreateProfileUseCase(sl()));
+  
+  // Auth ViewModels
+  sl.registerFactory(() => TermsAndConditionsViewModel());
 }
