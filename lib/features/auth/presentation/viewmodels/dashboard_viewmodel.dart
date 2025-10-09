@@ -877,7 +877,7 @@ class DashboardViewModel extends ChangeNotifier {
         await _bluetoothService.startScanning();
 
         // Wait a bit for scanning to complete
-        await Future.delayed(const Duration(seconds: 12));
+        await Future.delayed(const Duration(seconds: 10));
 
         // Check if we found any devices
         if (_bluetoothService.scannedDevices.isNotEmpty) {
@@ -1276,9 +1276,7 @@ class DashboardViewModel extends ChangeNotifier {
       await _bluetoothService.disconnect();
     } else {
       // Only start scanning if we're not already showing dialogs or scanning
-      if (!_showUnknownDeviceDialog &&
-          !_showDeviceSelectionDialog &&
-          !_showOtpConfirmationDialog) {
+      if (!_showUnknownDeviceDialog && !_showDeviceSelectionDialog) {
         print('🎵 Dashboard: connectBluetoothDevice() - Starting new scan');
         await _attemptAutoConnection();
       } else {
