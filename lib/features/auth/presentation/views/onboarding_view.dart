@@ -32,52 +32,66 @@ class _OnboardingViewBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       body: GestureDetector(
         onTap: () {
           // Hide keyboard when tapping outside input fields
           FocusScope.of(context).unfocus();
         },
-        child: Stack(
-          children: [
-            // Background PNG
-            Image.asset(
-              'assets/images/login-background.png',
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height,
             ),
+            child: IntrinsicHeight(
+              child: Stack(
+                children: [
+                  // Background PNG
+                  Positioned.fill(
+                    child: Image.asset(
+                      'assets/images/login-background.png',
+                      fit: BoxFit.cover,
+                    ),
+                  ),
 
-            // Header Section with evolv28 logo
-            Positioned(
-              top: 30,
-              left: 0,
-              right: 0,
-              child: SafeArea(
-                child: _buildHeader(context),
+                  // Header Section with evolv28 logo
+                  Positioned(
+                    top: 30,
+                    left: 0,
+                    right: 0,
+                    child: SafeArea(
+                      child: _buildHeader(context),
+                    ),
+                  ),
+
+                  // Main form content - starts at 35% from top
+                  Positioned(
+                    top: MediaQuery.of(context).size.height * 0.2,
+                    left: 24,
+                    right: 24,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(16.0),
+                      ),
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildProfileSetupForm(context),
+                          const SizedBox(height: 24),
+                          _buildContinueButton(context),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-
-            // Main form content - starts at 35% from top
-            Positioned(
-              top: MediaQuery.of(context).size.height * 0.2,
-              left: 24,
-              right: 24,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(16.0),
-                ),
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    _buildProfileSetupForm(context),
-                    const SizedBox(height: 24),
-                    _buildContinueButton(context),
-                  ],
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
