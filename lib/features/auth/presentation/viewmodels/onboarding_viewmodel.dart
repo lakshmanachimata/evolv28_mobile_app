@@ -67,6 +67,22 @@ class OnboardingViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Check if form is valid (both first name and last name have text)
+  bool get isFormValid {
+    return _firstNameController.text.trim().isNotEmpty && 
+           _lastNameController.text.trim().isNotEmpty;
+  }
+
+  // Add listeners to text controllers to update form validation
+  void addTextListeners() {
+    _firstNameController.addListener(() {
+      notifyListeners();
+    });
+    _lastNameController.addListener(() {
+      notifyListeners();
+    });
+  }
+
   void togglePrivacyPolicyAgreement() {
     _agreedToPrivacyPolicy = !_agreedToPrivacyPolicy;
     notifyListeners();

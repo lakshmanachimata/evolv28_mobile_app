@@ -907,19 +907,11 @@ class AuthRepositoryImpl implements AuthRepository {
         '🔐 AuthRepository: Create profile request for email: ${request.emailId}',
       );
 
-      // Get authorization token
-      final token = sharedPreferences.getString('user_token');
-      if (token == null || token.isEmpty) {
-        print('🔐 AuthRepository: No authorization token found');
-        return const Left('No authorization token found');
-      }
-
       final response = await _dio.post(
         '${ApiConstants.baseUrl}${ApiConstants.createProfile}',
         data: request.toJson(),
         options: Options(
           headers: {
-            // 'Authorization': token,
             'Accept': 'application/json',
             'Content-Type': 'application/json',
           },

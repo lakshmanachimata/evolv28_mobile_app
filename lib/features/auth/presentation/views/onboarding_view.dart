@@ -17,6 +17,7 @@ class OnboardingView extends StatelessWidget {
         // Refresh email data when view is created
         WidgetsBinding.instance.addPostFrameCallback((_) {
           viewModel.refreshEmailData();
+          viewModel.addTextListeners();
         });
         return viewModel;
       },
@@ -248,7 +249,7 @@ class _OnboardingViewBody extends StatelessWidget {
           width: double.infinity,
           height: 56,
           child: ElevatedButton(
-            onPressed: () async {
+            onPressed: viewModel.isFormValid ? () async {
               // Save user profile data before navigating
               final success = await viewModel.saveUserProfile();
               if (success) {
@@ -272,10 +273,13 @@ class _OnboardingViewBody extends StatelessWidget {
                   ),
                 );
               }
-            },
+            } : null,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFF17961), // Orange-red color
+              backgroundColor: viewModel.isFormValid 
+                  ? const Color(0xFFF17961) // Orange-red when enabled
+                  : Colors.grey, // Gray when disabled
               foregroundColor: Colors.white,
+              disabledForegroundColor: Colors.white, // White text even when disabled
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
