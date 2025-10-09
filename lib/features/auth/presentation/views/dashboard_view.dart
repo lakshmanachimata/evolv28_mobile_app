@@ -64,34 +64,46 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
   /// 3. Only start permission flow after Bluetooth is enabled
   /// 4. Skip permission flow if both permissions are already granted
   Future<void> _startPermissionFlow(BuildContext context) async {
-    print('🎵 Dashboard View: Checking Bluetooth state before starting permission flow...');
-    
+    print(
+      '🎵 Dashboard View: Checking Bluetooth state before starting permission flow...',
+    );
+
     // Check if permission flow is already in progress
     final viewModel = Provider.of<DashboardViewModel>(context, listen: false);
     if (viewModel.permissionFlowInProgress) {
-      print('🎵 Dashboard View: Permission flow already in progress, skipping...');
+      print(
+        '🎵 Dashboard View: Permission flow already in progress, skipping...',
+      );
       return;
     }
-    
+
     // Check if Bluetooth is enabled first
     final isBluetoothEnabled = await _checkBluetoothEnabled();
-    
+
     if (!isBluetoothEnabled) {
-      print('🎵 Dashboard View: Bluetooth is disabled - permission flow will be triggered after user enables Bluetooth');
+      print(
+        '🎵 Dashboard View: Bluetooth is disabled - permission flow will be triggered after user enables Bluetooth',
+      );
       return; // Don't start permission flow, wait for Bluetooth to be enabled
     }
-    
+
     // Check if both permissions are already granted
-    final hasLocationPermission = await LocationPermissionHelper.isLocationPermissionGranted();
-    final hasBluetoothPermission = await BluetoothPermissionHelper.isBluetoothEnabled();
-    
+    final hasLocationPermission =
+        await LocationPermissionHelper.isLocationPermissionGranted();
+    final hasBluetoothPermission =
+        await BluetoothPermissionHelper.isBluetoothEnabled();
+
     if (hasLocationPermission && hasBluetoothPermission) {
-      print('🎵 Dashboard View: Both permissions already granted, skipping permission flow and starting device scanning...');
+      print(
+        '🎵 Dashboard View: Both permissions already granted, skipping permission flow and starting device scanning...',
+      );
       await viewModel.startAutomaticDeviceScanning();
       return;
     }
-    
-    print('🎵 Dashboard View: Bluetooth is enabled but permissions missing - starting permission flow sequence...');
+
+    print(
+      '🎵 Dashboard View: Bluetooth is enabled but permissions missing - starting permission flow sequence...',
+    );
     await _executePermissionFlow(context);
   }
 
@@ -103,35 +115,45 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
   /// 4. Bluetooth permission system dialog
   Future<void> _executePermissionFlow(BuildContext context) async {
     print('🎵 Dashboard View: Starting full permission flow sequence...');
-    
+
     final viewModel = Provider.of<DashboardViewModel>(context, listen: false);
-    
+
     // Set permission flow in progress flag
     viewModel.setPermissionFlowInProgress(true);
-    
+
     try {
       // Step 1 & 2: Location permission (app dialog -> system dialog)
       print('🎵 Dashboard View: Step 1-2: Requesting location permission...');
-      final locationGranted = await LocationPermissionHelper.checkAndRequestLocationPermission(context);
-      
+      final locationGranted =
+          await LocationPermissionHelper.checkAndRequestLocationPermission(
+            context,
+          );
+
       if (!locationGranted) {
         print('🎵 Dashboard View: Location permission denied, stopping flow');
         return;
       }
-      
-      print('🎵 Dashboard View: Location permission granted, proceeding to Bluetooth...');
-      
+
+      print(
+        '🎵 Dashboard View: Location permission granted, proceeding to Bluetooth...',
+      );
+
       // Step 3 & 4: Bluetooth permission (app dialog -> system dialog)
       print('🎵 Dashboard View: Step 3-4: Requesting Bluetooth permission...');
-      final bluetoothGranted = await BluetoothPermissionHelper.checkAndRequestBluetoothPermission(context);
-      
+      final bluetoothGranted =
+          await BluetoothPermissionHelper.checkAndRequestBluetoothPermission(
+            context,
+          );
+
       if (!bluetoothGranted) {
         print('🎵 Dashboard View: Bluetooth permission denied, stopping flow');
         return;
       }
-      
-      print('🎵 Dashboard View: Both permissions granted, starting device scanning...');
-      
+
+      print(
+        '🎵 Dashboard View: Both permissions granted, starting device scanning...',
+      );
+
       // Step 5: Both permissions granted, start scanning
       await viewModel.startAutomaticDeviceScanning();
     } finally {
@@ -165,7 +187,8 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
           // Permission Flow Trigger Listener
           Consumer<DashboardViewModel>(
             builder: (context, viewModel, child) {
-              if (viewModel.shouldTriggerPermissionFlow && !viewModel.permissionFlowInProgress) {
+              if (viewModel.shouldTriggerPermissionFlow &&
+                  !viewModel.permissionFlowInProgress) {
                 // Clear the flag and trigger permission flow
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   viewModel.clearPermissionFlowTrigger();
@@ -436,10 +459,40 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
   Widget _buildConnectCard(BuildContext context, DashboardViewModel viewModel) {
     return Consumer<DashboardViewModel>(
       builder: (context, viewModel, child) {
+        // Determine connection state
+        String title;
+        String subtitle;
+        Color iconColor;
+        IconData iconData;
+
+        if (viewModel.connectionSuccessful) {
+          title = 'Connected';
+          subtitle = 'Your Evolv28 device is connected';
+          iconColor = Colors.green;
+          iconData = Icons.bluetooth_connected;
+        } else if (viewModel.isConnecting) {
+          title = 'Connecting';
+          subtitle = 'Connecting to your device...';
+          iconColor = Colors.orange;
+          iconData = Icons.bluetooth_searching;
+        } else if (viewModel.isBluetoothConnected) {
+          title = 'Connected';
+          subtitle = viewModel.bluetoothStatusMessage;
+          iconColor = Colors.blue;
+          iconData = Icons.bluetooth_connected;
+        } else {
+          title = 'Connect';
+          subtitle = 'Tap to connect your Evolv28 device';
+          iconColor = Colors.grey;
+          iconData = Icons.bluetooth;
+        }
+
         return GestureDetector(
-          onTap: () {
-            viewModel.connectBluetoothDevice();
-          },
+          onTap: viewModel.connectionSuccessful
+              ? null
+              : () {
+                  viewModel.connectBluetoothDevice();
+                },
           child: Container(
             padding: const EdgeInsets.all(20.0),
             decoration: BoxDecoration(
@@ -460,7 +513,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        viewModel.bluetoothStatusMessage,
+                        title,
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -469,17 +522,14 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        viewModel.isBluetoothConnected
-                            ? viewModel.bluetoothStatusMessage
-                            : viewModel.bluetoothService.isScanning
-                            ? 'Scanning... ${viewModel.bluetoothScanCountdown}s remaining'
-                            : 'Tap to connect your Evolv28 device',
+                        subtitle,
                         style: const TextStyle(
                           fontSize: 14,
                           color: Colors.grey,
                         ),
                       ),
-                      if (viewModel.bluetoothErrorMessage.isNotEmpty) ...[
+                      if (viewModel.bluetoothErrorMessage.isNotEmpty &&
+                          !viewModel.connectionSuccessful) ...[
                         const SizedBox(height: 4),
                         Text(
                           viewModel.bluetoothErrorMessage,
@@ -492,7 +542,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                     ],
                   ),
                 ),
-                _buildBluetoothIcon(viewModel),
+                Icon(iconData, color: iconColor, size: 30),
               ],
             ),
           ),
@@ -710,21 +760,23 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
             builder: (context, viewModel, child) {
               // Get filtered programs (union of music data and Bluetooth programs)
               final filteredPrograms = viewModel.filteredPrograms;
-              
+
               // Extract program names and IDs from filtered programs
               final programNames = <String>[];
               final programIds = <String>[];
-              
+
               for (final program in filteredPrograms) {
                 if (program is Map<String, dynamic>) {
-                  final programName = program['bluetoothProgramName'] ?? 
-                                    program['name'] ?? 
-                                    program['title'] ?? 
-                                    'Unknown Program';
-                  final programId = program['bluetoothProgramId'] ?? 
-                                  program['id']?.toString() ?? 
-                                  '';
-                  
+                  final programName =
+                      program['bluetoothProgramName'] ??
+                      program['name'] ??
+                      program['title'] ??
+                      'Unknown Program';
+                  final programId =
+                      program['bluetoothProgramId'] ??
+                      program['id']?.toString() ??
+                      '';
+
                   programNames.add(programName);
                   programIds.add(programId);
                 }
@@ -1481,37 +1533,26 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
     final unknownDevices = viewModel.unknownDevices;
     if (unknownDevices.isEmpty) return SizedBox.shrink();
 
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.7,
-        minHeight: 400.0,
-      ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-      ),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
+    return StatefulBuilder(
+      builder: (context, setModalState) {
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.7,
+            minHeight: MediaQuery.of(context).size.height * 0.6,
+          ),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: SafeArea(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Handle bar
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 10),
 
-                // Close button
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -1521,14 +1562,15 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                         viewModel.closeUnknownDeviceDialog();
                       },
                       child: Container(
+                        margin: const EdgeInsets.only(right: 24),
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.red[50],
+                          color: Colors.orange[50],
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Icon(
                           Icons.close,
-                          color: Colors.red[600],
+                          color: Colors.orange[600],
                           size: 20,
                         ),
                       ),
@@ -1536,11 +1578,19 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                   ],
                 ),
 
-                const SizedBox(height: 16),
+                // Scrollable content
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 16),
 
-                // Title
+                        // Title - Dynamic based on connection state
                 Text(
-                  'New Devices Found (${unknownDevices.length})',
+                  viewModel.connectionSuccessful
+                      ? 'Welcome ${viewModel.userName}'
+                      : 'Welcome ${viewModel.userName}\nselect your device',
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -1548,45 +1598,178 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                   ),
                 ),
 
-                const SizedBox(height: 8),
+                const SizedBox(height: 20),
 
-                // Subtitle
-                const Text(
-                  'Tap on a device to add it to your account',
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Device list
-                ...unknownDevices
-                    .map(
-                      (device) =>
-                          _buildUnknownDeviceItem(context, viewModel, device),
-                    )
-                    .toList(),
-
-                const SizedBox(height: 24),
-
-                // Skip All button
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      viewModel.skipUnknownDevice();
-                    },
-                    child: const Text(
-                      'Skip All',
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                // Device Image
+                Container(
+                  width: 120,
+                  height: 120,
+                  child: Center(
+                    child: Image.asset(
+                      'assets/images/evolv28_device.png',
+                      width: 120,
+                      height: 120,
+                      fit: BoxFit.contain,
                     ),
                   ),
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
+
+                // Connection status or device list
+                if (viewModel.connectionSuccessful) ...[
+                  // Success state
+                  Text(
+                    'Connected to ${unknownDevices.first['name']} successfully',
+                    style: const TextStyle(fontSize: 16, color: Colors.black),
+                  ),
+                  const SizedBox(height: 20),
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: const BoxDecoration(
+                      color: Colors.green,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.check,
+                      color: Colors.white,
+                      size: 40,
+                    ),
+                  ),
+                ] else ...[
+                  // Device selection state
+                  const Text(
+                    'Nearby Devices',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Device list with checkboxes
+                  Column(
+                    children: unknownDevices
+                        .map(
+                          (device) => _buildDeviceCheckboxItem(
+                            context,
+                            viewModel,
+                            device,
+                            setModalState,
+                          ),
+                        )
+                        .toList(),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Connect button - only show if devices are selected
+                  if (viewModel.hasSelectedDevices) ...[
+                    SizedBox(
+                      width: 120,
+                      child: ElevatedButton(
+                        onPressed: viewModel.isConnecting
+                            ? null
+                            : () async {
+                                await viewModel.connectToSelectedDevices();
+                                setModalState(() {});
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(
+                            0xFFF17961,
+                          ), // Orange-red
+                          foregroundColor: Colors.white,
+                          disabledForegroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          viewModel.isConnecting ? 'Connecting...' : 'Connect',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDeviceCheckboxItem(
+    BuildContext context,
+    DashboardViewModel viewModel,
+    Map<String, dynamic> device,
+    StateSetter setModalState,
+  ) {
+    final deviceId = device['id'] ?? device['name'] ?? '';
+    final isSelected = viewModel.isDeviceSelected(deviceId);
+
+    return GestureDetector(
+      onTap: () {
+        viewModel.toggleDeviceSelection(deviceId);
+        setModalState(() {});
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.orange[50] : Colors.grey[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? Colors.orange[300]! : Colors.grey[200]!,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            // Checkbox
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: isSelected ? Colors.orange[600] : Colors.transparent,
+                border: Border.all(
+                  color: isSelected ? Colors.orange[600]! : Colors.grey[400]!,
+                  width: 2,
+                ),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: isSelected
+                  ? const Icon(Icons.check, color: Colors.white, size: 16)
+                  : null,
+            ),
+            const SizedBox(width: 16),
+
+            // Device name
+            Expanded(
+              child: Text(
+                device['name'] ?? 'Unknown Device',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: isSelected ? Colors.orange[800] : Colors.black,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

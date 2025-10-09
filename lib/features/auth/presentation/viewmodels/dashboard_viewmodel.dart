@@ -85,6 +85,11 @@ class DashboardViewModel extends ChangeNotifier {
   Map<String, dynamic>? _selectedUnknownDevice;
   bool _showOtpConfirmationDialog = false;
   String _otpCode = '';
+  
+  // Device selection state for new UI
+  Set<String> _selectedDeviceIds = {}; // Track multiple selected devices
+  bool _isConnecting = false; // Track connection state
+  bool _connectionSuccessful = false; // Track successful connection
 
   // Getters
   bool get isLoading => _isLoading;
@@ -151,6 +156,12 @@ class DashboardViewModel extends ChangeNotifier {
   List<Map<String, dynamic>> get unknownDevices => _unknownDevices;
   Map<String, dynamic>? get selectedUnknownDevice => _selectedUnknownDevice;
   bool get showOtpConfirmationDialog => _showOtpConfirmationDialog;
+  
+  // Device selection getters
+  Set<String> get selectedDeviceIds => _selectedDeviceIds;
+  bool get isConnecting => _isConnecting;
+  bool get connectionSuccessful => _connectionSuccessful;
+  bool get hasSelectedDevices => _selectedDeviceIds.isNotEmpty;
 
   bool get unknownDeviceBottomSheetShown => _unknownDeviceBottomSheetShown;
 
@@ -1665,6 +1676,10 @@ class DashboardViewModel extends ChangeNotifier {
     _showUnknownDeviceDialog = false;
     _unknownDevices.clear();
     _selectedUnknownDevice = null;
+    // Reset connection states
+    _selectedDeviceIds.clear();
+    _isConnecting = false;
+    _connectionSuccessful = false;
     print('🎵 Dashboard: Unknown device dialog closed');
     notifyListeners();
   }
@@ -1696,6 +1711,53 @@ class DashboardViewModel extends ChangeNotifier {
       '🎵 Dashboard: Selected unknown device for OTP verification: ${device['name']}',
     );
     notifyListeners();
+  }
+
+  // New methods for device selection with checkboxes
+  void toggleDeviceSelection(String deviceId) {
+    if (_selectedDeviceIds.contains(deviceId)) {
+      _selectedDeviceIds.remove(deviceId);
+    } else {
+      _selectedDeviceIds.add(deviceId);
+    }
+    print('🎵 Dashboard: Toggled device selection: $deviceId, Selected: $_selectedDeviceIds');
+    notifyListeners();
+  }
+
+  bool isDeviceSelected(String deviceId) {
+    return _selectedDeviceIds.contains(deviceId);
+  }
+
+  Future<void> connectToSelectedDevices() async {
+    if (_selectedDeviceIds.isEmpty) return;
+
+    try {
+      _isConnecting = true;
+      _connectionSuccessful = false;
+      notifyListeners();
+
+      print('🎵 Dashboard: Connecting to selected devices: $_selectedDeviceIds');
+
+      // Simulate connection process (replace with actual Bluetooth connection logic)
+      await Future.delayed(const Duration(seconds: 2));
+
+      // For now, just mark as successful
+      _isConnecting = false;
+      _connectionSuccessful = true;
+      
+      print('🎵 Dashboard: Successfully connected to devices');
+      notifyListeners();
+
+      // Close the bottom sheet after successful connection
+      await Future.delayed(const Duration(seconds: 1));
+      closeUnknownDeviceDialog();
+      
+    } catch (e) {
+      _isConnecting = false;
+      _connectionSuccessful = false;
+      print('🎵 Dashboard: Error connecting to devices: $e');
+      notifyListeners();
+    }
   }
 
   void closeOtpConfirmationDialog() {
