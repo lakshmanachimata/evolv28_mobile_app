@@ -118,6 +118,9 @@ class DashboardViewModel extends ChangeNotifier {
   List<dynamic> get musicData => _musicData;
   bool get isLoadingMusic => _isLoadingMusic;
 
+  // Filtered programs (union of music data and Bluetooth programs)
+  List<dynamic> get filteredPrograms => _getFilteredPrograms();
+
   // Permission flow trigger getter
   bool get shouldTriggerPermissionFlow => _shouldTriggerPermissionFlow;
   bool get permissionFlowInProgress => _permissionFlowInProgress;
@@ -448,6 +451,154 @@ class DashboardViewModel extends ChangeNotifier {
     } catch (e) {
       print('🎵 Dashboard: Error saving music data to SharedPreferences: $e');
     }
+  }
+
+  // Get filtered programs (union of music data and Bluetooth programs)
+  List<dynamic> _getFilteredPrograms() {
+    try {
+      print('🎵 Dashboard: Creating union between music data and Bluetooth programs...');
+      
+      // Get Bluetooth programs from the service
+      final bluetoothPrograms = _bluetoothService.availablePrograms;
+      print('🎵 Dashboard: Bluetooth programs: ${bluetoothPrograms.length} items');
+      
+      // Get music data
+      print('🎵 Dashboard: Music data: ${_musicData.length} items');
+      
+      // If no music data or no Bluetooth programs, return empty list
+      if (_musicData.isEmpty || bluetoothPrograms.isEmpty) {
+        print('🎵 Dashboard: No music data or Bluetooth programs available');
+        return [];
+      }
+      
+      // Create union by matching music data with Bluetooth programs
+      final filteredPrograms = <dynamic>[];
+      
+      for (final musicItem in _musicData) {
+        if (musicItem is Map<String, dynamic>) {
+          // Extract relevant fields from music data
+          final musicName = _extractMusicName(musicItem);
+          final musicId = _extractMusicId(musicItem);
+          
+          if (musicName != null && musicId != null) {
+            // Check if this music item matches any Bluetooth program
+            final matchingBluetoothProgram = _findMatchingBluetoothProgram(musicName, musicId, bluetoothPrograms);
+            
+            if (matchingBluetoothProgram != null) {
+              // Create enhanced music item with Bluetooth program info
+              final enhancedMusicItem = Map<String, dynamic>.from(musicItem);
+              enhancedMusicItem['bluetoothProgram'] = matchingBluetoothProgram;
+              enhancedMusicItem['bluetoothProgramName'] = matchingBluetoothProgram.split('|')[0];
+              enhancedMusicItem['bluetoothProgramId'] = matchingBluetoothProgram.split('|')[1];
+              
+              filteredPrograms.add(enhancedMusicItem);
+              print('🎵 Dashboard: Matched music "$musicName" with Bluetooth program "$matchingBluetoothProgram"');
+            }
+          }
+        }
+      }
+      
+      print('🎵 Dashboard: Created union with ${filteredPrograms.length} filtered programs');
+      return filteredPrograms;
+    } catch (e) {
+      print('🎵 Dashboard: Error creating filtered programs: $e');
+      return [];
+    }
+  }
+
+  // Extract music name from music data item
+  String? _extractMusicName(Map<String, dynamic> musicItem) {
+    // Try different possible field names for music name
+    return musicItem['name'] ?? 
+           musicItem['title'] ?? 
+           musicItem['musicName'] ?? 
+           musicItem['programName'] ??
+           musicItem['fileName'] ??
+           musicItem['file_name'];
+  }
+
+  // Extract music ID from music data item
+  String? _extractMusicId(Map<String, dynamic> musicItem) {
+    // Try different possible field names for music ID
+    return musicItem['id']?.toString() ?? 
+           musicItem['musicId']?.toString() ?? 
+           musicItem['programId']?.toString() ??
+           musicItem['fileId']?.toString() ??
+           musicItem['file_id']?.toString();
+  }
+
+  // Find matching Bluetooth program for a music item
+  String? _findMatchingBluetoothProgram(String musicName, String musicId, List<String> bluetoothPrograms) {
+    try {
+      // Normalize music name for comparison
+      final normalizedMusicName = _normalizeName(musicName);
+      
+      for (final bluetoothProgram in bluetoothPrograms) {
+        final parts = bluetoothProgram.split('|');
+        if (parts.length >= 2) {
+          final bluetoothProgramName = parts[0];
+          final bluetoothProgramId = parts[1];
+          
+          // Normalize Bluetooth program name for comparison
+          final normalizedBluetoothName = _normalizeName(bluetoothProgramName);
+          
+          // Check for exact match or partial match
+          if (_isNameMatch(normalizedMusicName, normalizedBluetoothName) ||
+              _isIdMatch(musicId, bluetoothProgramId)) {
+            return bluetoothProgram;
+          }
+        }
+      }
+      
+      return null;
+    } catch (e) {
+      print('🎵 Dashboard: Error finding matching Bluetooth program: $e');
+      return null;
+    }
+  }
+
+  // Normalize name for comparison (remove special chars, convert to lowercase)
+  String _normalizeName(String name) {
+    return name
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^\w\s]'), '') // Remove special characters
+        .replaceAll(RegExp(r'\s+'), ' ') // Normalize spaces
+        .trim();
+  }
+
+  // Check if names match (exact or partial)
+  bool _isNameMatch(String musicName, String bluetoothName) {
+    // Exact match
+    if (musicName == bluetoothName) return true;
+    
+    // Check if one contains the other (for partial matches)
+    if (musicName.contains(bluetoothName) || bluetoothName.contains(musicName)) return true;
+    
+    // Check for word-level matches
+    final musicWords = musicName.split(' ');
+    final bluetoothWords = bluetoothName.split(' ');
+    
+    // If any significant word matches, consider it a match
+    for (final musicWord in musicWords) {
+      if (musicWord.length > 2) { // Only consider words longer than 2 chars
+        for (final bluetoothWord in bluetoothWords) {
+          if (bluetoothWord.length > 2 && musicWord == bluetoothWord) {
+            return true;
+          }
+        }
+      }
+    }
+    
+    return false;
+  }
+
+  // Check if IDs match
+  bool _isIdMatch(String musicId, String bluetoothId) {
+    // Remove file extensions for comparison
+    final normalizedMusicId = musicId.replaceAll(RegExp(r'\.\w+$'), '');
+    final normalizedBluetoothId = bluetoothId.replaceAll(RegExp(r'\.\w+$'), '');
+    
+    return normalizedMusicId.toLowerCase() == normalizedBluetoothId.toLowerCase();
   }
 
   // Start Bluetooth state monitoring

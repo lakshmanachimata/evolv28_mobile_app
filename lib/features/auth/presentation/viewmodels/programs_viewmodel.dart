@@ -44,31 +44,39 @@ class ProgramsViewModel extends ChangeNotifier {
   // Getter for current view
   String get currentView => _currentView;
 
-  // Programs data - dynamically generated from BLE programs
+  // Programs data - dynamically generated from filtered programs (union of music data and BLE programs)
   List<ProgramData> get programs {
-    final bluetoothPrograms = _bluetoothService.programNames;
-    final bluetoothIds = _bluetoothService.programIds;
+    // Get filtered programs from DashboardViewModel
+    final dashboardViewModel = DashboardViewModel();
+    final filteredPrograms = dashboardViewModel.filteredPrograms;
     
-    // If no BLE programs available, use default programs
-    if (bluetoothPrograms.isEmpty) {
+    // If no filtered programs available, use default programs
+    if (filteredPrograms.isEmpty) {
       return _getDefaultPrograms();
     }
     
-    // Convert BLE programs to ProgramData
-    return bluetoothPrograms.asMap().entries.map((entry) {
-      final index = entry.key;
-      final programName = entry.value;
-      final programId = bluetoothIds.length > index ? bluetoothIds[index] : '';
-      
-      return ProgramData(
-        id: programId,
-        title: programName,
-        recommendedTime: _getRecommendedTime(programName),
-        iconPath: _getIconPath(programName),
-        isLocked: false,
-        isFavorite: index == 0, // First program is favorite by default
-      );
-    }).toList();
+    // Convert filtered programs to ProgramData
+    return filteredPrograms.map((program) {
+      if (program is Map<String, dynamic>) {
+        final programName = program['bluetoothProgramName'] ?? 
+                          program['name'] ?? 
+                          program['title'] ?? 
+                          'Unknown Program';
+        final programId = program['bluetoothProgramId'] ?? 
+                         program['id']?.toString() ?? 
+                         '';
+        
+        return ProgramData(
+          id: programId,
+          title: programName,
+          recommendedTime: _getRecommendedTime(programName),
+          iconPath: _getIconPath(programName),
+          isLocked: false,
+          isFavorite: false, // No favorites by default for filtered programs
+        );
+      }
+      return null;
+    }).where((program) => program != null).cast<ProgramData>().toList();
   }
   
   // Default programs fallback

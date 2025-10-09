@@ -708,11 +708,29 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
           height: 100,
           child: Consumer<DashboardViewModel>(
             builder: (context, viewModel, child) {
-              // Get BLE programs or use default ones
-              final programNames = viewModel.bluetoothProgramNames;
-              final programIds = viewModel.bluetoothProgramIds;
+              // Get filtered programs (union of music data and Bluetooth programs)
+              final filteredPrograms = viewModel.filteredPrograms;
+              
+              // Extract program names and IDs from filtered programs
+              final programNames = <String>[];
+              final programIds = <String>[];
+              
+              for (final program in filteredPrograms) {
+                if (program is Map<String, dynamic>) {
+                  final programName = program['bluetoothProgramName'] ?? 
+                                    program['name'] ?? 
+                                    program['title'] ?? 
+                                    'Unknown Program';
+                  final programId = program['bluetoothProgramId'] ?? 
+                                  program['id']?.toString() ?? 
+                                  '';
+                  
+                  programNames.add(programName);
+                  programIds.add(programId);
+                }
+              }
 
-              // Use BLE programs if available, otherwise use default
+              // Use filtered programs if available, otherwise use default
               final topPicks = programNames.isNotEmpty
                   ? programNames.take(4).toList()
                   : [
