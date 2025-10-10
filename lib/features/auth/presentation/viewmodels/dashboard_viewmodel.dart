@@ -1117,10 +1117,19 @@ class DashboardViewModel extends ChangeNotifier {
   // Start full permission flow (all 4 dialogs in sequence)
   Future<void> _startFullPermissionFlow() async {
     try {
-      // Check if permission flow should be allowed
-      if (!_shouldAllowPermissionFlow()) {
-        print('🎵 Dashboard: Permission flow not allowed, skipping...');
+      // Check if permission flow is in progress
+      if (_permissionFlowInProgress) {
+        print('🎵 Dashboard: Permission flow already in progress, skipping...');
         return;
+      }
+
+      // Check cooldown period
+      if (_lastPermissionFlowTime != null) {
+        final timeSinceLastFlow = DateTime.now().difference(_lastPermissionFlowTime!);
+        if (timeSinceLastFlow < _permissionFlowCooldown) {
+          print('🎵 Dashboard: Permission flow cooldown active, skipping (${timeSinceLastFlow.inSeconds}s since last flow)');
+          return;
+        }
       }
 
       // Check if both permissions are already granted
@@ -1155,9 +1164,8 @@ class DashboardViewModel extends ChangeNotifier {
 
       print('🎵 Dashboard: Starting full permission flow sequence...');
 
-      // Mark permission flow as initiated and in progress
+      // Mark permission flow as initiated
       _permissionFlowInitiated = true;
-      _permissionFlowInProgress = true;
       _lastPermissionFlowTime = DateTime.now();
 
       // Set flag to trigger permission flow in UI layer
@@ -1193,12 +1201,6 @@ class DashboardViewModel extends ChangeNotifier {
 
   // Check if permission flow should be allowed (considering cooldown)
   bool _shouldAllowPermissionFlow() {
-    // If permission flow is already completed, don't allow another one
-    if (_permissionFlowCompleted) {
-      print('🎵 Dashboard: Permission flow already completed, not allowing another');
-      return false;
-    }
-    
     // If permission flow is in progress, don't allow another one
     if (_permissionFlowInProgress) {
       print('🎵 Dashboard: Permission flow already in progress, not allowing another');
@@ -1836,10 +1838,19 @@ class DashboardViewModel extends ChangeNotifier {
       '🎵 Dashboard: isBluetoothEnabled=$_isBluetoothEnabled, dialogShown=$_bluetoothDialogShown, scanPermissionGranted=$_isBluetoothScanPermissionGranted, statusChecked=$_bluetoothStatusChecked, permissionFlowInitiated=$_permissionFlowInitiated, permissionFlowCompleted=$_permissionFlowCompleted',
     );
 
-    // Check if permission flow should be allowed
-    if (!_shouldAllowPermissionFlow()) {
-      print('🎵 Dashboard: Permission flow not allowed, skipping');
+    // Check if permission flow is in progress
+    if (_permissionFlowInProgress) {
+      print('🎵 Dashboard: Permission flow already in progress, skipping');
       return;
+    }
+
+    // Check cooldown period
+    if (_lastPermissionFlowTime != null) {
+      final timeSinceLastFlow = DateTime.now().difference(_lastPermissionFlowTime!);
+      if (timeSinceLastFlow < _permissionFlowCooldown) {
+        print('🎵 Dashboard: Permission flow cooldown active, skipping (${timeSinceLastFlow.inSeconds}s since last flow)');
+        return;
+      }
     }
 
     // Check Bluetooth status first

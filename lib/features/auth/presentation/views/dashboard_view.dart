@@ -68,11 +68,11 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
       '🎵 Dashboard View: Checking Bluetooth state before starting permission flow...',
     );
 
-    // Check if permission flow is already in progress or completed
+    // Check if permission flow is already in progress
     final viewModel = Provider.of<DashboardViewModel>(context, listen: false);
-    if (viewModel.permissionFlowInProgress || viewModel.permissionFlowCompleted) {
+    if (viewModel.permissionFlowInProgress) {
       print(
-        '🎵 Dashboard View: Permission flow already in progress or completed, skipping...',
+        '🎵 Dashboard View: Permission flow already in progress, skipping...',
       );
       return;
     }
@@ -92,6 +92,8 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
         await LocationPermissionHelper.isLocationPermissionGranted();
     final hasBluetoothPermission =
         await BluetoothPermissionHelper.isBluetoothEnabled();
+
+    print('🎵 Dashboard View: Permission status - Location: $hasLocationPermission, Bluetooth: $hasBluetoothPermission');
 
     if (hasLocationPermission && hasBluetoothPermission) {
       print(
@@ -118,9 +120,9 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
 
     final viewModel = Provider.of<DashboardViewModel>(context, listen: false);
 
-    // Check if permission flow is already in progress or completed
-    if (viewModel.permissionFlowInProgress || viewModel.permissionFlowCompleted) {
-      print('🎵 Dashboard View: Permission flow already in progress or completed, skipping...');
+    // Check if permission flow is already in progress
+    if (viewModel.permissionFlowInProgress) {
+      print('🎵 Dashboard View: Permission flow already in progress, skipping...');
       return;
     }
 
