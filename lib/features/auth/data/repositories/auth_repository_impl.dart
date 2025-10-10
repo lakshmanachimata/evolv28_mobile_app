@@ -17,12 +17,17 @@ import '../../domain/entities/user.dart';
 import '../../domain/entities/device_mapping_request.dart';
 import '../../domain/entities/device_mapping_response.dart';
 import '../../domain/repositories/auth_repository.dart';
+import '../../../../core/services/bluetooth_service.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final SharedPreferences sharedPreferences;
+  final BluetoothService _bluetoothService;
   final Dio _dio = Dio();
 
-  AuthRepositoryImpl({required this.sharedPreferences});
+  AuthRepositoryImpl({
+    required this.sharedPreferences,
+    required BluetoothService bluetoothService,
+  }) : _bluetoothService = bluetoothService;
 
   @override
   Future<Either<String, AuthResult>> login(
@@ -646,6 +651,13 @@ class AuthRepositoryImpl implements AuthRepository {
     print('🔐 AuthRepository: Logging out - clearing all user data');
 
     try {
+      // Disconnect Bluetooth device if connected
+      if (_bluetoothService.isConnected) {
+        print('🔐 AuthRepository: Disconnecting Bluetooth device...');
+        await _bluetoothService.disconnect();
+        print('🔐 AuthRepository: Bluetooth device disconnected successfully');
+      }
+
       // Clear all user data fields
       await sharedPreferences.remove('auth_token');
       await sharedPreferences.remove('user_token');
@@ -668,7 +680,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
       print('🔐 AuthRepository: All user data cleared successfully');
     } catch (e) {
-      print('🔐 AuthRepository: Error clearing user data: $e');
+      print('🔐 AuthRepository: Error during logout: $e');
       rethrow;
     }
   }

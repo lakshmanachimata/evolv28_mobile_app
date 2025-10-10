@@ -2,6 +2,7 @@ import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../network/api_client.dart';
 import '../services/logging_service.dart';
+import '../services/bluetooth_service.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/domain/usecases/login_usecase.dart';
@@ -26,10 +27,14 @@ Future<void> initializeDependencies() async {
   // Core
   sl.registerLazySingleton(() => ApiClient());
   sl.registerLazySingleton(() => LoggingService());
+  sl.registerLazySingleton(() => BluetoothService());
   
   // Auth Repository
   sl.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(sharedPreferences: sl()),
+    () => AuthRepositoryImpl(
+      sharedPreferences: sl(),
+      bluetoothService: sl(),
+    ),
   );
   
   // Auth Use Cases
