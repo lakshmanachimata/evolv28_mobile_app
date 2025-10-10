@@ -236,7 +236,7 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
                         )
                       : Container(
                           key: const ValueKey('programs'),
-                          child: _buildProgramsList(context, viewModel),
+                          child: _buildScrollableProgramsList(context, viewModel),
                         ),
                 ),
               ),
@@ -302,6 +302,25 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
         children: viewModel.programs
             .map((program) => _buildProgramCard(context, program, viewModel))
             .toList(),
+      ),
+    );
+  }
+
+  Widget _buildScrollableProgramsList(BuildContext context, ProgramsViewModel viewModel) {
+    // Get programs from DashboardViewModel (now handled in the getter)
+    final programs = viewModel.programs;
+    
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 0),
+      child: Column(
+        children: [
+          // Add some top padding
+          const SizedBox(height: 8),
+          // Programs list
+          ...programs.map((program) => _buildProgramCard(context, program, viewModel)),
+          // Add bottom padding to ensure content doesn't get cut off by bottom navigation
+          const SizedBox(height: 100),
+        ],
       ),
     );
   }
