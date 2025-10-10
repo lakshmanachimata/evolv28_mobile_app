@@ -8,39 +8,39 @@ import 'dashboard_viewmodel.dart';
 class ProgramsViewModel extends ChangeNotifier {
   // Static variable to track navigation from dashboard player card
   static String? _programIdFromDashboard;
-  
+
   // Getter for the static variable (for external access)
   static String? get programIdFromDashboard => _programIdFromDashboard;
-  
+
   // Bluetooth service
   final BluetoothService _bluetoothService = BluetoothService();
-  
+
   // Bluetooth listener
   late VoidCallback _bluetoothListener;
 
   String? _selectedProgramId;
   int _selectedTabIndex = 1; // Programs tab is selected by default
   Map<String, bool> _favorites = {};
-  
+
   // Player state
   bool _isPlaying = false;
   String? _currentPlayingProgramId;
   Duration _currentPosition = Duration.zero;
   Duration _totalDuration = const Duration(minutes: 3);
-  
+
   // Bluetooth play state
   bool _isSendingPlayCommands = false;
   bool _isPlaySuccessful = false;
   String? _selectedBcuFile;
-  
+
   // Feedback state
   bool _isInFeedbackMode = false;
   FeedbackType? _selectedFeedback;
   bool _showSuccessPopup = false;
-  
+
   // View state tracking for animations
   String _currentView = 'programs'; // 'programs', 'player', 'feedback'
-  
+
   // Getter for current view
   String get currentView => _currentView;
 
@@ -49,36 +49,43 @@ class ProgramsViewModel extends ChangeNotifier {
     // Get filtered programs from DashboardViewModel
     final dashboardViewModel = DashboardViewModel();
     final filteredPrograms = dashboardViewModel.filteredPrograms;
-    
+
     // If no filtered programs available, use default programs
     if (filteredPrograms.isEmpty) {
       return _getDefaultPrograms();
     }
-    
+
     // Convert filtered programs to ProgramData
-    return filteredPrograms.map((program) {
-      if (program is Map<String, dynamic>) {
-        final programName = program['bluetoothProgramName'] ?? 
-                          program['name'] ?? 
-                          program['title'] ?? 
-                          'Unknown Program';
-        final programId = program['bluetoothProgramId'] ?? 
-                         program['id']?.toString() ?? 
-                         '';
-        
-        return ProgramData(
-          id: programId,
-          title: programName,
-          recommendedTime: _getRecommendedTime(programName),
-          iconPath: _getIconPath(programName),
-          isLocked: false,
-          isFavorite: false, // No favorites by default for filtered programs
-        );
-      }
-      return null;
-    }).where((program) => program != null).cast<ProgramData>().toList();
+    return filteredPrograms
+        .map((program) {
+          if (program is Map<String, dynamic>) {
+            final programName =
+                program['bluetoothProgramName'] ??
+                program['name'] ??
+                program['title'] ??
+                'Unknown Program';
+            final programId =
+                program['bluetoothProgramId'] ??
+                program['id']?.toString() ??
+                '';
+
+            return ProgramData(
+              id: programId,
+              title: programName,
+              recommendedTime: _getRecommendedTime(programName),
+              iconPath: _getIconPath(programName),
+              isLocked: false,
+              isFavorite:
+                  false, // No favorites by default for filtered programs
+            );
+          }
+          return null;
+        })
+        .where((program) => program != null)
+        .cast<ProgramData>()
+        .toList();
   }
-  
+
   // Default programs fallback
   List<ProgramData> _getDefaultPrograms() {
     return [
@@ -116,7 +123,7 @@ class ProgramsViewModel extends ChangeNotifier {
       ),
     ];
   }
-  
+
   // Get recommended time based on program name
   String _getRecommendedTime(String programName) {
     switch (programName) {
@@ -134,7 +141,7 @@ class ProgramsViewModel extends ChangeNotifier {
         return '2 hrs';
     }
   }
-  
+
   // Get icon path based on program name
   String _getIconPath(String programName) {
     switch (programName) {
@@ -156,19 +163,20 @@ class ProgramsViewModel extends ChangeNotifier {
   String? get selectedProgramId => _selectedProgramId;
   int get selectedTabIndex => _selectedTabIndex;
   Map<String, bool> get favorites => _favorites;
-  
+
   // Player getters
   bool get isPlaying => _isPlaying;
   String? get currentPlayingProgramId => _currentPlayingProgramId;
   Duration get currentPosition => _currentPosition;
   Duration get totalDuration => _totalDuration;
-  bool get isInPlayerMode => _currentPlayingProgramId != null || _isPlaySuccessful;
-  
+  bool get isInPlayerMode =>
+      _currentPlayingProgramId != null || _isPlaySuccessful;
+
   // Bluetooth play getters
   bool get isSendingPlayCommands => _isSendingPlayCommands;
   bool get isPlaySuccessful => _isPlaySuccessful;
   String? get selectedBcuFile => _selectedBcuFile;
-  
+
   // Feedback getters
   bool get isInFeedbackMode => _isInFeedbackMode;
   FeedbackType? get selectedFeedback => _selectedFeedback;
@@ -201,17 +209,17 @@ class ProgramsViewModel extends ChangeNotifier {
   // Stop the currently playing program via Bluetooth
   Future<void> stopBluetoothProgram(BuildContext context) async {
     print('🎵 Programs: stopBluetoothProgram called');
-    
+
     if (!_bluetoothService.isConnected) {
       print('🎵 Programs: Bluetooth not connected, cannot stop program');
       _showStopErrorSnackbar(context, 'Bluetooth not connected');
       return;
     }
-    
+
     try {
       print('🎵 Programs: Sending stop command to Bluetooth device...');
       final success = await _bluetoothService.stopProgram();
-      
+
       if (success) {
         print('🎵 Programs: Program stopped successfully');
         // Reset player state
@@ -223,10 +231,10 @@ class ProgramsViewModel extends ChangeNotifier {
         _currentView = 'programs'; // Update view state for animation
         print('🎬 View changed to: $_currentView');
         notifyListeners();
-        
+
         // Show success snackbar
         _showStopSuccessSnackbar(context, 'Player stopped');
-        
+
         // Navigate back to programs list
         await Future.delayed(const Duration(milliseconds: 500));
         // The UI will automatically show the programs list since _isPlaying is now false
@@ -325,22 +333,26 @@ class ProgramsViewModel extends ChangeNotifier {
 
   void minimizeToDashboard(BuildContext context) async {
     print('🎵 Programs: minimizeToDashboard called');
-    
+
     // Set navigation state to preserve connection
     final wasConnected = _bluetoothService.isConnected;
     DashboardViewModel.setNavigationState(wasConnected);
-    
+
     // Check actual player status from Bluetooth device
     if (_bluetoothService.isConnected) {
       print('🎵 Programs: Checking player status before minimizing...');
       try {
         final playingFile = await _bluetoothService.checkPlayerCommand();
         if (playingFile != null) {
-          print('🎵 Programs: Program is playing: $playingFile, setting minimized state');
+          print(
+            '🎵 Programs: Program is playing: $playingFile, setting minimized state',
+          );
           // Set the minimized state with the actual playing file
           DashboardViewModel.setMinimizedState(playingFile);
         } else {
-          print('🎵 Programs: No program currently playing, clearing minimized state');
+          print(
+            '🎵 Programs: No program currently playing, clearing minimized state',
+          );
           DashboardViewModel.clearMinimizedState();
         }
       } catch (e) {
@@ -357,7 +369,7 @@ class ProgramsViewModel extends ChangeNotifier {
         DashboardViewModel.setMinimizedState(_currentPlayingProgramId!);
       }
     }
-    
+
     // Navigate to dashboard
     context.go(AppRoutes.dashboard);
   }
@@ -403,14 +415,14 @@ class ProgramsViewModel extends ChangeNotifier {
   bool isFavorite(String programId) {
     return _favorites[programId] ?? false;
   }
-  
+
   // Initialize Bluetooth listener
   Future<void> initialize() async {
     print('🎵 Programs: Initializing Bluetooth service...');
-    
+
     // Initialize Bluetooth service
     await _bluetoothService.initialize();
-    
+
     _bluetoothListener = () {
       // Update Bluetooth play state from service
       _isSendingPlayCommands = _bluetoothService.isSendingPlayCommands;
@@ -418,25 +430,27 @@ class ProgramsViewModel extends ChangeNotifier {
       _selectedBcuFile = _bluetoothService.selectedBcuFile;
       notifyListeners();
     };
-    
+
     // Add listener to Bluetooth service
     _bluetoothService.addListener(_bluetoothListener);
-    
-    print('🎵 Programs: Bluetooth service initialized. Connected: ${_bluetoothService.isConnected}');
+
+    print(
+      '🎵 Programs: Bluetooth service initialized. Connected: ${_bluetoothService.isConnected}',
+    );
   }
-  
+
   // Check if a program is currently playing when navigating to programs screen
   Future<void> checkPlayerStatus() async {
     print('🎵 Programs: checkPlayerStatus called');
-    
+
     if (!_bluetoothService.isConnected) {
       print('🎵 Programs: Bluetooth not connected, skipping player check');
       return;
     }
-    
+
     try {
       final playingFile = await _bluetoothService.checkPlayerCommand();
-      
+
       if (playingFile != null) {
         print('🎵 Programs: Program is playing: $playingFile');
         _selectedBcuFile = playingFile;
@@ -453,41 +467,45 @@ class ProgramsViewModel extends ChangeNotifier {
       print('🎵 Programs: Error checking player status: $e');
     }
   }
-  
+
   // Dispose method to remove listener
   @override
   void dispose() {
     _bluetoothService.removeListener(_bluetoothListener);
     super.dispose();
   }
-  
+
   // Play program with Bluetooth commands
   void playBluetoothProgram(String programId) {
     print('🎵 Programs: playBluetoothProgram called with ID: $programId');
-    
+
     // Check if Bluetooth is connected
     print('🎵 Programs: Bluetooth connected: ${_bluetoothService.isConnected}');
     if (!_bluetoothService.isConnected) {
-      print('🎵 Programs: Bluetooth not connected, falling back to regular play');
+      print(
+        '🎵 Programs: Bluetooth not connected, falling back to regular play',
+      );
       // Fallback to regular play
       playProgram(programId);
       return;
     }
-    
+
     // Get the program and use its ID directly (it's already the BCU filename)
-    print('🎵 Programs: Available programs: ${programs.map((p) => '${p.id}: ${p.title}').join(', ')}');
+    print(
+      '🎵 Programs: Available programs: ${programs.map((p) => '${p.id}: ${p.title}').join(', ')}',
+    );
     final program = programs.firstWhere((p) => p.id == programId);
     final programName = program.title;
     print('🎵 Programs: Found program: $programName');
-    
+
     // Use the program ID directly as it's already the BCU filename
-    final bcuFileId = programId; // programId is already the BCU filename like "Alleviate_Stress.bcu"
+    final bcuFileId =
+        programId; // programId is already the BCU filename like "Alleviate_Stress.bcu"
     print('🎵 Programs: Using BCU file ID: $bcuFileId');
-    
+
     print('🎵 Programs: Starting play program: $bcuFileId');
     _bluetoothService.playProgram(bcuFileId);
   }
-  
 }
 
 class ProgramData {
@@ -508,8 +526,4 @@ class ProgramData {
   });
 }
 
-enum FeedbackType {
-  amazing,
-  good,
-  okay,
-}
+enum FeedbackType { amazing, good, okay }

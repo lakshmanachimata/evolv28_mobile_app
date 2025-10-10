@@ -145,6 +145,10 @@ class DashboardViewModel extends ChangeNotifier {
 
   // Filtered programs (union of music data and Bluetooth programs)
   List<dynamic> get filteredPrograms => _getFilteredPrograms();
+  set filteredPrograms(List<dynamic> value) {
+    // This setter is for compatibility, but the getter will always return the computed value
+    // The actual filtered programs are computed dynamically
+  }
 
   // Permission flow trigger getter
   bool get shouldTriggerPermissionFlow => _shouldTriggerPermissionFlow;
@@ -279,6 +283,7 @@ class DashboardViewModel extends ChangeNotifier {
         );
         clearNavigationState();
         await _loadMusicDataLocal();
+        filteredPrograms = await _getFilteredProgramsLocal();
         // Set up minimal initialization (listeners only)
         await _setupMinimalInitialization();
         return;
@@ -689,6 +694,117 @@ class DashboardViewModel extends ChangeNotifier {
   }
 
   // Get filtered programs (union of music data and Bluetooth programs)
+  Future<List> _getFilteredProgramsLocal() async {
+    try {
+      print(
+        '🎵 Dashboard: Creating union between music data and Bluetooth programs...',
+      );
+
+      // Get Bluetooth programs from the service
+      final bluetoothPrograms = _bluetoothService.availablePrograms;
+      print(
+        '🎵 Dashboard: Bluetooth programs: ${bluetoothPrograms.length} items',
+      );
+      await _loadMusicDataLocal();
+      // Get music data
+      print('🎵 Dashboard: Music data: ${_musicData.length} items');
+
+      // If no music data or no Bluetooth programs, return empty list
+      if (_musicData.isEmpty || bluetoothPrograms.isEmpty) {
+        print('🎵 Dashboard: No music data or Bluetooth programs available');
+        return [];
+      }
+
+      // Create union by matching music data with Bluetooth programs
+      final filteredPrograms = <dynamic>[];
+
+      for (final musicItem in _musicData) {
+        if (musicItem is Map<String, dynamic>) {
+          // Check if this music item has a musicfiles array
+          final musicFiles = musicItem['musicfiles'];
+          if (musicFiles is List && musicFiles.isNotEmpty) {
+            // Process each entry in the musicfiles array
+            for (final musicFile in musicFiles) {
+              if (musicFile is Map<String, dynamic>) {
+                // Extract relevant fields from music file
+                final musicName = _extractMusicName(musicFile);
+                final musicId = _extractMusicId(musicFile);
+
+                if (musicName != null && musicId != null) {
+                  // Check if this music file matches any Bluetooth program
+                  final matchingBluetoothProgram =
+                      _findMatchingBluetoothProgram(
+                        musicName,
+                        musicId,
+                        bluetoothPrograms,
+                      );
+
+                  if (matchingBluetoothProgram != null) {
+                    // Create enhanced music item with Bluetooth program info
+                    final enhancedMusicItem = Map<String, dynamic>.from(
+                      musicItem,
+                    );
+                    enhancedMusicItem['bluetoothProgram'] =
+                        matchingBluetoothProgram;
+                    enhancedMusicItem['bluetoothProgramName'] =
+                        matchingBluetoothProgram.split('|')[0];
+                    enhancedMusicItem['bluetoothProgramId'] =
+                        matchingBluetoothProgram.split('|')[1];
+                    // Add the specific music file info
+                    enhancedMusicItem['matchedMusicFile'] = musicFile;
+
+                    filteredPrograms.add(enhancedMusicItem);
+                    print(
+                      '🎵 Dashboard: Matched music file "$musicName" with Bluetooth program "$matchingBluetoothProgram"',
+                    );
+                  }
+                }
+              }
+            }
+          } else {
+            // Fallback to original logic for music items without musicfiles array
+            final musicName = _extractMusicName(musicItem);
+            final musicId = _extractMusicId(musicItem);
+
+            if (musicName != null && musicId != null) {
+              // Check if this music item matches any Bluetooth program
+              final matchingBluetoothProgram = _findMatchingBluetoothProgram(
+                musicName,
+                musicId,
+                bluetoothPrograms,
+              );
+
+              if (matchingBluetoothProgram != null) {
+                // Create enhanced music item with Bluetooth program info
+                final enhancedMusicItem = Map<String, dynamic>.from(musicItem);
+                enhancedMusicItem['bluetoothProgram'] =
+                    matchingBluetoothProgram;
+                enhancedMusicItem['bluetoothProgramName'] =
+                    matchingBluetoothProgram.split('|')[0];
+                enhancedMusicItem['bluetoothProgramId'] =
+                    matchingBluetoothProgram.split('|')[1];
+
+                filteredPrograms.add(enhancedMusicItem);
+                print(
+                  '🎵 Dashboard: Matched music "$musicName" with Bluetooth program "$matchingBluetoothProgram"',
+                );
+              }
+            }
+          }
+        }
+      }
+
+      print(
+        '🎵 Dashboard: Created union with ${filteredPrograms.length} filtered programs',
+      );
+      return filteredPrograms;
+    } catch (e) {
+      print('🎵 Dashboard: Error creating filtered programs: $e');
+      return [];
+    }
+  }
+
+  // Get filtered programs (union of music data and Bluetooth programs)
   List<dynamic> _getFilteredPrograms() {
     try {
       print(
@@ -700,7 +816,6 @@ class DashboardViewModel extends ChangeNotifier {
       print(
         '🎵 Dashboard: Bluetooth programs: ${bluetoothPrograms.length} items',
       );
-
       // Get music data
       print('🎵 Dashboard: Music data: ${_musicData.length} items');
 

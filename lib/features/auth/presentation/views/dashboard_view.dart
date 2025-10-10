@@ -223,11 +223,32 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
             },
           ),
 
-          // Permission Dialogs - Handled by UI layer permission flow
+          // Permission Dialogs
           Consumer<DashboardViewModel>(
             builder: (context, viewModel, child) {
-              // Permission dialogs are now handled by the UI layer permission flow
-              // No ViewModel permission dialogs should be shown here
+              // Show Bluetooth scan permission as bottom sheet
+              if (viewModel.showBluetoothScanPermissionDialog) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  // Double-check the state before showing the bottom sheet
+                  if (viewModel.showBluetoothScanPermissionDialog) {
+                    showModalBottomSheet<bool>(
+                      context: context,
+                      isDismissible: false,
+                      enableDrag: false,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => _buildBluetoothScanPermissionDialog(
+                        context,
+                        viewModel,
+                      ),
+                    ).then((_) {
+                      // Ensure state is reset when bottom sheet is dismissed
+                      if (viewModel.showBluetoothScanPermissionDialog) {
+                        viewModel.denyBluetoothScanPermission();
+                      }
+                    });
+                  }
+                });
+              }
 
               // Show unknown device list as bottom sheet
               if (viewModel.showUnknownDeviceDialog &&
@@ -468,9 +489,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
 
         if (viewModel.connectionSuccessful) {
           title = 'Connected';
-          subtitle = viewModel.deviceName.isNotEmpty 
-              ? 'Connected to ${viewModel.deviceName}'
-              : 'Your Evolv28 device is connected';
+          subtitle = 'Your Evolv28 device is connected';
           iconColor = Colors.green;
           iconData = Icons.bluetooth_connected;
         } else if (viewModel.isConnecting) {
@@ -480,9 +499,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
           iconData = Icons.bluetooth_searching;
         } else if (viewModel.isBluetoothConnected) {
           title = 'Connected';
-          subtitle = viewModel.deviceName.isNotEmpty 
-              ? 'Connected to ${viewModel.deviceName}'
-              : viewModel.bluetoothStatusMessage;
+          subtitle = viewModel.bluetoothStatusMessage;
           iconColor = Colors.blue;
           iconData = Icons.bluetooth_connected;
         } else {
