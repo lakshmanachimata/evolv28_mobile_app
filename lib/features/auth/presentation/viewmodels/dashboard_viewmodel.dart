@@ -1344,10 +1344,12 @@ class DashboardViewModel extends ChangeNotifier {
         '🎵 Dashboard: Location permission check result: $hasLocationPermission, dialogShown: $_locationPermissionDialogShown',
       );
       if (!hasLocationPermission && !_locationPermissionDialogShown) {
-        print('🎵 Dashboard: Showing location permission dialog first');
+        print('🎵 Dashboard: Location permission missing - triggering UI layer permission flow');
         _locationPermissionDialogShown = true; // Prevent multiple requests
         _permissionFlowInitiated = true; // Mark permission flow as initiated
-        _showLocationPermissionDialog = true; // Show location permission dialog
+        // Trigger the UI layer permission flow
+        _shouldTriggerPermissionFlow = true;
+        notifyListeners();
       } else if (hasLocationPermission) {
         // Location permission granted, check BLE scan permission
         bool hasBluetoothPermission = await _checkBluetoothScanPermission();
@@ -1363,11 +1365,13 @@ class DashboardViewModel extends ChangeNotifier {
           await _startBluetoothOperations();
         } else if (!_bluetoothScanPermissionDialogShown) {
           print(
-            '🎵 Dashboard: Location permission granted, showing Bluetooth permission dialog',
+            '🎵 Dashboard: Bluetooth permission missing - triggering UI layer permission flow',
           );
           _bluetoothScanPermissionDialogShown =
               true; // Prevent multiple requests
-          _showBluetoothScanPermissionDialog = true; // Show custom dialog first
+          // Trigger the UI layer permission flow
+          _shouldTriggerPermissionFlow = true;
+          notifyListeners();
         }
       }
     } else if (!_bluetoothStatusChecked) {
