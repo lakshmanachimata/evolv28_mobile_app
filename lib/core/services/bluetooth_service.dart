@@ -50,6 +50,7 @@ class BluetoothService extends ChangeNotifier {
   bool _isWaitingForFifthCommand = false;
   Completer<String?>? _playerStatusCompleter;
   Completer<bool>? _stopCommandCompleter;
+  Completer<String>? _responseCompleter;
   String? _lastNotificationResponse;
 
   // User devices for validation
@@ -57,7 +58,7 @@ class BluetoothService extends ChangeNotifier {
 
   // Callback for unknown devices
   Function(List<Map<String, dynamic>>)? _onUnknownDevicesFound;
-  
+
   // Callback for when no devices are found
   VoidCallback? _onNoDevicesFound;
 
@@ -535,7 +536,9 @@ class BluetoothService extends ChangeNotifier {
   }
 
   /// Connect to device without starting command sequence (for unknown devices)
-  Future<void> connectToDeviceWithoutCommandSequence(ble.BluetoothDevice device) async {
+  Future<void> connectToDeviceWithoutCommandSequence(
+    ble.BluetoothDevice device,
+  ) async {
     try {
       print('🔗 Connecting to unknown device: ${device.platformName}');
       _connectionState = BluetoothConnectionState.connecting;
@@ -561,7 +564,9 @@ class BluetoothService extends ChangeNotifier {
       notifyListeners();
 
       // Start command sequence in background without showing popup
-      print('🔗 Unknown device connected - starting background command sequence');
+      print(
+        '🔗 Unknown device connected - starting background command sequence',
+      );
       _startCommandSequenceInBackground();
     } catch (e) {
       _setError('Connection failed: $e');
@@ -586,7 +591,7 @@ class BluetoothService extends ChangeNotifier {
     try {
       print('📋 Starting background command sequence to fetch program list...');
       // Don't set _isExecutingCommands = true to avoid showing popup
-      
+
       // Discover services
       final services = await _connectedDevice!.discoverServices();
 
@@ -714,6 +719,10 @@ class BluetoothService extends ChangeNotifier {
         _isWaitingForFifthCommand = false;
       }
 
+      // Set up response completer before sending command
+      final completer = Completer<String>();
+      _responseCompleter = completer;
+
       // Send command
       await writeCommand(command);
 
@@ -721,6 +730,7 @@ class BluetoothService extends ChangeNotifier {
       final response = await _waitForResponse(
         timeout: const Duration(seconds: 10),
         commandIndex: i,
+        preSetupCompleter: completer,
       );
 
       print('Response ${i + 1}: $response');
@@ -761,8 +771,9 @@ class BluetoothService extends ChangeNotifier {
   Future<String> _waitForResponse({
     required Duration timeout,
     int? commandIndex,
+    Completer<String>? preSetupCompleter,
   }) async {
-    final completer = Completer<String>();
+    final completer = preSetupCompleter ?? Completer<String>();
     Timer? timeoutTimer;
     String? lastResponse;
 
@@ -790,7 +801,7 @@ class BluetoothService extends ChangeNotifier {
           (response) => response.contains('#Completed!'),
         )) {
           // Wait a bit more to ensure all responses are collected
-          await Future.delayed(const Duration(milliseconds: 500));
+          await Future.delayed(const Duration(milliseconds: 10));
           final fullResponse = _fifthCommandResponses.join('\n');
           print(
             '5th command - Final response with ${_fifthCommandResponses.length} parts',
@@ -800,7 +811,7 @@ class BluetoothService extends ChangeNotifier {
         }
 
         // Wait a bit before checking again
-        await Future.delayed(const Duration(milliseconds: 100));
+        await Future.delayed(const Duration(milliseconds: 1));
       }
 
       // If we haven't completed yet, use what we have
@@ -812,38 +823,24 @@ class BluetoothService extends ChangeNotifier {
       }
     } else {
       // Original behavior for other commands
+      // If completer wasn't pre-setup, set it up now
+      if (preSetupCompleter == null) {
+        _responseCompleter = completer;
+      }
+      
       // Set timeout
       timeoutTimer = Timer(timeout, () {
         if (!completer.isCompleted) {
           completer.complete(lastResponse ?? 'Timeout - No response received');
         }
       });
-
-      // Listen for next notification
-      if (_notifyCharacteristic != null) {
-        final subscription = _notifyCharacteristic!.lastValueStream.listen(
-          (value) {
-            if (!completer.isCompleted) {
-              lastResponse = String.fromCharCodes(value);
-              completer.complete(lastResponse!);
-            }
-          },
-          onError: (error) {
-            if (!completer.isCompleted) {
-              completer.complete('Error: $error');
-            }
-          },
-        );
-
-        final response = await completer.future;
-        timeoutTimer.cancel();
-        subscription.cancel();
-
-        return response;
-      } else {
-        timeoutTimer.cancel();
-        return 'Error: Notify characteristic not available';
-      }
+      
+      // Wait for the response to be completed by the main notification handler
+      final response = await completer.future;
+      timeoutTimer.cancel();
+      _responseCompleter = null; // Clear the completer
+      print('🎵 BluetoothService: Response for command $commandIndex: $response');
+      return response;
     }
 
     // Cancel timeout timer if it's still active
@@ -863,6 +860,16 @@ class BluetoothService extends ChangeNotifier {
 
     // Store the latest notification response for play command waiting
     _lastNotificationResponse = stringValue;
+
+    // Check if we're waiting for a general response first
+    if (_responseCompleter != null && !_responseCompleter!.isCompleted) {
+      // Only complete with non-empty responses
+      if (stringValue.isNotEmpty) {
+        _responseCompleter!.complete(stringValue);
+        _responseCompleter = null;
+        return;
+      }
+    }
 
     // Check if this is a player status response
     if (_playerStatusCompleter != null &&

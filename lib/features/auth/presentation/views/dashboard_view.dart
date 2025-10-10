@@ -866,11 +866,11 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
   }) {
     return GestureDetector(
       onTap: () {
-        // If Bluetooth is connected, play via Bluetooth, otherwise use default behavior
+        // If Bluetooth is connected, play via Bluetooth, otherwise show popup
         if (viewModel.isBluetoothConnected) {
           viewModel.playBluetoothProgram(title);
         } else {
-          viewModel.playProgram(title);
+          _showConnectDevicePopup(context);
         }
       },
       child: Column(
@@ -2582,6 +2582,48 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
           ),
         ),
       ),
+    );
+  }
+
+  void _showConnectDevicePopup(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16.0),
+          ),
+          title: const Text(
+            'Connect Device',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+          content: const Text(
+            'Please connect to the Evolv28 device to play programs.',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.black87,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text(
+                'OK',
+                style: TextStyle(
+                  color: Color(0xFFF17961), // Orange color
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
