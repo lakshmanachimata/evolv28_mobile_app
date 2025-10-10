@@ -68,11 +68,11 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
       '🎵 Dashboard View: Checking Bluetooth state before starting permission flow...',
     );
 
-    // Check if permission flow is already in progress
+    // Check if permission flow is already in progress or completed
     final viewModel = Provider.of<DashboardViewModel>(context, listen: false);
-    if (viewModel.permissionFlowInProgress) {
+    if (viewModel.permissionFlowInProgress || viewModel.permissionFlowCompleted) {
       print(
-        '🎵 Dashboard View: Permission flow already in progress, skipping...',
+        '🎵 Dashboard View: Permission flow already in progress or completed, skipping...',
       );
       return;
     }
@@ -117,6 +117,12 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
     print('🎵 Dashboard View: Starting full permission flow sequence...');
 
     final viewModel = Provider.of<DashboardViewModel>(context, listen: false);
+
+    // Check if permission flow is already in progress or completed
+    if (viewModel.permissionFlowInProgress || viewModel.permissionFlowCompleted) {
+      print('🎵 Dashboard View: Permission flow already in progress or completed, skipping...');
+      return;
+    }
 
     // Set permission flow in progress flag
     viewModel.setPermissionFlowInProgress(true);
@@ -188,11 +194,17 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
           Consumer<DashboardViewModel>(
             builder: (context, viewModel, child) {
               if (viewModel.shouldTriggerPermissionFlow &&
-                  !viewModel.permissionFlowInProgress) {
+                  !viewModel.permissionFlowInProgress &&
+                  !viewModel.permissionFlowCompleted) {
                 // Clear the flag and trigger permission flow
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  viewModel.clearPermissionFlowTrigger();
-                  _executePermissionFlow(context);
+                WidgetsBinding.instance.addPostFrameCallback((_) async {
+                  // Double-check the state before executing
+                  if (viewModel.shouldTriggerPermissionFlow && 
+                      !viewModel.permissionFlowInProgress &&
+                      !viewModel.permissionFlowCompleted) {
+                    viewModel.clearPermissionFlowTrigger();
+                    await _executePermissionFlow(context);
+                  }
                 });
               }
               return SizedBox.shrink();

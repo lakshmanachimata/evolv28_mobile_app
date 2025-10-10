@@ -92,6 +92,11 @@ class DashboardViewModel extends ChangeNotifier {
   bool _bluetoothScanPermissionDialogShown = false;
   bool _locationPermissionDialogShown = false;
   bool _permissionFlowInitiated = false;
+  
+  // Additional state management for permission flow
+  bool _permissionFlowCompleted = false;
+  DateTime? _lastPermissionFlowTime;
+  static const Duration _permissionFlowCooldown = Duration(seconds: 5);
 
   // Device selection state
   String _selectedDeviceId = '';
@@ -164,6 +169,7 @@ class DashboardViewModel extends ChangeNotifier {
   // Permission flow trigger getter
   bool get shouldTriggerPermissionFlow => _shouldTriggerPermissionFlow;
   bool get permissionFlowInProgress => _permissionFlowInProgress;
+  bool get permissionFlowCompleted => _permissionFlowCompleted;
 
   // Permission getters
   bool get isBluetoothEnabled => _isBluetoothEnabled;
@@ -280,6 +286,14 @@ class DashboardViewModel extends ChangeNotifier {
   Future<void> initialize() async {
     print('🎵 Dashboard: initialize() called');
     _isLoading = false;
+    
+    // Reset permission flow flags on fresh initialization
+    _permissionFlowInitiated = false;
+    _permissionFlowInProgress = false;
+    _shouldTriggerPermissionFlow = false;
+    _permissionFlowCompleted = false;
+    _lastPermissionFlowTime = null;
+    
     notifyListeners();
 
     // Check if we're returning from another screen
@@ -1103,9 +1117,9 @@ class DashboardViewModel extends ChangeNotifier {
   // Start full permission flow (all 4 dialogs in sequence)
   Future<void> _startFullPermissionFlow() async {
     try {
-      // Check if permission flow is already in progress
-      if (_permissionFlowInProgress) {
-        print('🎵 Dashboard: Permission flow already in progress, skipping...');
+      // Check if permission flow should be allowed
+      if (!_shouldAllowPermissionFlow()) {
+        print('🎵 Dashboard: Permission flow not allowed, skipping...');
         return;
       }
 
@@ -1119,6 +1133,10 @@ class DashboardViewModel extends ChangeNotifier {
         print(
           '🎵 Dashboard: Both permissions already granted, checking connection status...',
         );
+
+        // Mark permission flow as completed
+        _permissionFlowCompleted = true;
+        _lastPermissionFlowTime = DateTime.now();
 
         // Check if already connected before starting scan
         if (_bluetoothService.isConnected) {
@@ -1137,11 +1155,19 @@ class DashboardViewModel extends ChangeNotifier {
 
       print('🎵 Dashboard: Starting full permission flow sequence...');
 
+      // Mark permission flow as initiated and in progress
+      _permissionFlowInitiated = true;
+      _permissionFlowInProgress = true;
+      _lastPermissionFlowTime = DateTime.now();
+
       // Set flag to trigger permission flow in UI layer
       _shouldTriggerPermissionFlow = true;
       notifyListeners();
     } catch (e) {
       print('🎵 Dashboard: Error starting full permission flow: $e');
+      // Reset flags on error
+      _permissionFlowInProgress = false;
+      notifyListeners();
     }
   }
 
@@ -1154,7 +1180,41 @@ class DashboardViewModel extends ChangeNotifier {
   // Set permission flow in progress flag
   void setPermissionFlowInProgress(bool inProgress) {
     _permissionFlowInProgress = inProgress;
+    
+    // If setting to false (completed), mark as completed
+    if (!inProgress) {
+      _permissionFlowCompleted = true;
+      _lastPermissionFlowTime = DateTime.now();
+      print('🎵 Dashboard: Permission flow completed');
+    }
+    
     notifyListeners();
+  }
+
+  // Check if permission flow should be allowed (considering cooldown)
+  bool _shouldAllowPermissionFlow() {
+    // If permission flow is already completed, don't allow another one
+    if (_permissionFlowCompleted) {
+      print('🎵 Dashboard: Permission flow already completed, not allowing another');
+      return false;
+    }
+    
+    // If permission flow is in progress, don't allow another one
+    if (_permissionFlowInProgress) {
+      print('🎵 Dashboard: Permission flow already in progress, not allowing another');
+      return false;
+    }
+    
+    // Check cooldown period
+    if (_lastPermissionFlowTime != null) {
+      final timeSinceLastFlow = DateTime.now().difference(_lastPermissionFlowTime!);
+      if (timeSinceLastFlow < _permissionFlowCooldown) {
+        print('🎵 Dashboard: Permission flow cooldown active, not allowing another (${timeSinceLastFlow.inSeconds}s since last flow)');
+        return false;
+      }
+    }
+    
+    return true;
   }
 
   // Start permission flow after Bluetooth is enabled
@@ -1773,12 +1833,12 @@ class DashboardViewModel extends ChangeNotifier {
   Future<void> _checkPermissionsAndStartBluetooth() async {
     print('🎵 Dashboard: Starting permission check flow...');
     print(
-      '🎵 Dashboard: isBluetoothEnabled=$_isBluetoothEnabled, dialogShown=$_bluetoothDialogShown, scanPermissionGranted=$_isBluetoothScanPermissionGranted, statusChecked=$_bluetoothStatusChecked, permissionFlowInitiated=$_permissionFlowInitiated',
+      '🎵 Dashboard: isBluetoothEnabled=$_isBluetoothEnabled, dialogShown=$_bluetoothDialogShown, scanPermissionGranted=$_isBluetoothScanPermissionGranted, statusChecked=$_bluetoothStatusChecked, permissionFlowInitiated=$_permissionFlowInitiated, permissionFlowCompleted=$_permissionFlowCompleted',
     );
 
-    // Prevent multiple permission flow calls
-    if (_permissionFlowInitiated) {
-      print('🎵 Dashboard: Permission flow already initiated, skipping');
+    // Check if permission flow should be allowed
+    if (!_shouldAllowPermissionFlow()) {
+      print('🎵 Dashboard: Permission flow not allowed, skipping');
       return;
     }
 
@@ -1982,6 +2042,11 @@ class DashboardViewModel extends ChangeNotifier {
     // Mark permissions as granted
     _isLocationPermissionGranted = true;
     _isBluetoothScanPermissionGranted = true;
+    
+    // Mark permission flow as completed
+    _permissionFlowCompleted = true;
+    _permissionFlowInProgress = false;
+    _lastPermissionFlowTime = DateTime.now();
 
     // Start Bluetooth operations which includes scanning
     await _startBluetoothOperations();
@@ -2036,6 +2101,12 @@ class DashboardViewModel extends ChangeNotifier {
             '🎵 Dashboard: All permissions granted, starting Bluetooth operations',
           );
           _isBluetoothScanPermissionGranted = true;
+          
+          // Mark permission flow as completed
+          _permissionFlowCompleted = true;
+          _permissionFlowInProgress = false;
+          _lastPermissionFlowTime = DateTime.now();
+          
           await _startBluetoothOperations();
         } else if (!_bluetoothScanPermissionDialogShown) {
           print(
@@ -2110,6 +2181,11 @@ class DashboardViewModel extends ChangeNotifier {
         if (status == PermissionStatus.granted) {
           print('🎵 Dashboard: Bluetooth scan permission granted');
           _isBluetoothScanPermissionGranted = true;
+
+          // Mark permission flow as completed
+          _permissionFlowCompleted = true;
+          _permissionFlowInProgress = false;
+          _lastPermissionFlowTime = DateTime.now();
 
           // Start scanning for devices and show device selection dialog
           await _startDeviceScanning();

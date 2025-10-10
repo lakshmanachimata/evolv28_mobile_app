@@ -645,26 +645,32 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<void> logout() async {
     print('🔐 AuthRepository: Logging out - clearing all user data');
 
-    // Clear all user data fields
-    await sharedPreferences.remove('auth_token');
-    await sharedPreferences.remove('user_email_id');
-    await sharedPreferences.remove('user_data_json');
-    await sharedPreferences.remove('user_data'); // Also clear this field
-    await sharedPreferences.remove('user_token');
-    await sharedPreferences.remove('user_id');
-    await sharedPreferences.remove('user_log_id');
-    await sharedPreferences.remove('user_first_name');
-    await sharedPreferences.remove('user_last_name');
-    await sharedPreferences.remove('user_email_id');
-    await sharedPreferences.remove('user_name');
-    await sharedPreferences.remove('user_gender');
-    await sharedPreferences.remove('user_country');
-    await sharedPreferences.remove('user_age');
-    await sharedPreferences.remove('user_image_path');
-    await sharedPreferences.remove('user_profile_pic_path');
-    await sharedPreferences.remove('user_devices_count');
+    try {
+      // Clear all user data fields
+      await sharedPreferences.remove('auth_token');
+      await sharedPreferences.remove('user_token');
+      await sharedPreferences.remove('user_id');
+      await sharedPreferences.remove('user_email_id');
+      await sharedPreferences.remove('user_first_name');
+      await sharedPreferences.remove('user_last_name');
+      await sharedPreferences.remove('user_name');
+      await sharedPreferences.remove('user_log_id');
+      await sharedPreferences.remove('user_gender');
+      await sharedPreferences.remove('user_country');
+      await sharedPreferences.remove('user_age');
+      await sharedPreferences.remove('user_image_path');
+      await sharedPreferences.remove('user_profile_pic_path');
+      await sharedPreferences.remove('user_devices_count');
+      await sharedPreferences.remove('user_data');
+      await sharedPreferences.remove('user_data_json');
+      await sharedPreferences.remove('user_music_data');
+      await sharedPreferences.remove('user_device_name');
 
-    print('🔐 AuthRepository: All user data cleared successfully');
+      print('🔐 AuthRepository: All user data cleared successfully');
+    } catch (e) {
+      print('🔐 AuthRepository: Error clearing user data: $e');
+      rethrow;
+    }
   }
 
   @override
