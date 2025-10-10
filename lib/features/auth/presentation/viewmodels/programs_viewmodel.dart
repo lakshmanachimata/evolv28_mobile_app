@@ -326,6 +326,10 @@ class ProgramsViewModel extends ChangeNotifier {
   void minimizeToDashboard(BuildContext context) async {
     print('🎵 Programs: minimizeToDashboard called');
     
+    // Set navigation state to preserve connection
+    final wasConnected = _bluetoothService.isConnected;
+    DashboardViewModel.setNavigationState(wasConnected);
+    
     // Check actual player status from Bluetooth device
     if (_bluetoothService.isConnected) {
       print('🎵 Programs: Checking player status before minimizing...');

@@ -24,6 +24,10 @@ class DashboardViewModel extends ChangeNotifier {
   // Static variables to track minimized state
   static bool _isMinimizedFromPlayer = false;
   static String? _minimizedProgramId;
+  
+  // Static variables to track navigation state
+  static bool _isReturningFromOtherScreen = false;
+  static bool _wasConnectedBeforeNavigation = false;
 
   // Services
   final BluetoothService _bluetoothService = BluetoothService();
@@ -215,11 +219,43 @@ class DashboardViewModel extends ChangeNotifier {
     _minimizedProgramId = null;
   }
 
+  // Static methods to manage navigation state
+  static void setNavigationState(bool wasConnected) {
+    _isReturningFromOtherScreen = true;
+    _wasConnectedBeforeNavigation = wasConnected;
+    print('🎵 Dashboard: Set navigation state - wasConnected: $wasConnected');
+  }
+
+  static void clearNavigationState() {
+    _isReturningFromOtherScreen = false;
+    _wasConnectedBeforeNavigation = false;
+    print('🎵 Dashboard: Cleared navigation state');
+  }
+
   // Initialize the dashboard
   Future<void> initialize() async {
     print('🎵 Dashboard: initialize() called');
     _isLoading = false;
     notifyListeners();
+
+    // Check if we're returning from another screen
+    if (_isReturningFromOtherScreen) {
+      print('🎵 Dashboard: Returning from another screen, checking connection state...');
+      
+      if (_wasConnectedBeforeNavigation && _bluetoothService.isConnected) {
+        print('🎵 Dashboard: Device was connected before navigation and is still connected, skipping initialization');
+        clearNavigationState();
+        return;
+      } else if (_wasConnectedBeforeNavigation && !_bluetoothService.isConnected) {
+        print('🎵 Dashboard: Device was connected before navigation but is no longer connected, reinitializing...');
+        clearNavigationState();
+        // Continue with full initialization
+      } else {
+        print('🎵 Dashboard: Device was not connected before navigation, continuing with initialization...');
+        clearNavigationState();
+        // Continue with full initialization
+      }
+    }
 
     // Load user data from SharedPreferences
     await _loadUserData();
@@ -831,10 +867,18 @@ class DashboardViewModel extends ChangeNotifier {
 
       if (hasLocationPermission && hasBluetoothPermission) {
         print(
-          '🎵 Dashboard: Both permissions already granted, skipping permission flow and starting device scanning...',
+          '🎵 Dashboard: Both permissions already granted, checking connection status...',
         );
-        await _bluetoothService.startScanning();
-        _bluetoothService.setStatusMessage('Scanning for devices...');
+        
+        // Check if already connected before starting scan
+        if (_bluetoothService.isConnected) {
+          print('🎵 Dashboard: Already connected to device, skipping scan');
+          _bluetoothService.setStatusMessage('Connected to device');
+        } else {
+          print('🎵 Dashboard: Not connected, starting device scanning...');
+          await _bluetoothService.startScanning();
+          _bluetoothService.setStatusMessage('Scanning for devices...');
+        }
         notifyListeners();
         return;
       }
@@ -933,6 +977,13 @@ class DashboardViewModel extends ChangeNotifier {
       print(
         '🎵 Dashboard: User has ${_userDevices.length} devices in their account',
       );
+
+      // Check if Bluetooth service is already connected
+      if (_bluetoothService.isConnected) {
+        print('🎵 Dashboard: Device already connected, skipping auto-connection');
+        _isAutoConnectionRunning = false;
+        return;
+      }
 
       // Check if Bluetooth service is ready
       if (!_bluetoothService.isConnected) {
@@ -1242,12 +1293,18 @@ class DashboardViewModel extends ChangeNotifier {
         // Already on dashboard screen
         break;
       case 1: // Programs
+        // Set navigation state to preserve connection when returning
+        setNavigationState(_bluetoothService.isConnected);
         context.go(AppRoutes.programs);
         break;
       case 2: // Device
+        // Set navigation state to preserve connection when returning
+        setNavigationState(_bluetoothService.isConnected);
         context.go(AppRoutes.deviceConnected);
         break;
       case 3: // Profile
+        // Set navigation state to preserve connection when returning
+        setNavigationState(_bluetoothService.isConnected);
         context.go(AppRoutes.profile);
         break;
     }
@@ -1644,7 +1701,7 @@ class DashboardViewModel extends ChangeNotifier {
       await _bluetoothService.startScanning();
       print('🎵 Dashboard: Bluetooth scanning completed');
     } else {
-      print('🎵 Dashboard: Already connected to Bluetooth device');
+      print('🎵 Dashboard: Already connected to Bluetooth device - skipping scan');
     }
   }
 
