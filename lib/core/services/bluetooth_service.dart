@@ -728,7 +728,7 @@ class BluetoothService extends ChangeNotifier {
 
       // Wait for response with timeout, pass command index for special handling
       final response = await _waitForResponse(
-        timeout: const Duration(seconds: 10),
+        timeout: const Duration(seconds: 20),
         commandIndex: i,
         preSetupCompleter: completer,
       );
@@ -744,7 +744,14 @@ class BluetoothService extends ChangeNotifier {
 
       // Special handling for the 5th command (7#GFL,5!) to parse program list
       if (i == 4) {
-        _parseProgramListResponse(response);
+        // Use the full accumulated response for program list parsing
+        final fullResponse = _fifthCommandResponses.join('\n');
+        _parseProgramListResponse(fullResponse);
+        _loggingService.sendBleCommandLog(
+        command: command,
+        response: fullResponse,
+        reqTime: DateTime.now().millisecondsSinceEpoch,
+      );
       }
 
       // Small delay between commands
@@ -795,11 +802,12 @@ class BluetoothService extends ChangeNotifier {
 
       // For the 5th command, wait for the completion signal
       // The responses are being accumulated in _handleNotification
-      while (!completer.isCompleted && _fifthCommandResponses.isNotEmpty) {
+      while (!completer.isCompleted) {
         // Check if we have received the completion signal
-        if (_fifthCommandResponses.any(
-          (response) => response.contains('#Completed!'),
-        )) {
+        if (_fifthCommandResponses.isNotEmpty &&
+            _fifthCommandResponses.any(
+              (response) => response.contains('#Completed!'),
+            )) {
           // Wait a bit more to ensure all responses are collected
           await Future.delayed(const Duration(milliseconds: 20));
           final fullResponse = _fifthCommandResponses.join('\n');
@@ -847,7 +855,7 @@ class BluetoothService extends ChangeNotifier {
 
     // Cancel timeout timer if it's still active
     timeoutTimer.cancel();
-
+    
     return await completer.future;
   }
 
