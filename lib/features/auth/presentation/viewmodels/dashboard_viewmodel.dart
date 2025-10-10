@@ -49,6 +49,7 @@ class DashboardViewModel extends ChangeNotifier {
   // Music data
   List<dynamic> _musicData = []; // User's music data from server
   bool _isLoadingMusic = false; // Track if music data is being loaded
+  String _deviceName = ''; // Device name from getAllMusic API
 
   // Bluetooth state monitoring
   bool _isBluetoothStateMonitoring = false;
@@ -112,6 +113,7 @@ class DashboardViewModel extends ChangeNotifier {
   bool get isPlaying => _isPlaying;
   bool get showPlayerCard => _showPlayerCard;
   String? get currentPlayingProgramId => _currentPlayingProgramId;
+  String get deviceName => _deviceName;
 
   // Bluetooth getters
   BluetoothService get bluetoothService => _bluetoothService;
@@ -401,11 +403,14 @@ class DashboardViewModel extends ChangeNotifier {
 
   // Load music data from SharedPreferences and fetch if needed
   Future<void> _loadMusicData() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
+      try {
+        final prefs = await SharedPreferences.getInstance();
 
-      // Try to load music data from SharedPreferences first
-      final musicDataString = prefs.getString('user_music_data');
+        // Load device name from SharedPreferences first
+        await _loadDeviceNameFromPrefs();
+
+        // Try to load music data from SharedPreferences first
+        final musicDataString = prefs.getString('user_music_data');
       if (musicDataString != null && musicDataString.isNotEmpty) {
         final musicData = jsonDecode(musicDataString);
         if (musicData is List && musicData.isNotEmpty) {
@@ -470,15 +475,20 @@ class DashboardViewModel extends ChangeNotifier {
               _musicData = data;
               print('🎵 Dashboard: User has ${data.length} music items');
 
+              // Extract device name from music data
+              _extractDeviceNameFromMusicData(data);
+
               // Save to SharedPreferences
               _saveMusicDataToPrefs(data);
             } else {
               print('🎵 Dashboard: User has no music items (empty data array)');
               _musicData = [];
+              _deviceName = '';
             }
           } else {
             print('🎵 Dashboard: Invalid music data format');
             _musicData = [];
+            _deviceName = '';
           }
         },
       );
@@ -488,6 +498,63 @@ class DashboardViewModel extends ChangeNotifier {
     } finally {
       _isLoadingMusic = false;
       notifyListeners();
+    }
+  }
+
+  // Extract device name from music data
+  void _extractDeviceNameFromMusicData(List<dynamic> musicData) {
+    try {
+      // Look for devicename in the music data
+      for (final musicItem in musicData) {
+        if (musicItem is Map<String, dynamic>) {
+          // Check for devicename field in various possible formats
+          final deviceName = musicItem['devicename'] ?? 
+                            musicItem['deviceName'] ?? 
+                            musicItem['device_name'] ??
+                            musicItem['device'] ??
+                            musicItem['deviceName'];
+          
+          if (deviceName != null && deviceName.toString().isNotEmpty) {
+            _deviceName = deviceName.toString();
+            print('🎵 Dashboard: Extracted device name from music data: $_deviceName');
+            
+            // Save device name to SharedPreferences
+            _saveDeviceNameToPrefs(_deviceName);
+            return;
+          }
+        }
+      }
+      
+      // If no device name found, clear it
+      _deviceName = '';
+      print('🎵 Dashboard: No device name found in music data');
+    } catch (e) {
+      print('🎵 Dashboard: Error extracting device name from music data: $e');
+      _deviceName = '';
+    }
+  }
+
+  // Save device name to SharedPreferences
+  Future<void> _saveDeviceNameToPrefs(String deviceName) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_device_name', deviceName);
+      print('🎵 Dashboard: Saved device name to SharedPreferences: $deviceName');
+    } catch (e) {
+      print('🎵 Dashboard: Error saving device name to SharedPreferences: $e');
+    }
+  }
+
+  // Load device name from SharedPreferences
+  Future<void> _loadDeviceNameFromPrefs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final deviceName = prefs.getString('user_device_name') ?? '';
+      _deviceName = deviceName;
+      print('🎵 Dashboard: Loaded device name from SharedPreferences: $_deviceName');
+    } catch (e) {
+      print('🎵 Dashboard: Error loading device name from SharedPreferences: $e');
+      _deviceName = '';
     }
   }
 
@@ -885,6 +952,24 @@ class DashboardViewModel extends ChangeNotifier {
             '🎵 Dashboard: Found ${_bluetoothService.scannedDevices.length} devices during auto-scan',
           );
 
+          // First, try to auto-connect to device matching getAllMusic devicename
+          final autoConnectDevice = _findAutoConnectDevice(
+            _bluetoothService.scannedDevices,
+          );
+          
+          if (autoConnectDevice != null) {
+            print('🎵 Dashboard: Found device matching getAllMusic devicename, attempting auto-connection: ${autoConnectDevice.platformName}');
+            try {
+              await _bluetoothService.connectToDevice(autoConnectDevice);
+              print('🎵 Dashboard: Auto-connected to device: ${autoConnectDevice.platformName}');
+              _isAutoConnectionRunning = false;
+              return; // Exit early since we successfully connected
+            } catch (e) {
+              print('🎵 Dashboard: Auto-connection failed: $e');
+              // Continue with normal flow if auto-connection fails
+            }
+          }
+
           // Check for unknown devices (not in user's registered devices)
           final unknownDevicesList = _findUnknownDevices(
             _bluetoothService.scannedDevices,
@@ -965,32 +1050,46 @@ class DashboardViewModel extends ChangeNotifier {
       final deviceName = scannedDevice.platformName.toLowerCase();
       bool isKnownDevice = false;
 
-      // Check if this scanned device matches any of user's registered devices
-      for (final userDevice in _userDevices) {
-        if (userDevice is Map<String, dynamic>) {
-          // Check various possible device identifiers
-          final deviceId = userDevice['id']?.toString().toLowerCase() ?? '';
-          final deviceNameFromUser =
-              userDevice['name']?.toString().toLowerCase() ?? '';
-          final deviceMac = userDevice['mac']?.toString().toLowerCase() ?? '';
-          final deviceSerial =
-              userDevice['serial']?.toString().toLowerCase() ?? '';
+      // First, check if this device matches the device name from getAllMusic API
+      if (_deviceName.isNotEmpty) {
+        final expectedDeviceName = _deviceName.toLowerCase();
+        if (deviceName.contains(expectedDeviceName) || 
+            expectedDeviceName.contains(deviceName)) {
+          isKnownDevice = true;
+          print(
+            '🎵 Dashboard: Device matches getAllMusic devicename, marking as known: ${scannedDevice.platformName} (expected: $_deviceName)',
+          );
+        }
+      }
 
-          // Match by device name (most common case)
-          if (deviceName.contains('evolv28') &&
-              (deviceNameFromUser.contains('evolv28') ||
-                  deviceId.contains('evolv28') ||
-                  deviceMac.isNotEmpty ||
-                  deviceSerial.isNotEmpty)) {
-            isKnownDevice = true;
-            break;
-          }
-        } else if (userDevice is String) {
-          // If user device is just a string, check if it contains evolv28
-          if (userDevice.toLowerCase().contains('evolv28') &&
-              deviceName.contains('evolv28')) {
-            isKnownDevice = true;
-            break;
+      // If not matched by getAllMusic devicename, check user's registered devices
+      if (!isKnownDevice) {
+        for (final userDevice in _userDevices) {
+          if (userDevice is Map<String, dynamic>) {
+            // Check various possible device identifiers
+            final deviceId = userDevice['id']?.toString().toLowerCase() ?? '';
+            final deviceNameFromUser =
+                userDevice['name']?.toString().toLowerCase() ?? '';
+            final deviceMac = userDevice['mac']?.toString().toLowerCase() ?? '';
+            final deviceSerial =
+                userDevice['serial']?.toString().toLowerCase() ?? '';
+
+            // Match by device name (most common case)
+            if (deviceName.contains('evolv28') &&
+                (deviceNameFromUser.contains('evolv28') ||
+                    deviceId.contains('evolv28') ||
+                    deviceMac.isNotEmpty ||
+                    deviceSerial.isNotEmpty)) {
+              isKnownDevice = true;
+              break;
+            }
+          } else if (userDevice is String) {
+            // If user device is just a string, check if it contains evolv28
+            if (userDevice.toLowerCase().contains('evolv28') &&
+                deviceName.contains('evolv28')) {
+              isKnownDevice = true;
+              break;
+            }
           }
         }
       }
@@ -1007,6 +1106,31 @@ class DashboardViewModel extends ChangeNotifier {
     return unknownDevices;
   }
 
+  // Find device that matches getAllMusic devicename for auto-connection
+  ble.BluetoothDevice? _findAutoConnectDevice(
+    List<ble.BluetoothDevice> scannedDevices,
+  ) {
+    if (_deviceName.isEmpty) {
+      print('🎵 Dashboard: No device name from getAllMusic API, skipping auto-connection');
+      return null;
+    }
+
+    for (final scannedDevice in scannedDevices) {
+      final deviceName = scannedDevice.platformName.toLowerCase();
+      final expectedDeviceName = _deviceName.toLowerCase();
+      
+      // Check if device name matches (partial or exact match)
+      if (deviceName.contains(expectedDeviceName) || 
+          expectedDeviceName.contains(deviceName)) {
+        print('🎵 Dashboard: Found device for auto-connection: ${scannedDevice.platformName} (matches: $_deviceName)');
+        return scannedDevice;
+      }
+    }
+
+    print('🎵 Dashboard: No device found matching getAllMusic devicename: $_deviceName');
+    return null;
+  }
+
   // Find devices that match user's devices
   List<ble.BluetoothDevice> _findMatchingUserDevices(
     List<ble.BluetoothDevice> scannedDevices,
@@ -1015,6 +1139,19 @@ class DashboardViewModel extends ChangeNotifier {
 
     for (final scannedDevice in scannedDevices) {
       final deviceName = scannedDevice.platformName.toLowerCase();
+
+      // First, check if this device matches the device name from getAllMusic API
+      if (_deviceName.isNotEmpty) {
+        final expectedDeviceName = _deviceName.toLowerCase();
+        if (deviceName.contains(expectedDeviceName) || 
+            expectedDeviceName.contains(deviceName)) {
+          matchingDevices.add(scannedDevice);
+          print(
+            '🎵 Dashboard: Found matching device by getAllMusic devicename: ${scannedDevice.platformName} (expected: $_deviceName)',
+          );
+          continue; // Skip other checks since we found a match
+        }
+      }
 
       // Check if this scanned device matches any of user's devices
       for (final userDevice in _userDevices) {
