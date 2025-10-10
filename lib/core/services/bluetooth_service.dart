@@ -801,7 +801,7 @@ class BluetoothService extends ChangeNotifier {
           (response) => response.contains('#Completed!'),
         )) {
           // Wait a bit more to ensure all responses are collected
-          await Future.delayed(const Duration(milliseconds: 10));
+          await Future.delayed(const Duration(milliseconds: 20));
           final fullResponse = _fifthCommandResponses.join('\n');
           print(
             '5th command - Final response with ${_fifthCommandResponses.length} parts',
@@ -827,19 +827,21 @@ class BluetoothService extends ChangeNotifier {
       if (preSetupCompleter == null) {
         _responseCompleter = completer;
       }
-      
+
       // Set timeout
       timeoutTimer = Timer(timeout, () {
         if (!completer.isCompleted) {
           completer.complete(lastResponse ?? 'Timeout - No response received');
         }
       });
-      
+
       // Wait for the response to be completed by the main notification handler
       final response = await completer.future;
       timeoutTimer.cancel();
       _responseCompleter = null; // Clear the completer
-      print('🎵 BluetoothService: Response for command $commandIndex: $response');
+      print(
+        '🎵 BluetoothService: Response for command $commandIndex: $response',
+      );
       return response;
     }
 
