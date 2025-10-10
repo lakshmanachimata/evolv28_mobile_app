@@ -468,7 +468,9 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
 
         if (viewModel.connectionSuccessful) {
           title = 'Connected';
-          subtitle = 'Your Evolv28 device is connected';
+          subtitle = viewModel.deviceName.isNotEmpty 
+              ? 'Connected to ${viewModel.deviceName}'
+              : 'Your Evolv28 device is connected';
           iconColor = Colors.green;
           iconData = Icons.bluetooth_connected;
         } else if (viewModel.isConnecting) {
@@ -478,7 +480,9 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
           iconData = Icons.bluetooth_searching;
         } else if (viewModel.isBluetoothConnected) {
           title = 'Connected';
-          subtitle = viewModel.bluetoothStatusMessage;
+          subtitle = viewModel.deviceName.isNotEmpty 
+              ? 'Connected to ${viewModel.deviceName}'
+              : viewModel.bluetoothStatusMessage;
           iconColor = Colors.blue;
           iconData = Icons.bluetooth_connected;
         } else {
