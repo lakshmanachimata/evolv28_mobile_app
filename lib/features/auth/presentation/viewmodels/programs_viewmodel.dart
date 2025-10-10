@@ -44,10 +44,38 @@ class ProgramsViewModel extends ChangeNotifier {
   // Getter for current view
   String get currentView => _currentView;
 
+  // Method to refresh programs from DashboardViewModel
+  Future<void> refreshProgramsFromDashboard() async {
+    try {
+      print('ProgramsViewModel: Refreshing programs from DashboardViewModel...');
+      
+      // Get filtered programs from DashboardViewModel using static reference
+      final dashboardViewModel = DashboardViewModel.instance;
+      if (dashboardViewModel == null) {
+        print('ProgramsViewModel: DashboardViewModel instance not available');
+        return;
+      }
+      
+      // Trigger the DashboardViewModel to update its filtered programs
+      // This will process the union between music data and Bluetooth programs
+      await dashboardViewModel.loadMusicDataLocal();
+      
+      print('ProgramsViewModel: Programs refreshed successfully');
+      notifyListeners();
+    } catch (e) {
+      print('ProgramsViewModel: Error refreshing programs from DashboardViewModel: $e');
+    }
+  }
+
   // Programs data - dynamically generated from filtered programs (union of music data and BLE programs)
   List<ProgramData> get programs {
-    // Get filtered programs from DashboardViewModel
-    final dashboardViewModel = DashboardViewModel();
+    // Get filtered programs from DashboardViewModel using static reference
+    final dashboardViewModel = DashboardViewModel.instance;
+    if (dashboardViewModel == null) {
+      print('ProgramsViewModel: DashboardViewModel instance not available, using default programs');
+      return _getDefaultPrograms();
+    }
+    
     final filteredPrograms = dashboardViewModel.filteredPrograms;
 
     // If no filtered programs available, use default programs

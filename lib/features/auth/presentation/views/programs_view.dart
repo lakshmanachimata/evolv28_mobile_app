@@ -34,6 +34,8 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
       final viewModel = Provider.of<ProgramsViewModel>(context, listen: false);
       // Initialize Bluetooth listener
       await viewModel.initialize();
+      // Refresh programs from DashboardViewModel to get the latest union of music data and Bluetooth programs
+      await viewModel.refreshProgramsFromDashboard();
       // Check if a program is currently playing when navigating to programs screen
       await viewModel.checkPlayerStatus();
       // Check if we should show player screen (coming from dashboard player card)

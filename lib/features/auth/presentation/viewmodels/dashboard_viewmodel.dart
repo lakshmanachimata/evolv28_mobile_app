@@ -21,6 +21,12 @@ import '../../domain/usecases/map_device_without_otp_usecase.dart';
 import '../../domain/usecases/verify_otp_usecase.dart';
 
 class DashboardViewModel extends ChangeNotifier {
+  // Static reference to the current instance
+  static DashboardViewModel? _instance;
+  
+  // Static getter for the current instance
+  static DashboardViewModel? get instance => _instance;
+  
   // Static variables to track minimized state
   static bool _isMinimizedFromPlayer = false;
   static String? _minimizedProgramId;
@@ -36,6 +42,11 @@ class DashboardViewModel extends ChangeNotifier {
   final GetAllMusicUseCase _getAllMusicUseCase = sl<GetAllMusicUseCase>();
   final MapDeviceWithoutOtpUseCase _mapDeviceWithoutOtpUseCase =
       sl<MapDeviceWithoutOtpUseCase>();
+
+  // Constructor
+  DashboardViewModel() {
+    _instance = this;
+  }
 
   // State variables
   bool _isLoading = false;
@@ -282,7 +293,7 @@ class DashboardViewModel extends ChangeNotifier {
           '🎵 Dashboard: Device was connected before navigation and is still connected, setting up minimal initialization',
         );
         clearNavigationState();
-        await _loadMusicDataLocal();
+        await loadMusicDataLocal();
         filteredPrograms = await _getFilteredProgramsLocal();
         // Set up minimal initialization (listeners only)
         await _setupMinimalInitialization();
@@ -483,7 +494,7 @@ class DashboardViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> _loadMusicDataLocal() async {
+  Future<void> loadMusicDataLocal() async {
     try {
       final prefs = await SharedPreferences.getInstance();
 
@@ -705,7 +716,7 @@ class DashboardViewModel extends ChangeNotifier {
       print(
         '🎵 Dashboard: Bluetooth programs: ${bluetoothPrograms.length} items',
       );
-      await _loadMusicDataLocal();
+      await loadMusicDataLocal();
       // Get music data
       print('🎵 Dashboard: Music data: ${_musicData.length} items');
 
@@ -1112,7 +1123,9 @@ class DashboardViewModel extends ChangeNotifier {
         // Check if already connected before starting scan
         if (_bluetoothService.isConnected) {
           print('🎵 Dashboard: Already connected to device, skipping scan');
-          _bluetoothService.setStatusMessage('Connected to device');
+          _bluetoothService.setStatusMessage(
+            '${_bluetoothService.connectedDevice?.platformName} is connected',
+          );
         } else {
           print('🎵 Dashboard: Not connected, starting device scanning...');
           await _bluetoothService.startScanning();
