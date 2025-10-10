@@ -675,92 +675,95 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<String, bool>> deleteUserAccount() async {
-    try {
-      // Get stored user data
-      print('🔐 AuthRepository: Getting user data from SharedPreferences...');
+    await logout();
+    return Right(true);
 
-      // Debug: List all stored keys
-      final allKeys = sharedPreferences.getKeys();
-      print('🔐 AuthRepository: All stored keys: $allKeys');
+    // try {
+    //   // Get stored user data
+    //   print('🔐 AuthRepository: Getting user data from SharedPreferences...');
 
-      // Debug: Check what type of data is stored
-      final userIdValue = sharedPreferences.get('user_id');
-      final tokenValue = sharedPreferences.get('user_token');
+    //   // Debug: List all stored keys
+    //   final allKeys = sharedPreferences.getKeys();
+    //   print('🔐 AuthRepository: All stored keys: $allKeys');
 
-      print(
-        '🔐 AuthRepository: Raw userId type: ${userIdValue.runtimeType}, value: $userIdValue',
-      );
-      print(
-        '🔐 AuthRepository: Raw token type: ${tokenValue.runtimeType}, value: $tokenValue',
-      );
+    //   // Debug: Check what type of data is stored
+    //   final userIdValue = sharedPreferences.get('user_id');
+    //   final tokenValue = sharedPreferences.get('user_token');
 
-      // Convert to string safely
-      final userId = userIdValue?.toString() ?? '';
-      final token = tokenValue?.toString() ?? '';
+    //   print(
+    //     '🔐 AuthRepository: Raw userId type: ${userIdValue.runtimeType}, value: $userIdValue',
+    //   );
+    //   print(
+    //     '🔐 AuthRepository: Raw token type: ${tokenValue.runtimeType}, value: $tokenValue',
+    //   );
 
-      print('🔐 AuthRepository: Converted userId: $userId');
-      print(
-        '🔐 AuthRepository: Converted token: ${token.isNotEmpty ? 'present' : 'empty'}',
-      );
+    //   // Convert to string safely
+    //   final userId = userIdValue?.toString() ?? '';
+    //   final token = tokenValue?.toString() ?? '';
 
-      if (userId.isEmpty || token.isEmpty) {
-        print('🔐 AuthRepository: No user ID or token found for deletion');
-        print('🔐 AuthRepository: Proceeding with local data cleanup only');
+    //   print('🔐 AuthRepository: Converted userId: $userId');
+    //   print(
+    //     '🔐 AuthRepository: Converted token: ${token.isNotEmpty ? 'present' : 'empty'}',
+    //   );
 
-        // Clear any remaining local data
-        await logout();
+    //   if (userId.isEmpty || token.isEmpty) {
+    //     print('🔐 AuthRepository: No user ID or token found for deletion');
+    //     print('🔐 AuthRepository: Proceeding with local data cleanup only');
 
-        return Right(true); // Return success since local cleanup is done
-      }
+    //     // Clear any remaining local data
+    //     await logout();
 
-      print('🔐 AuthRepository: Deleting user account for ID: $userId');
+    //     return Right(true); // Return success since local cleanup is done
+    //   }
 
-      final response = await _dio.delete(
-        '${ApiConstants.baseUrl}${ApiConstants.deleteUser}/$userId',
-        options: Options(
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Authorization': token,
-          },
-        ),
-      );
+    //   print('🔐 AuthRepository: Deleting user account for ID: $userId');
 
-      print(
-        '🔐 AuthRepository: Delete user API response: ${response.statusCode}',
-      );
+    //   final response = await _dio.delete(
+    //     '${ApiConstants.baseUrl}${ApiConstants.deleteUser}/$userId',
+    //     options: Options(
+    //       headers: {
+    //         'Accept': 'application/json',
+    //         'Content-Type': 'application/json',
+    //         'Authorization': token,
+    //       },
+    //     ),
+    //   );
 
-      if (response.statusCode == 200 || response.statusCode == 204) {
-        print('🔐 AuthRepository: User account deleted successfully');
+    //   print(
+    //     '🔐 AuthRepository: Delete user API response: ${response.statusCode}',
+    //   );
 
-        // Clear all user data from SharedPreferences
-        await logout();
+    //   if (response.statusCode == 200 || response.statusCode == 204) {
+    //     print('🔐 AuthRepository: User account deleted successfully');
 
-        return Right(true);
-      } else {
-        print(
-          '🔐 AuthRepository: Delete user API failed with status: ${response.statusCode}',
-        );
-        return Left('Failed to delete account. Please try again.');
-      }
-    } catch (e) {
-      print('🔐 AuthRepository: Delete user API error: $e');
-      if (e is DioException) {
-        if (e.response != null) {
-          // Server responded with error status
-          final errorMessage =
-              e.response?.data?['message'] ??
-              'Failed to delete account. Please try again.';
-          return Left(errorMessage);
-        } else {
-          // Network error
-          return Left(
-            'Network error. Please check your connection and try again.',
-          );
-        }
-      }
-      return Left('Failed to delete account. Please try again.');
-    }
+    //     // Clear all user data from SharedPreferences
+    //     await logout();
+
+    //     return Right(true);
+    //   } else {
+    //     print(
+    //       '🔐 AuthRepository: Delete user API failed with status: ${response.statusCode}',
+    //     );
+    //     return Left('Failed to delete account. Please try again.');
+    //   }
+    // } catch (e) {
+    //   print('🔐 AuthRepository: Delete user API error: $e');
+    //   if (e is DioException) {
+    //     if (e.response != null) {
+    //       // Server responded with error status
+    //       final errorMessage =
+    //           e.response?.data?['message'] ??
+    //           'Failed to delete account. Please try again.';
+    //       return Left(errorMessage);
+    //     } else {
+    //       // Network error
+    //       return Left(
+    //         'Network error. Please check your connection and try again.',
+    //       );
+    //     }
+    //   }
+    //   return Left('Failed to delete account. Please try again.');
+    // }
   }
 
   @override
