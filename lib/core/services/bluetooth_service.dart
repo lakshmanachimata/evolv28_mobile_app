@@ -736,22 +736,23 @@ class BluetoothService extends ChangeNotifier {
       print('Response ${i + 1}: $response');
 
       // Log BLE command interaction
-      _loggingService.sendBleCommandLog(
-        command: command,
-        response: response,
-        reqTime: DateTime.now().millisecondsSinceEpoch,
-      );
-
+      if (i != 4) {
+        _loggingService.sendBleCommandLog(
+          command: command,
+          response: response,
+          reqTime: DateTime.now().millisecondsSinceEpoch,
+        );
+      }
       // Special handling for the 5th command (7#GFL,5!) to parse program list
       if (i == 4) {
         // Use the full accumulated response for program list parsing
         final fullResponse = _fifthCommandResponses.join('\n');
         _parseProgramListResponse(fullResponse);
         _loggingService.sendBleCommandLog(
-        command: command,
-        response: fullResponse,
-        reqTime: DateTime.now().millisecondsSinceEpoch,
-      );
+          command: command,
+          response: fullResponse,
+          reqTime: DateTime.now().millisecondsSinceEpoch,
+        );
       }
 
       // Small delay between commands
@@ -855,7 +856,7 @@ class BluetoothService extends ChangeNotifier {
 
     // Cancel timeout timer if it's still active
     timeoutTimer.cancel();
-    
+
     return await completer.future;
   }
 
