@@ -39,6 +39,7 @@ class BluetoothService extends ChangeNotifier {
   bool _isSendingPlayCommands = false;
   bool _isPlaySuccessful = false;
   String _selectedBcuFile = 'Uplift_Mood.bcu'; // Default file
+  String? _currentPlayingFile; // Currently playing file from player status
   List<String> _playCommandResponses = [];
 
   // Command handling
@@ -84,6 +85,7 @@ class BluetoothService extends ChangeNotifier {
   bool get isSendingPlayCommands => _isSendingPlayCommands;
   bool get isPlaySuccessful => _isPlaySuccessful;
   String get selectedBcuFile => _selectedBcuFile;
+  String? get currentPlayingFile => _currentPlayingFile;
   List<String> get playCommandResponses => _playCommandResponses;
   List<dynamic> get userDevices => _userDevices;
 
@@ -682,10 +684,16 @@ class BluetoothService extends ChangeNotifier {
       );
 
       // Send all commands from the reference implementation
-      await _sendCommandSequence();
+      final playerStatusResponse = await _sendCommandSequence();
 
       // Command sequence completed
       _isExecutingCommands = false;
+      
+      // Process player status from the last command response
+      if (playerStatusResponse != null) {
+        _processPlayerStatusFromResponse(playerStatusResponse);
+      }
+      
       notifyListeners();
     } catch (e) {
       _isExecutingCommands = false;
@@ -694,7 +702,7 @@ class BluetoothService extends ChangeNotifier {
     }
   }
 
-  Future<void> _sendCommandSequence() async {
+  Future<String?> _sendCommandSequence() async {
     // Commands from the reference implementation
     const List<String> commands = [
       '#GET_MAC_ID!',
@@ -706,6 +714,8 @@ class BluetoothService extends ChangeNotifier {
     ];
 
     print('=== STARTING COMMAND SEQUENCE ===');
+
+    String? lastCommandResponse;
 
     for (int i = 0; i < commands.length; i++) {
       final command = commands[i];
@@ -735,6 +745,12 @@ class BluetoothService extends ChangeNotifier {
 
       print('Response ${i + 1}: $response');
 
+      // Store the last command response (5#SPL!) for player status
+      if (i == commands.length - 1) {
+        lastCommandResponse = response;
+        print('🎵 BluetoothService: Stored last command response for player status: $response');
+      }
+
       // Log BLE command interaction
       if (i != 4) {
         _loggingService.sendBleCommandLog(
@@ -760,6 +776,41 @@ class BluetoothService extends ChangeNotifier {
     }
 
     print('=== COMMAND SEQUENCE COMPLETED ===');
+    return lastCommandResponse;
+  }
+
+  /// Process player status from the last command response (5#SPL!)
+  void _processPlayerStatusFromResponse(String response) {
+    print('🎵 BluetoothService: Processing player status from command sequence response: $response');
+    
+    if (response.contains('#SPL,')) {
+      // Check if response contains STOP status
+      if (response.contains('STOP')) {
+        print('🎵 BluetoothService: No program currently playing (from command sequence)');
+        _currentPlayingFile = null;
+      } else {
+        // Extract filename that contains .bcu from the entire response string
+        final RegExp bcuFileRegex = RegExp(r'([A-Za-z0-9_]+\.bcu)');
+        final Match? match = bcuFileRegex.firstMatch(response);
+        
+        if (match != null) {
+          final filename = match.group(1);
+          if (filename != null && filename.isNotEmpty) {
+            print('🎵 BluetoothService: Program is playing: $filename (from command sequence)');
+            _currentPlayingFile = filename;
+          } else {
+            print('🎵 BluetoothService: Playing status but no .bcu filename found (from command sequence)');
+            _currentPlayingFile = null;
+          }
+        } else {
+          print('🎵 BluetoothService: Playing status but no .bcu filename found in response (from command sequence)');
+          _currentPlayingFile = null;
+        }
+      }
+    } else {
+      print('🎵 BluetoothService: Response does not contain player status (from command sequence)');
+      _currentPlayingFile = null;
+    }
   }
 
   Future<void> writeCommand(String command) async {

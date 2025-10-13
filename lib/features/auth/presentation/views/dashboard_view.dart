@@ -93,7 +93,9 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
     final hasBluetoothPermission =
         await BluetoothPermissionHelper.isBluetoothEnabled();
 
-    print('🎵 Dashboard View: Permission status - Location: $hasLocationPermission, Bluetooth: $hasBluetoothPermission');
+    print(
+      '🎵 Dashboard View: Permission status - Location: $hasLocationPermission, Bluetooth: $hasBluetoothPermission',
+    );
 
     if (hasLocationPermission && hasBluetoothPermission) {
       print(
@@ -122,7 +124,9 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
 
     // Check if permission flow is already in progress
     if (viewModel.permissionFlowInProgress) {
-      print('🎵 Dashboard View: Permission flow already in progress, skipping...');
+      print(
+        '🎵 Dashboard View: Permission flow already in progress, skipping...',
+      );
       return;
     }
 
@@ -201,7 +205,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                 // Clear the flag and trigger permission flow
                 WidgetsBinding.instance.addPostFrameCallback((_) async {
                   // Double-check the state before executing
-                  if (viewModel.shouldTriggerPermissionFlow && 
+                  if (viewModel.shouldTriggerPermissionFlow &&
                       !viewModel.permissionFlowInProgress &&
                       !viewModel.permissionFlowCompleted) {
                     viewModel.clearPermissionFlowTrigger();
@@ -270,7 +274,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                 print('🎵 Dashboard UI: Showing unknown device bottom sheet');
                 // Mark that the bottom sheet is being shown immediately
                 viewModel.setUnknownDeviceBottomSheetShown(true);
-                
+
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   // Double-check the state before showing the bottom sheet
                   if (viewModel.showUnknownDeviceDialog) {
@@ -318,7 +322,8 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
               if (viewModel.pendingDeviceMappingError != null) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   // Only pop if there's a modal to dismiss and we can pop
-                  if (viewModel.showUnknownDeviceDialog && Navigator.of(context).canPop()) {
+                  if (viewModel.showUnknownDeviceDialog &&
+                      Navigator.of(context).canPop()) {
                     Navigator.of(context).pop();
                   }
                   viewModel.closeUnknownDeviceDialog();
@@ -1219,6 +1224,10 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
     BuildContext context,
     DashboardViewModel viewModel,
   ) {
+    String msg = 'Scanning for ${viewModel.deviceName} device';
+    if (viewModel.deviceName.isEmpty) {
+      msg = 'Scanning for Evolv28 device';
+    }
     return Container(
       width: double.infinity,
       height: double.infinity,
@@ -1271,7 +1280,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
               SizedBox(height: 20),
               // Scanning text
               Text(
-                'Scanning for evolv28 devices',
+                msg,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -1833,11 +1842,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                   color: Colors.red[50],
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Icon(
-                  Icons.close,
-                  color: Colors.red[600],
-                  size: 20,
-                ),
+                child: Icon(Icons.close, color: Colors.red[600], size: 20),
               ),
             ),
           ],
@@ -1848,78 +1853,81 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-        // "Can't find your Device" message with info icon - clickable
-        GestureDetector(
-          onTap: () {
-            viewModel.openTroubleshootingScreen();
-            setModalState(() {});
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.grey[200],
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  "Can't find your Device",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black,
+              // "Can't find your Device" message with info icon - clickable
+              GestureDetector(
+                onTap: () {
+                  viewModel.openTroubleshootingScreen();
+                  setModalState(() {});
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        "Can't find your Device",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: const Icon(
+                          Icons.info_outline,
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w900,
+                          size: 20,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: const Icon(
-                    Icons.info_outline,
-                    color: Colors.grey,
-                    fontWeight: FontWeight.w900,
-                    size: 20,
+              ),
+
+              const SizedBox(height: 24),
+
+              // Try Again button
+              SizedBox(
+                width: 120,
+                child: ElevatedButton(
+                  onPressed: () {
+                    // Close the bottom sheet first
+                    Navigator.of(context).pop();
+                    viewModel.closeUnknownDeviceDialog();
+                    // Then trigger device scan again
+                    viewModel.connectBluetoothDevice();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFF17961), // Orange-red
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Try Again',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              ],
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 24),
-
-        // Try Again button
-        SizedBox(
-          width: 120,
-          child: ElevatedButton(
-            onPressed: () {
-              // Close the bottom sheet first
-              Navigator.of(context).pop();
-              viewModel.closeUnknownDeviceDialog();
-              // Then trigger device scan again
-              viewModel.connectBluetoothDevice();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFF17961), // Orange-red
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
               ),
-            ),
-            child: const Text(
-              'Try Again',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ),
 
-        const SizedBox(height: 24),
+              const SizedBox(height: 24),
             ],
           ),
         ),
@@ -2519,11 +2527,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                   color: Colors.red,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.error,
-                  color: Colors.white,
-                  size: 30,
-                ),
+                child: const Icon(Icons.error, color: Colors.white, size: 30),
               ),
 
               const SizedBox(height: 16),
@@ -2544,10 +2548,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
               // Error message
               Text(
                 viewModel.deviceMappingError,
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: Colors.black87,
-                ),
+                style: const TextStyle(fontSize: 16, color: Colors.black87),
                 textAlign: TextAlign.center,
               ),
 
@@ -2603,10 +2604,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
           ),
           content: const Text(
             'Please connect to the Evolv28 device to play programs.',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.black87,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.black87),
           ),
           actions: [
             TextButton(

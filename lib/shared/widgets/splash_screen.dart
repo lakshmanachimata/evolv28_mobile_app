@@ -9,6 +9,7 @@ import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/domain/usecases/get_user_details_usecase.dart';
 import '../../features/auth/domain/usecases/get_all_music_usecase.dart';
 import '../../core/di/injection_container.dart';
+import '../../core/services/session_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -221,8 +222,8 @@ class _SplashScreenState extends State<SplashScreen>
             if (data is List && data.isNotEmpty) {
               print('🚀 SplashScreen: User has ${data.length} music items');
               
-              // Save music data to SharedPreferences
-              _saveMusicDataToPrefs(data);
+              // Save music data to SharedPreferences and update session ID
+              _handleMusicDataSuccess(data, userId);
               
               return true;
             } else {
@@ -241,6 +242,15 @@ class _SplashScreenState extends State<SplashScreen>
     }
   }
 
+  // Handle successful music data fetch
+  void _handleMusicDataSuccess(List<dynamic> musicData, int userId) {
+    // Save music data to SharedPreferences
+    _saveMusicDataToPrefs(musicData);
+    
+    // Update session ID after successfully fetching music data
+    _updateSessionId(userId);
+  }
+
   // Save music data to SharedPreferences
   Future<void> _saveMusicDataToPrefs(List<dynamic> musicData) async {
     try {
@@ -250,6 +260,24 @@ class _SplashScreenState extends State<SplashScreen>
       print('🚀 SplashScreen: Saved ${musicData.length} music items to SharedPreferences');
     } catch (e) {
       print('🚀 SplashScreen: Error saving music data to SharedPreferences: $e');
+    }
+  }
+
+  // Update session ID after fetching music data
+  Future<void> _updateSessionId(int userId) async {
+    try {
+      print('🚀 SplashScreen: Updating session ID for user: $userId');
+      
+      final sessionService = SessionService();
+      final newSessionId = await sessionService.updateSessionId(userId);
+      
+      if (newSessionId != null) {
+        print('🚀 SplashScreen: Session ID updated successfully: $newSessionId');
+      } else {
+        print('🚀 SplashScreen: Failed to update session ID');
+      }
+    } catch (e) {
+      print('🚀 SplashScreen: Error updating session ID: $e');
     }
   }
 

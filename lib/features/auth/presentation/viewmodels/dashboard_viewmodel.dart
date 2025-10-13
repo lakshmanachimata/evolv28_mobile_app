@@ -23,10 +23,10 @@ import '../../domain/usecases/verify_otp_usecase.dart';
 class DashboardViewModel extends ChangeNotifier {
   // Static reference to the current instance
   static DashboardViewModel? _instance;
-  
+
   // Static getter for the current instance
   static DashboardViewModel? get instance => _instance;
-  
+
   // Static variables to track minimized state
   static bool _isMinimizedFromPlayer = false;
   static String? _minimizedProgramId;
@@ -92,7 +92,7 @@ class DashboardViewModel extends ChangeNotifier {
   bool _bluetoothScanPermissionDialogShown = false;
   bool _locationPermissionDialogShown = false;
   bool _permissionFlowInitiated = false;
-  
+
   // Additional state management for permission flow
   bool _permissionFlowCompleted = false;
   DateTime? _lastPermissionFlowTime;
@@ -270,7 +270,7 @@ class DashboardViewModel extends ChangeNotifier {
         print(
           '🎵 Dashboard: Command sequence completed, checking player status...',
         );
-        checkPlayerStatus();
+        _updatePlayerStatusFromBluetoothService();
       }
       notifyListeners();
     };
@@ -286,14 +286,14 @@ class DashboardViewModel extends ChangeNotifier {
   Future<void> initialize() async {
     print('🎵 Dashboard: initialize() called');
     _isLoading = false;
-    
+
     // Reset permission flow flags on fresh initialization
     _permissionFlowInitiated = false;
     _permissionFlowInProgress = false;
     _shouldTriggerPermissionFlow = false;
     _permissionFlowCompleted = false;
     _lastPermissionFlowTime = null;
-    
+
     notifyListeners();
 
     // Check if we're returning from another screen
@@ -376,7 +376,7 @@ class DashboardViewModel extends ChangeNotifier {
         print(
           '🎵 Dashboard: Command sequence completed, checking player status...',
         );
-        checkPlayerStatus();
+        _updatePlayerStatusFromBluetoothService();
       }
       notifyListeners();
     };
@@ -1003,32 +1003,10 @@ class DashboardViewModel extends ChangeNotifier {
         .trim();
   }
 
-  // Check if names match (exact or partial)
+  // Check if names match (exact match only)
   bool _isNameMatch(String musicName, String bluetoothName) {
-    // Exact match
-    if (musicName == bluetoothName) return true;
-
-    // Check if one contains the other (for partial matches)
-    if (musicName.contains(bluetoothName) || bluetoothName.contains(musicName))
-      return true;
-
-    // Check for word-level matches
-    final musicWords = musicName.split(' ');
-    final bluetoothWords = bluetoothName.split(' ');
-
-    // If any significant word matches, consider it a match
-    for (final musicWord in musicWords) {
-      if (musicWord.length > 2) {
-        // Only consider words longer than 2 chars
-        for (final bluetoothWord in bluetoothWords) {
-          if (bluetoothWord.length > 2 && musicWord == bluetoothWord) {
-            return true;
-          }
-        }
-      }
-    }
-
-    return false;
+    // Exact match only
+    return musicName == bluetoothName;
   }
 
   // Check if IDs match
@@ -1125,9 +1103,13 @@ class DashboardViewModel extends ChangeNotifier {
 
       // Check cooldown period
       if (_lastPermissionFlowTime != null) {
-        final timeSinceLastFlow = DateTime.now().difference(_lastPermissionFlowTime!);
+        final timeSinceLastFlow = DateTime.now().difference(
+          _lastPermissionFlowTime!,
+        );
         if (timeSinceLastFlow < _permissionFlowCooldown) {
-          print('🎵 Dashboard: Permission flow cooldown active, skipping (${timeSinceLastFlow.inSeconds}s since last flow)');
+          print(
+            '🎵 Dashboard: Permission flow cooldown active, skipping (${timeSinceLastFlow.inSeconds}s since last flow)',
+          );
           return;
         }
       }
@@ -1188,14 +1170,14 @@ class DashboardViewModel extends ChangeNotifier {
   // Set permission flow in progress flag
   void setPermissionFlowInProgress(bool inProgress) {
     _permissionFlowInProgress = inProgress;
-    
+
     // If setting to false (completed), mark as completed
     if (!inProgress) {
       _permissionFlowCompleted = true;
       _lastPermissionFlowTime = DateTime.now();
       print('🎵 Dashboard: Permission flow completed');
     }
-    
+
     notifyListeners();
   }
 
@@ -1203,19 +1185,25 @@ class DashboardViewModel extends ChangeNotifier {
   bool _shouldAllowPermissionFlow() {
     // If permission flow is in progress, don't allow another one
     if (_permissionFlowInProgress) {
-      print('🎵 Dashboard: Permission flow already in progress, not allowing another');
+      print(
+        '🎵 Dashboard: Permission flow already in progress, not allowing another',
+      );
       return false;
     }
-    
+
     // Check cooldown period
     if (_lastPermissionFlowTime != null) {
-      final timeSinceLastFlow = DateTime.now().difference(_lastPermissionFlowTime!);
+      final timeSinceLastFlow = DateTime.now().difference(
+        _lastPermissionFlowTime!,
+      );
       if (timeSinceLastFlow < _permissionFlowCooldown) {
-        print('🎵 Dashboard: Permission flow cooldown active, not allowing another (${timeSinceLastFlow.inSeconds}s since last flow)');
+        print(
+          '🎵 Dashboard: Permission flow cooldown active, not allowing another (${timeSinceLastFlow.inSeconds}s since last flow)',
+        );
         return false;
       }
     }
-    
+
     return true;
   }
 
@@ -1660,6 +1648,35 @@ class DashboardViewModel extends ChangeNotifier {
     print('Device management requested');
   }
 
+  // Update player status from Bluetooth service (from command sequence response)
+  void _updatePlayerStatusFromBluetoothService() {
+    print('🎵 Dashboard: _updatePlayerStatusFromBluetoothService called');
+
+    final playingFile = _bluetoothService.currentPlayingFile;
+
+    if (playingFile != null) {
+      print('🎵 Dashboard: Program is playing: $playingFile (from command sequence)');
+      _showPlayerCard = true;
+      _isPlaying = true;
+      _currentPlayingProgramId = playingFile;
+      // Set the selected BCU file so the player card shows the correct program name
+      _bluetoothService.setSelectedBcuFile(playingFile);
+      print(
+        '🎵 Dashboard: Player card state set to: showPlayerCard=$_showPlayerCard, isPlaying=$_isPlaying, selectedBcuFile=$playingFile',
+      );
+      notifyListeners();
+    } else {
+      print('🎵 Dashboard: No program currently playing (from command sequence)');
+      _showPlayerCard = false;
+      _isPlaying = false;
+      _currentPlayingProgramId = null;
+      print(
+        '🎵 Dashboard: Player card state set to: showPlayerCard=$_showPlayerCard, isPlaying=$_isPlaying',
+      );
+      notifyListeners();
+    }
+  }
+
   // Check if a program is currently playing when navigating to dashboard
   Future<void> checkPlayerStatus() async {
     print('🎵 Dashboard: checkPlayerStatus called');
@@ -1846,9 +1863,13 @@ class DashboardViewModel extends ChangeNotifier {
 
     // Check cooldown period
     if (_lastPermissionFlowTime != null) {
-      final timeSinceLastFlow = DateTime.now().difference(_lastPermissionFlowTime!);
+      final timeSinceLastFlow = DateTime.now().difference(
+        _lastPermissionFlowTime!,
+      );
       if (timeSinceLastFlow < _permissionFlowCooldown) {
-        print('🎵 Dashboard: Permission flow cooldown active, skipping (${timeSinceLastFlow.inSeconds}s since last flow)');
+        print(
+          '🎵 Dashboard: Permission flow cooldown active, skipping (${timeSinceLastFlow.inSeconds}s since last flow)',
+        );
         return;
       }
     }
@@ -2053,7 +2074,7 @@ class DashboardViewModel extends ChangeNotifier {
     // Mark permissions as granted
     _isLocationPermissionGranted = true;
     _isBluetoothScanPermissionGranted = true;
-    
+
     // Mark permission flow as completed
     _permissionFlowCompleted = true;
     _permissionFlowInProgress = false;
@@ -2112,12 +2133,12 @@ class DashboardViewModel extends ChangeNotifier {
             '🎵 Dashboard: All permissions granted, starting Bluetooth operations',
           );
           _isBluetoothScanPermissionGranted = true;
-          
+
           // Mark permission flow as completed
           _permissionFlowCompleted = true;
           _permissionFlowInProgress = false;
           _lastPermissionFlowTime = DateTime.now();
-          
+
           await _startBluetoothOperations();
         } else if (!_bluetoothScanPermissionDialogShown) {
           print(

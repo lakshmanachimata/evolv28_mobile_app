@@ -19,6 +19,7 @@ class ApiConstants {
   static const String deviceMappingWithoutOtp = '/api/device/mapping/withoutotp';
   static const String deviceTroubleshotLog = '/api/devicetroubleshotlog';
   static const String logsNewInsert = '/api/logs/newinsert';
+  static const String updateSessid = '/api/update_sessid';
 
   // User endpoints
   static const String profile = '/user/profile';
