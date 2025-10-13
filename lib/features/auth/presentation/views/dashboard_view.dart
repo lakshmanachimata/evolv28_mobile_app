@@ -505,93 +505,108 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
   Widget _buildConnectCard(BuildContext context, DashboardViewModel viewModel) {
     return Consumer<DashboardViewModel>(
       builder: (context, viewModel, child) {
-        // Determine connection state
-        String title;
-        String subtitle;
-        Color iconColor;
-        IconData iconData;
+        return FutureBuilder<bool>(
+          future: viewModel.arePermissionsGranted(),
+          builder: (context, snapshot) {
+            // Determine connection state
+            String title;
+            String subtitle;
+            Color iconColor;
+            IconData iconData;
+            bool isClickable = true;
 
-        if (viewModel.connectionSuccessful) {
-          title = 'Connected';
-          subtitle = 'Your Evolv28 device is connected';
-          iconColor = Colors.green;
-          iconData = Icons.bluetooth_connected;
-        } else if (viewModel.isConnecting) {
-          title = 'Connecting';
-          subtitle = 'Connecting to your device...';
-          iconColor = Colors.orange;
-          iconData = Icons.bluetooth_searching;
-        } else if (viewModel.isBluetoothConnected) {
-          title = 'Connected';
-          subtitle = viewModel.bluetoothStatusMessage;
-          iconColor = Colors.blue;
-          iconData = Icons.bluetooth_connected;
-        } else {
-          title = 'Connect';
-          subtitle = 'Tap to connect your Evolv28 device';
-          iconColor = Colors.grey;
-          iconData = Icons.bluetooth;
-        }
+            if (viewModel.connectionSuccessful) {
+              title = 'Connected';
+              subtitle = 'Your Evolv28 device is connected';
+              iconColor = Colors.green;
+              iconData = Icons.bluetooth_connected;
+              isClickable = false;
+            } else if (viewModel.isConnecting) {
+              title = 'Connecting';
+              subtitle = 'Connecting to your device...';
+              iconColor = Colors.orange;
+              iconData = Icons.bluetooth_searching;
+              isClickable = false;
+            } else if (viewModel.isBluetoothConnected) {
+              title = 'Connected';
+              subtitle = viewModel.bluetoothStatusMessage;
+              iconColor = Colors.blue;
+              iconData = Icons.bluetooth_connected;
+            } else if (snapshot.hasData && !snapshot.data!) {
+              // Permissions not granted
+              title = 'Connect';
+              subtitle = 'Give permission to connect';
+              iconColor = Colors.orange;
+              iconData = Icons.bluetooth_disabled;
+            } else {
+              title = 'Connect';
+              subtitle = 'Tap to connect your Evolv28 device';
+              iconColor = Colors.grey;
+              iconData = Icons.bluetooth;
+            }
 
-        return GestureDetector(
-          onTap: viewModel.connectionSuccessful
-              ? null
-              : () {
-                  viewModel.connectBluetoothDevice();
-                },
-          child: Container(
-            padding: const EdgeInsets.all(20.0),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16.0),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  offset: const Offset(0, 2),
-                  blurRadius: 8,
+            return GestureDetector(
+              onTap: isClickable
+                  ? () async {
+                      print('🎵 Dashboard View: Connect card tapped');
+                      await viewModel.connectBluetoothDevice();
+                    }
+                  : null,
+              child: Container(
+                padding: const EdgeInsets.all(20.0),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16.0),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      offset: const Offset(0, 2),
+                      blurRadius: 8,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        subtitle,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey,
-                        ),
-                      ),
-                      if (viewModel.bluetoothErrorMessage.isNotEmpty &&
-                          !viewModel.connectionSuccessful) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          viewModel.bluetoothErrorMessage,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.red,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
                           ),
-                        ),
-                      ],
-                    ],
-                  ),
+                          const SizedBox(height: 8),
+                          Text(
+                            subtitle,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          if (viewModel.bluetoothErrorMessage.isNotEmpty &&
+                              !viewModel.connectionSuccessful) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              viewModel.bluetoothErrorMessage,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.red,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    Icon(iconData, color: iconColor, size: 30),
+                  ],
                 ),
-                Icon(iconData, color: iconColor, size: 30),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );

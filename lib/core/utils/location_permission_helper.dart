@@ -201,7 +201,7 @@ class LocationPermissionHelper {
   }
 
   /// Check location permission and show dialog if needed
-  /// Always shows app dialog first, then system dialog
+  /// Only shows app dialog if permission is not already granted
   static Future<bool> checkAndRequestLocationPermission(BuildContext context) async {
     try {
       // First check if location services are enabled
@@ -216,18 +216,18 @@ class LocationPermissionHelper {
         return false;
       }
 
-      // Always show app dialog first, regardless of permission status
+      // Check if permission is already granted first
+      final isPermissionGranted = await isLocationPermissionGranted();
+      if (isPermissionGranted) {
+        print('📍 LocationPermissionHelper: Location permission already granted, skipping dialogs');
+        return true;
+      }
+
+      // Permission not granted, show app dialog first
       print('📍 LocationPermissionHelper: Showing location permission app dialog');
       final userAccepted = await showLocationPermissionDialog(context);
       if (!userAccepted) {
         return false;
-      }
-
-      // Check if permission is already granted
-      final isPermissionGranted = await isLocationPermissionGranted();
-      if (isPermissionGranted) {
-        print('📍 LocationPermissionHelper: Location permission already granted, skipping system dialog');
-        return true;
       }
 
       // User accepted app dialog, now request the actual system permission

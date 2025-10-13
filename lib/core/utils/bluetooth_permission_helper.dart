@@ -227,21 +227,21 @@ class BluetoothPermissionHelper {
   }
 
   /// Check Bluetooth permission and show dialog if needed
-  /// Always shows app dialog first, then system dialog
+  /// Only shows app dialog if permission is not already granted
   static Future<bool> checkAndRequestBluetoothPermission(BuildContext context) async {
     try {
-      // Always show app dialog first, regardless of permission status
+      // Check if Bluetooth permission is already granted first
+      final isEnabled = await isBluetoothEnabled();
+      if (isEnabled) {
+        print('🔵 BluetoothPermissionHelper: Bluetooth permission already granted, skipping dialogs');
+        return true;
+      }
+
+      // Permission not granted, show app dialog first
       print('🔵 BluetoothPermissionHelper: Showing Bluetooth permission app dialog');
       final userAccepted = await showBluetoothPermissionDialog(context);
       if (!userAccepted) {
         return false;
-      }
-
-      // Check if Bluetooth permission is already granted
-      final isEnabled = await isBluetoothEnabled();
-      if (isEnabled) {
-        print('🔵 BluetoothPermissionHelper: Bluetooth permission already granted, skipping system dialog');
-        return true;
       }
 
       // User accepted app dialog, now request the actual system permission

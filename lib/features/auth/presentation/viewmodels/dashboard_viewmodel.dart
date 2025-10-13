@@ -1292,6 +1292,16 @@ class DashboardViewModel extends ChangeNotifier {
         '🎵 Dashboard: User has ${_userDevices.length} devices in their account',
       );
 
+      // Check permissions before starting scan
+      final hasLocationPermission = await LocationPermissionHelper.isLocationPermissionGranted();
+      final hasBluetoothPermission = await BluetoothPermissionHelper.isBluetoothEnabled();
+      
+      if (!hasLocationPermission || !hasBluetoothPermission) {
+        print('🎵 Dashboard: Permissions not granted - skipping auto-connection');
+        _isAutoConnectionRunning = false;
+        return;
+      }
+
       // Check if Bluetooth service is already connected
       if (_bluetoothService.isConnected) {
         print(
@@ -1824,6 +1834,17 @@ class DashboardViewModel extends ChangeNotifier {
       // If already connected, disconnect
       await _bluetoothService.disconnect();
     } else {
+      // Check permissions before starting scan
+      final hasLocationPermission = await LocationPermissionHelper.isLocationPermissionGranted();
+      final hasBluetoothPermission = await BluetoothPermissionHelper.isBluetoothEnabled();
+      
+      if (!hasLocationPermission || !hasBluetoothPermission) {
+        print('🎵 Dashboard: Permissions not granted - triggering permission flow');
+        // Use the dedicated method to trigger permission flow
+        triggerPermissionFlow();
+        return;
+      }
+      
       // Only start scanning if we're not already showing dialogs or scanning
       if (!_showUnknownDeviceDialog && !_showDeviceSelectionDialog) {
         print('🎵 Dashboard: connectBluetoothDevice() - Starting new scan');
@@ -2068,8 +2089,17 @@ class DashboardViewModel extends ChangeNotifier {
       print('🚀 Auto-starting Bluetooth scan on dashboard load...');
       // Small delay to ensure UI is fully loaded
       await Future.delayed(const Duration(milliseconds: 500));
-      await _bluetoothService.startScanning();
-      print('🎵 Dashboard: Bluetooth scanning completed');
+      
+      // Double-check permissions before starting scan
+      final hasLocationPermission = await LocationPermissionHelper.isLocationPermissionGranted();
+      final hasBluetoothPermission = await BluetoothPermissionHelper.isBluetoothEnabled();
+      
+      if (hasLocationPermission && hasBluetoothPermission) {
+        await _bluetoothService.startScanning();
+        print('🎵 Dashboard: Bluetooth scanning completed');
+      } else {
+        print('🎵 Dashboard: Permissions not granted - skipping scan');
+      }
     } else {
       print(
         '🎵 Dashboard: Already connected to Bluetooth device - skipping scan',
@@ -2082,6 +2112,15 @@ class DashboardViewModel extends ChangeNotifier {
     print(
       '🎵 Dashboard: Starting automatic device scanning after permissions granted...',
     );
+
+    // Double-check permissions before starting scan
+    final hasLocationPermission = await LocationPermissionHelper.isLocationPermissionGranted();
+    final hasBluetoothPermission = await BluetoothPermissionHelper.isBluetoothEnabled();
+    
+    if (!hasLocationPermission || !hasBluetoothPermission) {
+      print('🎵 Dashboard: Permissions not granted - skipping automatic scanning');
+      return;
+    }
 
     // Mark permissions as granted
     _isLocationPermissionGranted = true;
@@ -2804,6 +2843,38 @@ class DashboardViewModel extends ChangeNotifier {
   void closeDeviceDisconnectedPopup() {
     _showDeviceDisconnectedPopup = false;
     _disconnectedDeviceName = '';
+    notifyListeners();
+  }
+
+  // Check if all required permissions are granted
+  Future<bool> arePermissionsGranted() async {
+    try {
+      final hasLocationPermission = await LocationPermissionHelper.isLocationPermissionGranted();
+      final hasBluetoothPermission = await BluetoothPermissionHelper.isBluetoothEnabled();
+      
+      print('🎵 Dashboard: Permission check - Location: $hasLocationPermission, Bluetooth: $hasBluetoothPermission');
+      return hasLocationPermission && hasBluetoothPermission;
+    } catch (e) {
+      print('🎵 Dashboard: Error checking permissions: $e');
+      return false;
+    }
+  }
+
+  // Manually trigger permission flow (called when user clicks connect card without permissions)
+  void triggerPermissionFlow() {
+    print('🎵 Dashboard: Manually triggering permission flow');
+    
+    // Reset all permission flow flags to allow restart
+    _permissionFlowInitiated = false;
+    _permissionFlowInProgress = false;
+    _permissionFlowCompleted = false;
+    _shouldTriggerPermissionFlow = true;
+    
+    // Reset dialog flags to allow showing permission dialogs again
+    _bluetoothDialogShown = false;
+    _bluetoothScanPermissionDialogShown = false;
+    _locationPermissionDialogShown = false;
+    
     notifyListeners();
   }
 
