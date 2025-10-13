@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/routing/app_router_config.dart';
+import '../../../../shared/widgets/device_disconnected_popup.dart';
 import '../viewmodels/profile_viewmodel.dart';
 
 class ProfileView extends StatelessWidget {
@@ -31,56 +32,64 @@ class _ProfileViewBody extends StatelessWidget {
       builder: (context, viewModel, child) {
         return Scaffold(
           backgroundColor: Colors.white,
-          body: SafeArea(
-            child: Column(
-              children: [
-                // Main content area
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 40),
+          body: Stack(
+            children: [
+              SafeArea(
+                child: Column(
+                  children: [
+                    // Main content area
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 40),
 
-                        // Header with evolv28 logo and settings icon
-                        _buildHeader(context),
+                            // Header with evolv28 logo and settings icon
+                            _buildHeader(context),
 
-                        const SizedBox(height: 24),
+                            const SizedBox(height: 24),
 
-                        // User profile section
-                        _buildUserProfile(context, viewModel),
+                            // User profile section
+                            _buildUserProfile(context, viewModel),
 
-                        const SizedBox(height: 24),
+                            const SizedBox(height: 24),
 
-                        // Action buttons
-                        _buildActionButtons(context, viewModel),
+                            // Action buttons
+                            _buildActionButtons(context, viewModel),
 
-                        const SizedBox(height: 24),
+                            const SizedBox(height: 24),
 
-                        // Daily Mindfulness Goal section
-                        _buildDailyGoalSection(context, viewModel),
+                            // Daily Mindfulness Goal section
+                            _buildDailyGoalSection(context, viewModel),
 
-                        const SizedBox(height: 24),
+                            const SizedBox(height: 24),
 
-                        // Connect to Application section
-                        _buildConnectToAppSection(context, viewModel),
+                            // Connect to Application section
+                            _buildConnectToAppSection(context, viewModel),
 
-                        const SizedBox(height: 24),
+                            const SizedBox(height: 24),
 
-                        // Family section
-                        _buildFamilySection(context, viewModel),
+                            // Family section
+                            _buildFamilySection(context, viewModel),
 
-                        // Add extra space at bottom to ensure content doesn't get cut off
-                        const SizedBox(height: 100),
-                      ],
+                            // Add extra space at bottom to ensure content doesn't get cut off
+                            const SizedBox(height: 100),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
 
-                // Bottom Navigation
-                _buildBottomNavigation(context),
-              ],
-            ),
+                    // Bottom Navigation
+                    _buildBottomNavigation(context),
+                  ],
+                ),
+              ),
+
+              // Device disconnection popup
+              if (viewModel.showDeviceDisconnectedPopup)
+                _buildDeviceDisconnectedPopup(context, viewModel),
+            ],
           ),
         );
       },
@@ -460,6 +469,72 @@ class _ProfileViewBody extends StatelessWidget {
               : SvgPicture.asset(iconPath, width: 30, height: 30),
           const SizedBox(height: 4),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDeviceDisconnectedPopup(
+    BuildContext context,
+    ProfileViewModel viewModel,
+  ) {
+    return Container(
+      color: Colors.black.withOpacity(0.5),
+      child: Center(
+        child: Container(
+          width: 300,
+          margin: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Device Disconnected',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  '${viewModel.disconnectedDeviceName} is disconnected from the app, please connect again',
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      viewModel.closeDeviceDisconnectedPopup();
+                      DeviceDisconnectedPopup.navigateToDashboardAndScan(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF07A60),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'OK',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

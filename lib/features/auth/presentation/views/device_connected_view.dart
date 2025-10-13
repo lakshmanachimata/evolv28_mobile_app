@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/routing/app_router_config.dart';
+import '../../../../shared/widgets/device_disconnected_popup.dart';
 import '../viewmodels/device_connected_viewmodel.dart';
 
 class DeviceConnectedView extends StatelessWidget {
@@ -41,6 +42,10 @@ class _DeviceConnectedViewBody extends StatelessWidget {
               // Update success dialog
               if (viewModel.showUpdateSuccessDialog)
                 _buildUpdateSuccessDialog(context, viewModel),
+
+              // Device disconnection popup
+              if (viewModel.showDeviceDisconnectedPopup)
+                _buildDeviceDisconnectedPopup(context, viewModel),
             ],
           ),
         );
@@ -464,6 +469,72 @@ class _DeviceConnectedViewBody extends StatelessWidget {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: viewModel.handleUpdateSuccessOk,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF07A60),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'OK',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDeviceDisconnectedPopup(
+    BuildContext context,
+    DeviceConnectedViewModel viewModel,
+  ) {
+    return Container(
+      color: Colors.black.withOpacity(0.5),
+      child: Center(
+        child: Container(
+          width: 300,
+          margin: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Device Disconnected',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  '${viewModel.disconnectedDeviceName} is disconnected from the app, please connect again',
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      viewModel.closeDeviceDisconnectedPopup();
+                      DeviceDisconnectedPopup.navigateToDashboardAndScan(context);
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFF07A60),
                       foregroundColor: Colors.white,

@@ -1,6 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/services/bluetooth_service.dart';
+
 class DeviceConnectedViewModel extends ChangeNotifier {
+  // Bluetooth service
+  final BluetoothService _bluetoothService = BluetoothService();
+  
+  // Bluetooth listener
+  late VoidCallback _bluetoothListener;
+
   // Device information
   final String _deviceName = 'evolv28-F07C1K';
   final int _batteryLevel = 90;
@@ -16,6 +24,10 @@ class DeviceConnectedViewModel extends ChangeNotifier {
   // Dialog states
   bool _showUpdateSuccessDialog = false;
   
+  // Device disconnection state
+  bool _showDeviceDisconnectedPopup = false;
+  String _disconnectedDeviceName = '';
+  
   // Getters
   String get deviceName => _deviceName;
   int get batteryLevel => _batteryLevel;
@@ -27,8 +39,27 @@ class DeviceConnectedViewModel extends ChangeNotifier {
   bool get updateCompleted => _updateCompleted;
   bool get showUpdateSuccessDialog => _showUpdateSuccessDialog;
   
+  // Device disconnection getters
+  bool get showDeviceDisconnectedPopup => _showDeviceDisconnectedPopup;
+  String get disconnectedDeviceName => _disconnectedDeviceName;
+  
   // Initialize the view model
-  void initialize() {
+  void initialize() async {
+    // Initialize Bluetooth service
+    await _bluetoothService.initialize();
+
+    // Set up Bluetooth listener
+    _bluetoothListener = () {
+      notifyListeners();
+    };
+    _bluetoothService.addListener(_bluetoothListener);
+
+    // Set up device disconnection callback
+    _bluetoothService.setOnDeviceDisconnectedCallback((deviceName) {
+      print('🎵 DeviceConnected: Device disconnected: $deviceName');
+      _handleDeviceDisconnection(deviceName);
+    });
+
     // Simulate checking for updates after a short delay
     Future.delayed(const Duration(seconds: 1), () {
       checkForUpdates();
@@ -72,5 +103,27 @@ class DeviceConnectedViewModel extends ChangeNotifier {
   void handleHelp() {
     // Navigate to help or show help dialog
     // TODO: Implement help functionality
+  }
+
+  // Handle device disconnection
+  void _handleDeviceDisconnection(String deviceName) {
+    print('🎵 DeviceConnected: Handling device disconnection for: $deviceName');
+    
+    // Show disconnection popup
+    _showDeviceDisconnectedPopup = true;
+    _disconnectedDeviceName = deviceName;
+    notifyListeners();
+  }
+
+  void closeDeviceDisconnectedPopup() {
+    _showDeviceDisconnectedPopup = false;
+    _disconnectedDeviceName = '';
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _bluetoothService.removeListener(_bluetoothListener);
+    super.dispose();
   }
 }

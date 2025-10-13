@@ -462,6 +462,12 @@ class ProgramsViewModel extends ChangeNotifier {
     // Add listener to Bluetooth service
     _bluetoothService.addListener(_bluetoothListener);
 
+    // Set up device disconnection callback
+    _bluetoothService.setOnDeviceDisconnectedCallback((deviceName) {
+      print('🎵 Programs: Device disconnected: $deviceName');
+      _handleDeviceDisconnection(deviceName);
+    });
+
     print(
       '🎵 Programs: Bluetooth service initialized. Connected: ${_bluetoothService.isConnected}',
     );
@@ -494,6 +500,40 @@ class ProgramsViewModel extends ChangeNotifier {
     } catch (e) {
       print('🎵 Programs: Error checking player status: $e');
     }
+  }
+
+  // Handle device disconnection
+  void _handleDeviceDisconnection(String deviceName) {
+    print('🎵 Programs: Handling device disconnection for: $deviceName');
+    
+    // Reset player state
+    _isPlaying = false;
+    _currentPlayingProgramId = null;
+    _currentPosition = Duration.zero;
+    _isPlaySuccessful = false;
+    _selectedBcuFile = null;
+    _currentView = 'programs';
+    
+    // Update UI
+    notifyListeners();
+    
+    // Show disconnection popup
+    _showDeviceDisconnectedPopup = true;
+    _disconnectedDeviceName = deviceName;
+    notifyListeners();
+  }
+
+  // State for device disconnection popup
+  bool _showDeviceDisconnectedPopup = false;
+  String _disconnectedDeviceName = '';
+  
+  bool get showDeviceDisconnectedPopup => _showDeviceDisconnectedPopup;
+  String get disconnectedDeviceName => _disconnectedDeviceName;
+  
+  void closeDeviceDisconnectedPopup() {
+    _showDeviceDisconnectedPopup = false;
+    _disconnectedDeviceName = '';
+    notifyListeners();
   }
 
   // Dispose method to remove listener

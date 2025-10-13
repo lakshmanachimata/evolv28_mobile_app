@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/routing/app_router_config.dart';
+import '../../../../shared/widgets/device_disconnected_popup.dart';
 import '../viewmodels/programs_viewmodel.dart';
 
 class ProgramsView extends StatelessWidget {
@@ -165,6 +166,16 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
                 builder: (context, viewModel, child) {
                   if (viewModel.isSendingPlayCommands) {
                     return _buildLoadingOverlay(context, viewModel);
+                  }
+                  return SizedBox.shrink();
+                },
+              ),
+
+              // Device disconnection popup
+              Consumer<ProgramsViewModel>(
+                builder: (context, viewModel, child) {
+                  if (viewModel.showDeviceDisconnectedPopup) {
+                    return _buildDeviceDisconnectedPopup(context, viewModel);
                   }
                   return SizedBox.shrink();
                 },
@@ -1055,6 +1066,72 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
               : SvgPicture.asset(iconPath, width: 30, height: 30),
           const SizedBox(height: 4),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDeviceDisconnectedPopup(
+    BuildContext context,
+    ProgramsViewModel viewModel,
+  ) {
+    return Container(
+      color: Colors.black.withOpacity(0.5),
+      child: Center(
+        child: Container(
+          width: 300,
+          margin: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Device Disconnected',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  '${viewModel.disconnectedDeviceName} is disconnected from the app, please connect again',
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      viewModel.closeDeviceDisconnectedPopup();
+                      DeviceDisconnectedPopup.navigateToDashboardAndScan(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF07A60),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'OK',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

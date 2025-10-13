@@ -47,6 +47,7 @@ class BluetoothService extends ChangeNotifier {
   ble.BluetoothCharacteristic? _writeCharacteristic;
   ble.BluetoothCharacteristic? _notifyCharacteristic;
   StreamSubscription<List<int>>? _notificationSubscription;
+  StreamSubscription<ble.BluetoothConnectionState>? _connectionStateSubscription;
   List<String> _fifthCommandResponses = [];
   bool _isWaitingForFifthCommand = false;
   Completer<String?>? _playerStatusCompleter;
@@ -62,6 +63,9 @@ class BluetoothService extends ChangeNotifier {
 
   // Callback for when no devices are found
   VoidCallback? _onNoDevicesFound;
+  
+  // Callback for device disconnection
+  Function(String deviceName)? _onDeviceDisconnected;
 
   // Nordic UART Service UUIDs
   static const String nordicUartServiceUUID =
@@ -190,6 +194,11 @@ class BluetoothService extends ChangeNotifier {
   /// Set callback for when no devices are found
   void setOnNoDevicesFoundCallback(VoidCallback callback) {
     _onNoDevicesFound = callback;
+  }
+
+  /// Set callback for when device gets disconnected
+  void setOnDeviceDisconnectedCallback(Function(String deviceName) callback) {
+    _onDeviceDisconnected = callback;
   }
 
   Future<void> startScanning() async {
@@ -509,6 +518,9 @@ class BluetoothService extends ChangeNotifier {
       _statusMessage = '${device.platformName} is connected';
       print('✅ Device connected: ${device.platformName}');
 
+      // Start monitoring device disconnection
+      _startDisconnectionMonitoring(device);
+
       // Log successful device connection
       _loggingService.sendLogs(
         event: 'BLE Device Connect',
@@ -556,6 +568,9 @@ class BluetoothService extends ChangeNotifier {
       _statusMessage = '${device.platformName} is connected';
       print('✅ Unknown device connected: ${device.platformName}');
 
+      // Start monitoring device disconnection
+      _startDisconnectionMonitoring(device);
+
       // Log successful device connection
       _loggingService.sendLogs(
         event: 'BLE Device Connect',
@@ -584,6 +599,56 @@ class BluetoothService extends ChangeNotifier {
 
       notifyListeners();
     }
+  }
+
+  /// Start monitoring device disconnection
+  void _startDisconnectionMonitoring(ble.BluetoothDevice device) {
+    print('🔍 Starting disconnection monitoring for: ${device.platformName}');
+    
+    // Cancel any existing connection state subscription
+    _connectionStateSubscription?.cancel();
+    
+    // Listen to device connection state changes
+    _connectionStateSubscription = device.connectionState.listen((state) {
+      print('🔍 Device ${device.platformName} connection state changed: $state');
+      
+      if (state == ble.BluetoothConnectionState.disconnected) {
+        print('❌ Device ${device.platformName} disconnected!');
+        
+        // Update internal state
+        _connectedDevice = null;
+        _connectionState = BluetoothConnectionState.disconnected;
+        _statusMessage = 'Connect';
+        _currentPlayingFile = null;
+        _clearError();
+        
+        // Cancel subscriptions
+        _notificationSubscription?.cancel();
+        _connectionStateSubscription?.cancel();
+        
+        // Clear command state
+        _fifthCommandResponses.clear();
+        _isWaitingForFifthCommand = false;
+        _playerStatusCompleter?.complete(null);
+        _stopCommandCompleter?.complete(false);
+        _responseCompleter?.complete('');
+        
+        // Notify listeners
+        notifyListeners();
+        
+        // Call disconnection callback if set
+        if (_onDeviceDisconnected != null) {
+          _onDeviceDisconnected!(device.platformName);
+        }
+        
+        // Log disconnection
+        _loggingService.sendLogs(
+          event: 'BLE Device Disconnect',
+          status: 'success',
+          notes: 'device disconnected: ${device.platformName}',
+        );
+      }
+    });
   }
 
   /// Start command sequence in background without showing popup
@@ -1168,11 +1233,16 @@ class BluetoothService extends ChangeNotifier {
         await _connectedDevice!.disconnect();
       }
 
+      // Cancel subscriptions
+      _notificationSubscription?.cancel();
+      _connectionStateSubscription?.cancel();
+
       _connectedDevice = null;
       _connectionState = BluetoothConnectionState.disconnected;
       _statusMessage = 'Connect';
       _scannedDevices.clear();
       _availablePrograms.clear();
+      _currentPlayingFile = null;
       _clearError();
       notifyListeners();
     } catch (e) {

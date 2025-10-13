@@ -2,8 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/routing/app_router_config.dart';
+import '../../../../core/services/bluetooth_service.dart';
 
 class ProfileViewModel extends ChangeNotifier {
+  // Bluetooth service
+  final BluetoothService _bluetoothService = BluetoothService();
+  
+  // Bluetooth listener
+  late VoidCallback _bluetoothListener;
+
   // State variables
   bool _isLoading = false;
   String _userName = 'Jane Doe';
@@ -12,6 +19,10 @@ class ProfileViewModel extends ChangeNotifier {
   bool _googleFitConnected = true;
   bool _appleHealthConnected = true;
   final int _selectedTabIndex = 3; // Profile tab is selected
+
+  // Device disconnection state
+  bool _showDeviceDisconnectedPopup = false;
+  String _disconnectedDeviceName = '';
 
   // Getters
   bool get isLoading => _isLoading;
@@ -22,12 +33,31 @@ class ProfileViewModel extends ChangeNotifier {
   bool get appleHealthConnected => _appleHealthConnected;
   int get selectedTabIndex => _selectedTabIndex;
 
+  // Device disconnection getters
+  bool get showDeviceDisconnectedPopup => _showDeviceDisconnectedPopup;
+  String get disconnectedDeviceName => _disconnectedDeviceName;
+
   // Initialize the profile
   Future<void> initialize() async {
     _isLoading = true;
     notifyListeners();
 
     try {
+      // Initialize Bluetooth service
+      await _bluetoothService.initialize();
+
+      // Set up Bluetooth listener
+      _bluetoothListener = () {
+        notifyListeners();
+      };
+      _bluetoothService.addListener(_bluetoothListener);
+
+      // Set up device disconnection callback
+      _bluetoothService.setOnDeviceDisconnectedCallback((deviceName) {
+        print('🎵 Profile: Device disconnected: $deviceName');
+        _handleDeviceDisconnection(deviceName);
+      });
+
       // Load user data from SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       
@@ -124,5 +154,27 @@ class ProfileViewModel extends ChangeNotifier {
   void editDailyGoal() {
     // Implement edit daily goal logic here
     print('Edit daily goal requested');
+  }
+
+  // Handle device disconnection
+  void _handleDeviceDisconnection(String deviceName) {
+    print('🎵 Profile: Handling device disconnection for: $deviceName');
+    
+    // Show disconnection popup
+    _showDeviceDisconnectedPopup = true;
+    _disconnectedDeviceName = deviceName;
+    notifyListeners();
+  }
+
+  void closeDeviceDisconnectedPopup() {
+    _showDeviceDisconnectedPopup = false;
+    _disconnectedDeviceName = '';
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _bluetoothService.removeListener(_bluetoothListener);
+    super.dispose();
   }
 }

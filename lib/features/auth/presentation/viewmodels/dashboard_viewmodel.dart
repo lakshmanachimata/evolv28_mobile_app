@@ -276,6 +276,12 @@ class DashboardViewModel extends ChangeNotifier {
     };
     _bluetoothService.addListener(_bluetoothListener!);
 
+    // Set up device disconnection callback
+    _bluetoothService.setOnDeviceDisconnectedCallback((deviceName) {
+      print('🎵 Dashboard: Device disconnected: $deviceName');
+      _handleDeviceDisconnection(deviceName);
+    });
+
     // Start Bluetooth state monitoring
     _startBluetoothStateMonitoring();
 
@@ -381,6 +387,12 @@ class DashboardViewModel extends ChangeNotifier {
       notifyListeners();
     };
     _bluetoothService.addListener(_bluetoothListener!);
+
+    // Set up device disconnection callback
+    _bluetoothService.setOnDeviceDisconnectedCallback((deviceName) {
+      print('🎵 Dashboard: Device disconnected: $deviceName');
+      _handleDeviceDisconnection(deviceName);
+    });
 
     // Start Bluetooth state monitoring
     _startBluetoothStateMonitoring();
@@ -2757,6 +2769,42 @@ class DashboardViewModel extends ChangeNotifier {
     } catch (e) {
       print('🎵 Dashboard: Error opening app settings: $e');
     }
+  }
+
+  // Handle device disconnection
+  void _handleDeviceDisconnection(String deviceName) {
+    print('🎵 Dashboard: Handling device disconnection for: $deviceName');
+    
+    // Reset player state
+    _showPlayerCard = false;
+    _isPlaying = false;
+    _currentPlayingProgramId = null;
+    
+    // Clear any ongoing operations
+    _scannedDevices.clear();
+    _selectedDeviceId = '';
+    
+    // Update UI
+    notifyListeners();
+    
+    // Show disconnection popup
+    // Note: This will be handled by the view layer
+    _showDeviceDisconnectedPopup = true;
+    _disconnectedDeviceName = deviceName;
+    notifyListeners();
+  }
+
+  // State for device disconnection popup
+  bool _showDeviceDisconnectedPopup = false;
+  String _disconnectedDeviceName = '';
+  
+  bool get showDeviceDisconnectedPopup => _showDeviceDisconnectedPopup;
+  String get disconnectedDeviceName => _disconnectedDeviceName;
+  
+  void closeDeviceDisconnectedPopup() {
+    _showDeviceDisconnectedPopup = false;
+    _disconnectedDeviceName = '';
+    notifyListeners();
   }
 
   @override
