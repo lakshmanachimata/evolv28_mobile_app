@@ -20,6 +20,7 @@ class ApiConstants {
   static const String deviceTroubleshotLog = '/api/devicetroubleshotlog';
   static const String logsNewInsert = '/api/logs/newinsert';
   static const String updateSessid = '/api/update_sessid';
+  static const String getProfileDetailsByEmail = '/api/get_profile_details_by_email';
 
   // User endpoints
   static const String profile = '/user/profile';
