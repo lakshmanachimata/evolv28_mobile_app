@@ -1308,15 +1308,6 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                 ),
                 textAlign: TextAlign.center,
               ),
-              SizedBox(height: 8),
-              // Countdown text
-              Text(
-                viewModel.bluetoothScanCountdown > 0
-                    ? '${viewModel.bluetoothScanCountdown} seconds remaining'
-                    : 'Searching for devices...',
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                textAlign: TextAlign.center,
-              ),
             ],
           ),
         ),

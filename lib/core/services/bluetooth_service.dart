@@ -257,7 +257,11 @@ class BluetoothService extends ChangeNotifier {
 
       // Stop scanning after 10 seconds
       _scanTimer = Timer(const Duration(seconds: 10), () {
-        _stopScanning();
+        // Only stop scanning if we're not already connected or connecting
+        if (_connectionState != BluetoothConnectionState.connected &&
+            _connectionState != BluetoothConnectionState.connecting) {
+          _stopScanning();
+        }
       });
     } catch (e) {
       _setError('Error starting scan: $e');
@@ -289,6 +293,36 @@ class BluetoothService extends ChangeNotifier {
           _scannedDevices.add(device);
         }
 
+        // Check if this device matches any user devices immediately
+        if (_userDevices.isNotEmpty) {
+          final matchingDevices = _findMatchingUserDevices([device]);
+          if (matchingDevices.isNotEmpty) {
+            print('🔗 Found matching user device during scan: ${device.platformName}');
+            // Stop scanning immediately and connect to the device
+            _stopScanning();
+            
+            // Auto-connect to the first matching device
+            final deviceToConnect = matchingDevices.first;
+            print('🔗 Auto-connecting to registered device: ${deviceToConnect.platformName}');
+
+            _connectionState = BluetoothConnectionState.connecting;
+            _statusMessage = 'Connecting to ${deviceToConnect.platformName}...';
+            _clearError();
+            notifyListeners();
+
+            // Connect to the device
+            _connectToDevice(deviceToConnect);
+
+            // Log auto-connection
+            _loggingService.sendLogs(
+              event: 'BLE Device Connect',
+              status: 'success',
+              notes: 'auto-connected to registered device: ${deviceToConnect.platformName}',
+            );
+            return; // Exit early since we found and are connecting to a matching device
+          }
+        }
+
         notifyListeners();
       }
     }
@@ -301,7 +335,10 @@ class BluetoothService extends ChangeNotifier {
     _countdownTimer?.cancel();
     _scanCountdown = 0;
 
-    if (_scannedDevices.isEmpty) {
+    // Don't show "no devices found" if we're already connected or connecting
+    if (_scannedDevices.isEmpty && 
+        _connectionState != BluetoothConnectionState.connected &&
+        _connectionState != BluetoothConnectionState.connecting) {
       _connectionState = BluetoothConnectionState.disconnected;
       _statusMessage = 'No Evolv28 devices found';
       _setError('No Evolv28 devices found nearby');
@@ -317,7 +354,7 @@ class BluetoothService extends ChangeNotifier {
         status: 'failed',
         notes: 'unable to find device',
       );
-    } else {
+    } else if (_scannedDevices.isNotEmpty) {
       print('✅ Found ${_scannedDevices.length} Evolv28 devices');
 
       // Find devices that match user's registered devices
