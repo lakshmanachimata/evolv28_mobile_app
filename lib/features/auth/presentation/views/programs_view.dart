@@ -347,18 +347,19 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
 
   // Show WiFi scan bottom sheet
   void _showWifiScanBottomSheet(BuildContext context, ProgramData program) {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      barrierDismissible: false,
-      builder: (context) => _buildWifiScanDialog(context, program),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildWifiScanBottomSheet(context, program),
     );
   }
 
-  // Build WiFi scan dialog
-  Widget _buildWifiScanDialog(BuildContext context, ProgramData program) {
+  // Build WiFi scan bottom sheet
+  Widget _buildWifiScanBottomSheet(BuildContext context, ProgramData program) {
     return StatefulBuilder(
       builder: (context, setState) {
-        return _WifiScanDialog(
+        return _WifiScanBottomSheet(
           program: program,
           onClose: () => Navigator.pop(context),
         );
@@ -1256,18 +1257,18 @@ class _CustomSliderThumbShape extends SliderComponentShape {
   }
 }
 
-// WiFi Scan Dialog Widget
-class _WifiScanDialog extends StatefulWidget {
+// WiFi Scan Bottom Sheet Widget
+class _WifiScanBottomSheet extends StatefulWidget {
   final ProgramData program;
   final VoidCallback onClose;
 
-  const _WifiScanDialog({required this.program, required this.onClose});
+  const _WifiScanBottomSheet({required this.program, required this.onClose});
 
   @override
-  State<_WifiScanDialog> createState() => _WifiScanDialogState();
+  State<_WifiScanBottomSheet> createState() => _WifiScanBottomSheetState();
 }
 
-class _WifiScanDialogState extends State<_WifiScanDialog> {
+class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
   WifiScanState _currentState = WifiScanState.scanning;
   String? _selectedNetwork;
   final TextEditingController _passwordController = TextEditingController();
@@ -1292,58 +1293,70 @@ class _WifiScanDialogState extends State<_WifiScanDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.85,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.7,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header with close button
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const SizedBox(width: 24), // Spacer for centering
-                  Text(
-                    _getTitle(),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: widget.onClose,
-                    child: Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF17961),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.close,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // Content based on current state
-              _buildContent(),
-            ],
+      ),
+      child: Column(
+        children: [
+          // Handle bar
+          Container(
+            margin: const EdgeInsets.only(top: 12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
+            ),
           ),
-        ),
+          
+          // Header
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const SizedBox(width: 24), // Spacer for centering
+                Text(
+                  _getTitle(),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: widget.onClose,
+                  child: Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF17961),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          const Divider(height: 1),
+          
+          // Content based on current state
+          Expanded(
+            child: _buildContent(),
+          ),
+        ],
       ),
     );
   }
@@ -1371,15 +1384,19 @@ class _WifiScanDialogState extends State<_WifiScanDialog> {
   }
 
   Widget _buildScanningContent() {
-    return Column(
-      children: [
-        const Text(
-          'Wi Fi Scan in Progress',
-          style: TextStyle(fontSize: 16, color: Colors.black),
-        ),
-        const SizedBox(height: 32),
-        _buildLoadingIndicator(),
-      ],
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text(
+            'Wi Fi Scan in Progress',
+            style: TextStyle(fontSize: 16, color: Colors.black),
+          ),
+          const SizedBox(height: 32),
+          _buildLoadingIndicator(),
+        ],
+      ),
     );
   }
 
@@ -1392,28 +1409,39 @@ class _WifiScanDialogState extends State<_WifiScanDialog> {
 
     return Column(
       children: [
-        ...networks.map((network) => _buildNetworkItem(network)).toList(),
-        const SizedBox(height: 24),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _currentState = WifiScanState.scanning;
-              });
-              _startScanning();
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: networks.length,
+            itemBuilder: (context, index) {
+              final network = networks[index];
+              return _buildNetworkItem(network);
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFF17961),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _currentState = WifiScanState.scanning;
+                });
+                _startScanning();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFF17961),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
-            ),
-            child: const Text(
-              'TRY AGAIN',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              child: const Text(
+                'TRY AGAIN',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
             ),
           ),
         ),
@@ -1467,34 +1495,38 @@ class _WifiScanDialogState extends State<_WifiScanDialog> {
   }
 
   Widget _buildPasswordInputContent() {
-    return Column(
-      children: [
-        const Text(
-          'Please enter Wifi Password for updating your latest Files',
-          style: TextStyle(fontSize: 16, color: Colors.black),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 24),
-        TextField(
-          controller: _passwordController,
-          obscureText: !_isPasswordVisible,
-          decoration: InputDecoration(
-            hintText: 'Enter password',
-            suffixText: 'Show',
-            suffixStyle: const TextStyle(color: Colors.black, fontSize: 14),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
-            ),
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text(
+            'Please enter Wifi Password for updating your latest Files',
+            style: TextStyle(fontSize: 16, color: Colors.black),
+            textAlign: TextAlign.center,
           ),
-          onChanged: (value) {
-            // Handle password input
-          },
-        ),
-        const SizedBox(height: 24),
-        _buildLoadingIndicator(),
-      ],
+          const SizedBox(height: 24),
+          TextField(
+            controller: _passwordController,
+            obscureText: !_isPasswordVisible,
+            decoration: InputDecoration(
+              hintText: 'Enter password',
+              suffixText: 'Show',
+              suffixStyle: const TextStyle(color: Colors.black, fontSize: 14),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+            ),
+            onChanged: (value) {
+              // Handle password input
+            },
+          ),
+          const SizedBox(height: 24),
+          _buildLoadingIndicator(),
+        ],
+      ),
     );
   }
 
