@@ -351,6 +351,8 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      isDismissible: false,
+      enableDrag: false,
       builder: (context) => _buildWifiScanBottomSheet(context, program),
     );
   }
@@ -1294,26 +1296,16 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: MediaQuery.of(context).size.height * 0.7,
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
+          topLeft: Radius.circular(40),
+          topRight: Radius.circular(40),
         ),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Handle bar
-          Container(
-            margin: const EdgeInsets.only(top: 12),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
           
           // Header
           Padding(
@@ -1350,12 +1342,8 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
             ),
           ),
           
-          const Divider(height: 1),
-          
           // Content based on current state
-          Expanded(
-            child: _buildContent(),
-          ),
+          _buildContent(),
         ],
       ),
     );
@@ -1385,13 +1373,16 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
 
   Widget _buildScanningContent() {
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 64),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           const Text(
             'Wi Fi Scan in Progress',
-            style: TextStyle(fontSize: 16, color: Colors.black),
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey,
+            ),
           ),
           const SizedBox(height: 32),
           _buildLoadingIndicator(),
@@ -1408,21 +1399,21 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
     ];
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: networks.length,
-            itemBuilder: (context, index) {
-              final network = networks[index];
-              return _buildNetworkItem(network);
-            },
+        // Network list with dynamic height
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            children: networks.map((network) => _buildNetworkItem(network)).toList(),
           ),
         ),
+        
+        // TRY AGAIN button
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 64),
           child: SizedBox(
-            width: double.infinity,
+            width: 120,
             child: ElevatedButton(
               onPressed: () {
                 setState(() {
@@ -1459,33 +1450,24 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade50,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey.shade200),
-        ),
-        child: Row(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.wifi, color: Colors.blue, size: 20),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    network['name']!,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                  Text(
-                    network['frequency']!,
-                    style: const TextStyle(fontSize: 14, color: Colors.black),
-                  ),
-                ],
+            Text(
+              network['name']!,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              network['frequency']!,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
               ),
             ),
           ],
@@ -1496,35 +1478,67 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
 
   Widget _buildPasswordInputContent() {
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 64),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           const Text(
             'Please enter Wifi Password for updating your latest Files',
-            style: TextStyle(fontSize: 16, color: Colors.black),
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
-          TextField(
-            controller: _passwordController,
-            obscureText: !_isPasswordVisible,
-            decoration: InputDecoration(
-              hintText: 'Enter password',
-              suffixText: 'Show',
-              suffixStyle: const TextStyle(color: Colors.black, fontSize: 14),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
+          
+          // Password field with Show text on the right
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _passwordController,
+                  obscureText: !_isPasswordVisible,
+                  decoration: InputDecoration(
+                    hintText: 'Enter password',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                  onChanged: (value) {
+                    // Handle password input
+                  },
+                ),
               ),
-            ),
-            onChanged: (value) {
-              // Handle password input
-            },
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _isPasswordVisible = !_isPasswordVisible;
+                  });
+                },
+                child: const Text(
+                  'Show',
+                  style: TextStyle(
+                    color: Colors.blue,
+                    fontSize: 14,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ],
           ),
+          
           const SizedBox(height: 24),
-          _buildLoadingIndicator(),
+          
+          // Chat Qn Icon
+          SvgPicture.asset(
+            'assets/images/chat_qn_icon.svg',
+            width: 48,
+            height: 46.71,
+          ),
         ],
       ),
     );
