@@ -87,11 +87,8 @@ class ProgramsViewModel extends ChangeNotifier {
     return filteredPrograms
         .map((program) {
           if (program is Map<String, dynamic>) {
-            final programName =
-                program['bluetoothProgramName'] ??
-                program['name'] ??
-                program['title'] ??
-                'Unknown Program';
+            // Extract program name - prioritize user program name over Bluetooth program name
+            final programName = _extractProgramName(program);
             final programId =
                 program['bluetoothProgramId'] ??
                 program['id']?.toString() ??
@@ -188,6 +185,34 @@ class ProgramsViewModel extends ChangeNotifier {
       default:
         return 'assets/images/sleep_better.svg';
     }
+  }
+
+  // Extract program name from program data
+  String _extractProgramName(Map<String, dynamic> program) {
+    // For programs not in device, get name from matchedMusicFile
+    if (program['needsDownload'] == true && program['matchedMusicFile'] != null) {
+      final musicFile = program['matchedMusicFile'] as Map<String, dynamic>;
+      final musicName = musicFile['name'] ??
+          musicFile['title'] ??
+          musicFile['musicName'] ??
+          musicFile['programName'] ??
+          musicFile['filename'] ??
+          musicFile['file_name'];
+      
+      if (musicName != null && musicName.isNotEmpty) {
+        return musicName;
+      }
+    }
+    
+    // For programs in device, use Bluetooth program name or fallback to user program name
+    return program['bluetoothProgramName'] ??
+        program['name'] ??
+        program['title'] ??
+        program['musicName'] ??
+        program['programName'] ??
+        program['filename'] ??
+        program['file_name'] ??
+        'Unknown Program';
   }
 
   String? get selectedProgramId => _selectedProgramId;

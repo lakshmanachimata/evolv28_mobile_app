@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../../../core/routing/app_router_config.dart';
 import '../../../../shared/widgets/device_disconnected_popup.dart';
 import '../viewmodels/programs_viewmodel.dart';
 
@@ -48,19 +46,22 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
       }
     });
   }
-  
+
   String _formatProgramName(String fileName) {
     // Remove .bcu extension and convert to title case
     String name = fileName.replaceAll('.bcu', '');
     // Replace underscores with spaces
     name = name.replaceAll('_', ' ');
     // Convert to title case (first letter of each word capitalized)
-    return name.split(' ').map((word) {
-      if (word.isEmpty) return word;
-      return word[0].toUpperCase() + word.substring(1).toLowerCase();
-    }).join(' ');
+    return name
+        .split(' ')
+        .map((word) {
+          if (word.isEmpty) return word;
+          return word[0].toUpperCase() + word.substring(1).toLowerCase();
+        })
+        .join(' ');
   }
-  
+
   String _getIconPathForProgram(String programName) {
     // Map program names to icon paths (same as ProgramsViewModel)
     switch (programName) {
@@ -80,13 +81,16 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
         return 'assets/images/sleep_better.svg';
     }
   }
-  
-  Widget _buildLoadingOverlay(BuildContext context, ProgramsViewModel viewModel) {
+
+  Widget _buildLoadingOverlay(
+    BuildContext context,
+    ProgramsViewModel viewModel,
+  ) {
     // Show the actual program name being played
-    final programName = viewModel.selectedBcuFile != null 
+    final programName = viewModel.selectedBcuFile != null
         ? _formatProgramName(viewModel.selectedBcuFile!)
         : 'Program';
-    
+
     return Container(
       width: double.infinity,
       height: double.infinity,
@@ -134,10 +138,7 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
               SizedBox(height: 8),
               Text(
                 'Starting your wellness program',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -160,7 +161,7 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
 
               // Main Content
               _buildMainContent(context),
-              
+
               // Loading Overlay
               Consumer<ProgramsViewModel>(
                 builder: (context, viewModel, child) {
@@ -201,7 +202,7 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
       child: Stack(
         children: [
           Image.asset(
-            backgroundImage, 
+            backgroundImage,
             fit: BoxFit.cover,
             width: double.infinity,
             height: double.infinity,
@@ -232,9 +233,10 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
               Expanded(
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 400),
-                  transitionBuilder: (Widget child, Animation<double> animation) {
-                    return _buildTransition(child, animation);
-                  },
+                  transitionBuilder:
+                      (Widget child, Animation<double> animation) {
+                        return _buildTransition(child, animation);
+                      },
                   child: viewModel.isInFeedbackMode
                       ? Container(
                           key: const ValueKey('feedback'),
@@ -247,7 +249,10 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
                         )
                       : Container(
                           key: const ValueKey('programs'),
-                          child: _buildScrollableProgramsList(context, viewModel),
+                          child: _buildScrollableProgramsList(
+                            context,
+                            viewModel,
+                          ),
                         ),
                 ),
               ),
@@ -275,7 +280,6 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
       },
     );
   }
-
 
   Widget _buildPlayerHeader(BuildContext context, ProgramsViewModel viewModel) {
     return Column(
@@ -317,10 +321,13 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
     );
   }
 
-  Widget _buildScrollableProgramsList(BuildContext context, ProgramsViewModel viewModel) {
+  Widget _buildScrollableProgramsList(
+    BuildContext context,
+    ProgramsViewModel viewModel,
+  ) {
     // Get programs from DashboardViewModel (now handled in the getter)
     final programs = viewModel.programs;
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 0),
       child: Column(
@@ -328,11 +335,34 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
           // Add some top padding
           const SizedBox(height: 8),
           // Programs list
-          ...programs.map((program) => _buildProgramCard(context, program, viewModel)),
+          ...programs.map(
+            (program) => _buildProgramCard(context, program, viewModel),
+          ),
           // Add bottom padding to ensure content doesn't get cut off by bottom navigation
           const SizedBox(height: 100),
         ],
       ),
+    );
+  }
+
+  // Show WiFi scan bottom sheet
+  void _showWifiScanBottomSheet(BuildContext context, ProgramData program) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => _buildWifiScanDialog(context, program),
+    );
+  }
+
+  // Build WiFi scan dialog
+  Widget _buildWifiScanDialog(BuildContext context, ProgramData program) {
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return _WifiScanDialog(
+          program: program,
+          onClose: () => Navigator.pop(context),
+        );
+      },
     );
   }
 
@@ -361,133 +391,139 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () => viewModel.selectProgram(program.id),
-          child: Padding(
-            padding: const EdgeInsets.all(10),
-            child: Row(
-              children: [
-                // Program Icon Container
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8F9FA),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: program.iconPath.endsWith('.png')
-                        ? Image.asset(program.iconPath, width: 32, height: 32)
-                        : SvgPicture.asset(
-                            program.iconPath,
-                            width: 32,
-                            height: 32,
-                          ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-
-                // Program Details
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        program.title,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Recommended Time: ${program.recommendedTime}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Right side elements
-                Row(
-                  mainAxisSize: MainAxisSize.min,
+          child: Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(10),
+                child: Row(
                   children: [
-                    // Download icon (if program needs download)
-                    if (program.needsDownload)
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        child: const Icon(
-                          Icons.download,
-                          color: Colors.orange,
-                          size: 20,
-                        ),
+                    // Program Icon Container
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8F9FA),
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      child: Center(
+                        child: program.iconPath.endsWith('.png')
+                            ? Image.asset(
+                                program.iconPath,
+                                width: 32,
+                                height: 32,
+                              )
+                            : SvgPicture.asset(
+                                program.iconPath,
+                                width: 32,
+                                height: 32,
+                              ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
 
-                    // Favorite icon
-                    GestureDetector(
-                      onTap: () => viewModel.toggleFavorite(program.id),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        child: SvgPicture.asset(
-                          program.isFavorite
-                              ? 'assets/images/fav_filled.svg'
-                              : 'assets/images/fav_outline.svg',
-                          width: 20,
-                          height: 20,
-                        ),
+                    // Program Details
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            program.title,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Recommended Time: ${program.recommendedTime}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
 
-                    const SizedBox(width: 8),
+                    // Right side elements
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Favorite icon
+                        GestureDetector(
+                          onTap: () => viewModel.toggleFavorite(program.id),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            child: SvgPicture.asset(
+                              program.isFavorite
+                                  ? 'assets/images/fav_filled.svg'
+                                  : 'assets/images/fav_outline.svg',
+                              width: 20,
+                              height: 20,
+                            ),
+                          ),
+                        ),
 
-                    // Play button (only show if program is in device)
-                    if (program.isInDevice)
-                      GestureDetector(
-                        onTap: () {
-                          print('🎵 Programs: Play button tapped for program: ${program.id}');
-                          viewModel.playBluetoothProgram(program.id);
-                        },
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF17961),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Icon(
-                            Icons.play_arrow,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                        ),
-                      )
-                    else
-                      // Download button for programs not in device
-                      GestureDetector(
-                        onTap: () {
-                          print('🎵 Programs: Download button tapped for program: ${program.id}');
-                          // TODO: Implement download functionality
-                        },
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.orange,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Icon(
-                            Icons.download,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                        ),
-                      ),
+                         const SizedBox(width: 8),
+                         GestureDetector(
+                           onTap: program.needsDownload ? null : () {
+                             print(
+                               '🎵 Programs: Play button tapped for program: ${program.id}',
+                             );
+                             viewModel.playBluetoothProgram(program.id);
+                           },
+                           child: Container(
+                             width: 36,
+                             height: 36,
+                             decoration: BoxDecoration(
+                               color: program.needsDownload 
+                                   ? const Color(0xFFF17961).withOpacity(0.3)
+                                   : const Color(0xFFF17961),
+                               borderRadius: BorderRadius.circular(18),
+                             ),
+                             child: Icon(
+                               Icons.play_arrow,
+                               color: program.needsDownload 
+                                   ? Colors.white.withOpacity(0.5)
+                                   : Colors.white,
+                               size: 20,
+                             ),
+                           ),
+                         ),
+                      ],
+                    ),
                   ],
                 ),
-              ],
-            ),
+              ),
+
+              // Download icon in top right corner
+              if (program.needsDownload)
+                Positioned(
+                  top: 1,
+                  right: 1,
+                  child: GestureDetector(
+                    onTap: () {
+                      print(
+                        '🎵 Programs: Download icon tapped for program: ${program.id}',
+                      );
+                      _showWifiScanBottomSheet(context, program);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.download,
+                        color: Colors.orange,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
       ),
@@ -499,7 +535,7 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
     ProgramsViewModel viewModel,
   ) {
     ProgramData currentProgram;
-    
+
     // Handle Bluetooth programs
     if (viewModel.isPlaySuccessful && viewModel.selectedBcuFile != null) {
       // Create a program data for the Bluetooth program
@@ -730,14 +766,8 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
       position: Tween<Offset>(
         begin: const Offset(1.0, 0.0), // Slide in from right
         end: Offset.zero,
-      ).animate(CurvedAnimation(
-        parent: animation,
-        curve: Curves.easeInOut,
-      )),
-      child: FadeTransition(
-        opacity: animation,
-        child: child,
-      ),
+      ).animate(CurvedAnimation(parent: animation, curve: Curves.easeInOut)),
+      child: FadeTransition(opacity: animation, child: child),
     );
   }
 
@@ -1073,7 +1103,11 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             _buildNavItem('assets/images/bottom_menu_home.svg', 0, viewModel),
-            _buildNavItem('assets/images/bottom_menu_programs_selected.svg', 1, viewModel),
+            _buildNavItem(
+              'assets/images/bottom_menu_programs_selected.svg',
+              1,
+              viewModel,
+            ),
             _buildNavItem('assets/images/bottom_menu_device.png', 2, viewModel),
             _buildNavItem('assets/images/bottom_menu_user.svg', 3, viewModel),
           ],
@@ -1142,7 +1176,9 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
                   child: ElevatedButton(
                     onPressed: () {
                       viewModel.closeDeviceDisconnectedPopup();
-                      DeviceDisconnectedPopup.navigateToDashboardAndScan(context);
+                      DeviceDisconnectedPopup.navigateToDashboardAndScan(
+                        context,
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFF07A60),
@@ -1219,3 +1255,265 @@ class _CustomSliderThumbShape extends SliderComponentShape {
     canvas.drawCircle(center, 5.5, borderPaint);
   }
 }
+
+// WiFi Scan Dialog Widget
+class _WifiScanDialog extends StatefulWidget {
+  final ProgramData program;
+  final VoidCallback onClose;
+
+  const _WifiScanDialog({required this.program, required this.onClose});
+
+  @override
+  State<_WifiScanDialog> createState() => _WifiScanDialogState();
+}
+
+class _WifiScanDialogState extends State<_WifiScanDialog> {
+  WifiScanState _currentState = WifiScanState.scanning;
+  String? _selectedNetwork;
+  final TextEditingController _passwordController = TextEditingController();
+  bool _isPasswordVisible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _startScanning();
+  }
+
+  void _startScanning() {
+    // Simulate scanning process
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() {
+          _currentState = WifiScanState.networkList;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.85,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header with close button
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const SizedBox(width: 24), // Spacer for centering
+                  Text(
+                    _getTitle(),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: widget.onClose,
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF17961),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              // Content based on current state
+              _buildContent(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getTitle() {
+    switch (_currentState) {
+      case WifiScanState.scanning:
+        return 'Wi Fi SCAN...';
+      case WifiScanState.networkList:
+        return 'Wi Fi SCAN...';
+      case WifiScanState.passwordInput:
+        return 'Connect Wifi';
+    }
+  }
+
+  Widget _buildContent() {
+    switch (_currentState) {
+      case WifiScanState.scanning:
+        return _buildScanningContent();
+      case WifiScanState.networkList:
+        return _buildNetworkListContent();
+      case WifiScanState.passwordInput:
+        return _buildPasswordInputContent();
+    }
+  }
+
+  Widget _buildScanningContent() {
+    return Column(
+      children: [
+        const Text(
+          'Wi Fi Scan in Progress',
+          style: TextStyle(fontSize: 16, color: Colors.black),
+        ),
+        const SizedBox(height: 32),
+        _buildLoadingIndicator(),
+      ],
+    );
+  }
+
+  Widget _buildNetworkListContent() {
+    final networks = [
+      {'name': 'Network Name', 'frequency': '2.4 Ghz'},
+      {'name': 'Network Name', 'frequency': '2.4 Ghz'},
+      {'name': 'Network Name', 'frequency': '2.4 Ghz'},
+    ];
+
+    return Column(
+      children: [
+        ...networks.map((network) => _buildNetworkItem(network)).toList(),
+        const SizedBox(height: 24),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _currentState = WifiScanState.scanning;
+              });
+              _startScanning();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF17961),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text(
+              'TRY AGAIN',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNetworkItem(Map<String, String> network) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedNetwork = network['name'];
+          _currentState = WifiScanState.passwordInput;
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.wifi, color: Colors.blue, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    network['name']!,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  Text(
+                    network['frequency']!,
+                    style: const TextStyle(fontSize: 14, color: Colors.black),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPasswordInputContent() {
+    return Column(
+      children: [
+        const Text(
+          'Please enter Wifi Password for updating your latest Files',
+          style: TextStyle(fontSize: 16, color: Colors.black),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 24),
+        TextField(
+          controller: _passwordController,
+          obscureText: !_isPasswordVisible,
+          decoration: InputDecoration(
+            hintText: 'Enter password',
+            suffixText: 'Show',
+            suffixStyle: const TextStyle(color: Colors.black, fontSize: 14),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
+          ),
+          onChanged: (value) {
+            // Handle password input
+          },
+        ),
+        const SizedBox(height: 24),
+        _buildLoadingIndicator(),
+      ],
+    );
+  }
+
+  Widget _buildLoadingIndicator() {
+    return SizedBox(
+      width: 40,
+      height: 40,
+      child: CircularProgressIndicator(
+        strokeWidth: 3,
+        valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFF17961)),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
+  }
+}
+
+enum WifiScanState { scanning, networkList, passwordInput }
