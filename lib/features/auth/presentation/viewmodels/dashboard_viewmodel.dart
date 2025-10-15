@@ -739,15 +739,25 @@ class DashboardViewModel extends ChangeNotifier {
 
       // Get Bluetooth programs from the service
       final bluetoothPrograms = _bluetoothService.availablePrograms;
+      // Remove duplicate Bluetooth programs while preserving order
+      final seenBluetoothPrograms = <String>{};
+      final uniqueBluetoothPrograms = <String>[];
+      for (final program in bluetoothPrograms) {
+        if (!seenBluetoothPrograms.contains(program)) {
+          seenBluetoothPrograms.add(program);
+          uniqueBluetoothPrograms.add(program);
+        }
+      }
+      final deduplicatedBluetoothPrograms = uniqueBluetoothPrograms;
       print(
-        '🎵 Dashboard: Bluetooth programs: ${bluetoothPrograms.length} items',
+        '🎵 Dashboard: Bluetooth programs: ${deduplicatedBluetoothPrograms.length} items',
       );
       await loadMusicDataLocal();
       // Get music data
       print('🎵 Dashboard: Music data: ${_musicData.length} items');
 
       // If no music data or no Bluetooth programs, return empty list
-      if (_musicData.isEmpty || bluetoothPrograms.isEmpty) {
+      if (_musicData.isEmpty || deduplicatedBluetoothPrograms.isEmpty) {
         print('🎵 Dashboard: No music data or Bluetooth programs available');
         return [];
       }
@@ -773,7 +783,7 @@ class DashboardViewModel extends ChangeNotifier {
                       _findMatchingBluetoothProgram(
                         musicName,
                         musicId,
-                        bluetoothPrograms,
+                        deduplicatedBluetoothPrograms,
                       );
 
                   if (matchingBluetoothProgram != null) {
@@ -850,20 +860,31 @@ class DashboardViewModel extends ChangeNotifier {
 
       // Get Bluetooth programs from the service
       final bluetoothPrograms = _bluetoothService.availablePrograms;
+      // Remove duplicate Bluetooth programs while preserving order
+      final seenBluetoothPrograms = <String>{};
+      final uniqueBluetoothPrograms = <String>[];
+      for (final program in bluetoothPrograms) {
+        if (!seenBluetoothPrograms.contains(program)) {
+          seenBluetoothPrograms.add(program);
+          uniqueBluetoothPrograms.add(program);
+        }
+      }
+      final deduplicatedBluetoothPrograms = uniqueBluetoothPrograms;
       print(
-        '🎵 Dashboard: Bluetooth programs: ${bluetoothPrograms.length} items',
+        '🎵 Dashboard: Bluetooth programs: ${deduplicatedBluetoothPrograms.length} items',
       );
       // Get music data
       print('🎵 Dashboard: Music data: ${_musicData.length} items');
 
-      // If no music data or no Bluetooth programs, return empty list
-      if (_musicData.isEmpty || bluetoothPrograms.isEmpty) {
-        print('🎵 Dashboard: No music data or Bluetooth programs available');
+      // If no music data, return empty list
+      if (_musicData.isEmpty) {
+        print('🎵 Dashboard: No music data available');
         return [];
       }
 
       // Create union by matching music data with Bluetooth programs
       final filteredPrograms = <dynamic>[];
+      final matchedMusicIds = <String>{}; // Track which music items have been matched
 
       for (final musicItem in _musicData) {
         if (musicItem is Map<String, dynamic>) {
@@ -883,7 +904,7 @@ class DashboardViewModel extends ChangeNotifier {
                       _findMatchingBluetoothProgram(
                         musicName,
                         musicId,
-                        bluetoothPrograms,
+                        deduplicatedBluetoothPrograms,
                       );
 
                   if (matchingBluetoothProgram != null) {
@@ -899,8 +920,10 @@ class DashboardViewModel extends ChangeNotifier {
                         matchingBluetoothProgram.split('|')[1];
                     // Add the specific music file info
                     enhancedMusicItem['matchedMusicFile'] = musicFile;
+                    enhancedMusicItem['isInDevice'] = true; // Mark as available in device
 
                     filteredPrograms.add(enhancedMusicItem);
+                    matchedMusicIds.add(musicId);
                     print(
                       '🎵 Dashboard: Matched music file "$musicName" with Bluetooth program "$matchingBluetoothProgram"',
                     );
@@ -930,12 +953,59 @@ class DashboardViewModel extends ChangeNotifier {
                     matchingBluetoothProgram.split('|')[0];
                 enhancedMusicItem['bluetoothProgramId'] =
                     matchingBluetoothProgram.split('|')[1];
+                enhancedMusicItem['isInDevice'] = true; // Mark as available in device
 
                 filteredPrograms.add(enhancedMusicItem);
+                matchedMusicIds.add(musicId);
                 print(
                   '🎵 Dashboard: Matched music "$musicName" with Bluetooth program "$matchingBluetoothProgram"',
                 );
               }
+            }
+          }
+        }
+      }
+
+      // Add user programs that are not in device (with download indicator)
+      for (final musicItem in _musicData) {
+        if (musicItem is Map<String, dynamic>) {
+          final musicFiles = musicItem['musicfiles'];
+          if (musicFiles is List && musicFiles.isNotEmpty) {
+            // Process each entry in the musicfiles array
+            for (final musicFile in musicFiles) {
+              if (musicFile is Map<String, dynamic>) {
+                final musicName = _extractMusicName(musicFile);
+                final musicId = _extractMusicId(musicFile);
+
+                if (musicName != null && musicId != null && !matchedMusicIds.contains(musicId)) {
+                  // This is a user program not available in device
+                  final enhancedMusicItem = Map<String, dynamic>.from(musicItem);
+                  enhancedMusicItem['matchedMusicFile'] = musicFile;
+                  enhancedMusicItem['isInDevice'] = false; // Mark as not available in device
+                  enhancedMusicItem['needsDownload'] = true; // Mark as needing download
+
+                  filteredPrograms.add(enhancedMusicItem);
+                  print(
+                    '🎵 Dashboard: Added user program "$musicName" not in device (needs download)',
+                  );
+                }
+              }
+            }
+          } else {
+            // Fallback for music items without musicfiles array
+            final musicName = _extractMusicName(musicItem);
+            final musicId = _extractMusicId(musicItem);
+
+            if (musicName != null && musicId != null && !matchedMusicIds.contains(musicId)) {
+              // This is a user program not available in device
+              final enhancedMusicItem = Map<String, dynamic>.from(musicItem);
+              enhancedMusicItem['isInDevice'] = false; // Mark as not available in device
+              enhancedMusicItem['needsDownload'] = true; // Mark as needing download
+
+              filteredPrograms.add(enhancedMusicItem);
+              print(
+                '🎵 Dashboard: Added user program "$musicName" not in device (needs download)',
+              );
             }
           }
         }

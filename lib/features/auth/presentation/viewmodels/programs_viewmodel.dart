@@ -105,6 +105,8 @@ class ProgramsViewModel extends ChangeNotifier {
               isLocked: false,
               isFavorite:
                   false, // No favorites by default for filtered programs
+              isInDevice: program['isInDevice'] ?? true,
+              needsDownload: program['needsDownload'] ?? false,
             );
           }
           return null;
@@ -583,6 +585,8 @@ class ProgramData {
   final String iconPath;
   final bool isLocked;
   final bool isFavorite;
+  final bool isInDevice;
+  final bool needsDownload;
 
   ProgramData({
     required this.id,
@@ -591,6 +595,8 @@ class ProgramData {
     required this.iconPath,
     required this.isLocked,
     required this.isFavorite,
+    this.isInDevice = true,
+    this.needsDownload = false,
   });
 }
 

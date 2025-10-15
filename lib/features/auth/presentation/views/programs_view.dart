@@ -414,6 +414,17 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // Download icon (if program needs download)
+                    if (program.needsDownload)
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        child: const Icon(
+                          Icons.download,
+                          color: Colors.orange,
+                          size: 20,
+                        ),
+                      ),
+
                     // Favorite icon
                     GestureDetector(
                       onTap: () => viewModel.toggleFavorite(program.id),
@@ -431,26 +442,48 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
 
                     const SizedBox(width: 8),
 
-                    // Play button
-                    GestureDetector(
-                      onTap: () {
-                        print('🎵 Programs: Play button tapped for program: ${program.id}');
-                        viewModel.playBluetoothProgram(program.id);
-                      },
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF17961),
-                          borderRadius: BorderRadius.circular(20),
+                    // Play button (only show if program is in device)
+                    if (program.isInDevice)
+                      GestureDetector(
+                        onTap: () {
+                          print('🎵 Programs: Play button tapped for program: ${program.id}');
+                          viewModel.playBluetoothProgram(program.id);
+                        },
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF17961),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Icon(
+                            Icons.play_arrow,
+                            color: Colors.white,
+                            size: 24,
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.play_arrow,
-                          color: Colors.white,
-                          size: 24,
+                      )
+                    else
+                      // Download button for programs not in device
+                      GestureDetector(
+                        onTap: () {
+                          print('🎵 Programs: Download button tapped for program: ${program.id}');
+                          // TODO: Implement download functionality
+                        },
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.orange,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Icon(
+                            Icons.download,
+                            color: Colors.white,
+                            size: 24,
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ],
