@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
+import '../../../../core/services/bluetooth_service.dart';
 import '../../../../shared/widgets/device_disconnected_popup.dart';
 import '../viewmodels/programs_viewmodel.dart';
 
@@ -1275,6 +1276,9 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
   String? _selectedNetwork;
   final TextEditingController _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
+  List<String> _wifiNetworks = [];
+  bool _isScanning = false;
+  final BluetoothService _bluetoothService = BluetoothService();
 
   @override
   void initState() {
@@ -1282,15 +1286,76 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
     _startScanning();
   }
 
-  void _startScanning() {
-    // Simulate scanning process
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
+  void _startScanning() async {
+    setState(() {
+      _isScanning = true;
+    });
+
+    try {
+      // Check if device is connected
+      if (!_bluetoothService.isConnected) {
+        _showErrorDialog('Device not connected. Please connect to your Evolv28 device first.');
+        return;
+      }
+
+      // Set up WiFi list callback
+      _bluetoothService.setOnWifiListReceivedCallback((networks) {
+        if (mounted) {
+          setState(() {
+            _wifiNetworks = networks;
+            _currentState = WifiScanState.networkList;
+            _isScanning = false;
+          });
+        }
+      });
+
+      // Set up error callback
+      _bluetoothService.setOnWifiErrorCallback((error) {
+        if (mounted) {
+          setState(() {
+            _isScanning = false;
+          });
+          _showErrorDialog('WiFi scan failed: $error');
+        }
+      });
+
+      // Start WiFi scanning
+      await _bluetoothService.scanWifi();
+      
+      // Wait for 8 seconds as requested
+      await Future.delayed(const Duration(seconds: 8));
+      
+      // If no networks found after timeout, show empty list
+      if (mounted && _wifiNetworks.isEmpty) {
         setState(() {
           _currentState = WifiScanState.networkList;
+          _isScanning = false;
         });
       }
-    });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isScanning = false;
+        });
+        _showErrorDialog('Failed to scan WiFi networks: $e');
+      }
+    }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -1392,20 +1457,19 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
   }
 
   Widget _buildNetworkListContent() {
-    final networks = [
-      {'name': 'Network Name', 'frequency': '2.4 Ghz'},
-      {'name': 'Network Name', 'frequency': '2.4 Ghz'},
-      {'name': 'Network Name', 'frequency': '2.4 Ghz'},
-    ];
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Network list with dynamic height
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            children: networks.map((network) => _buildNetworkItem(network)).toList(),
+        // Scrollable network list
+        ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.4, // Max 40% of screen height
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              children: _wifiNetworks.map((network) => _buildNetworkItem(network)).toList(),
+            ),
           ),
         ),
         
@@ -1415,7 +1479,7 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
           child: SizedBox(
             width: 120,
             child: ElevatedButton(
-              onPressed: () {
+              onPressed: _isScanning ? null : () {
                 setState(() {
                   _currentState = WifiScanState.scanning;
                 });
@@ -1440,11 +1504,11 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
     );
   }
 
-  Widget _buildNetworkItem(Map<String, String> network) {
+  Widget _buildNetworkItem(String network) {
     return GestureDetector(
       onTap: () {
         setState(() {
-          _selectedNetwork = network['name'];
+          _selectedNetwork = network;
           _currentState = WifiScanState.passwordInput;
         });
       },
@@ -1455,7 +1519,7 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              network['name']!,
+              network.isNotEmpty ? network : 'Hidden Network',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -1464,7 +1528,7 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
             ),
             const SizedBox(height: 4),
             Text(
-              network['frequency']!,
+              '2.4 Ghz',
               style: const TextStyle(
                 fontSize: 14,
                 color: Colors.grey,
@@ -1533,6 +1597,32 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
           
           const SizedBox(height: 24),
           
+          // Connect button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () async {
+                // Handle WiFi connection
+                print('Connecting to WiFi: $_selectedNetwork');
+                await _connectToWifi();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFF17961),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text(
+                'Connect',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          
+          const SizedBox(height: 24),
+          
           // Chat Qn Icon
           SvgPicture.asset(
             'assets/images/chat_qn_icon.svg',
@@ -1553,6 +1643,71 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
         valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFF17961)),
       ),
     );
+  }
+
+  Future<void> _connectToWifi() async {
+    try {
+      if (_selectedNetwork == null || _passwordController.text.isEmpty) {
+        _showErrorDialog('Please enter WiFi password');
+        return;
+      }
+
+      // Set up WiFi connection callback
+      _bluetoothService.setOnWifiConnectedCallback((success) {
+        if (mounted) {
+          if (success) {
+            print('WiFi connected successfully');
+            Navigator.pop(context);
+            // TODO: Start file download process
+            _startFileDownload();
+          } else {
+            _showErrorDialog('Failed to connect to WiFi network');
+          }
+        }
+      });
+
+      // Send SSID and password to device
+      await _bluetoothService.sendSSID(_selectedNetwork!);
+      await Future.delayed(const Duration(milliseconds: 500));
+      await _bluetoothService.sendPassword(_passwordController.text);
+      await Future.delayed(const Duration(milliseconds: 500));
+      await _bluetoothService.connectWifi();
+      
+    } catch (e) {
+      if (mounted) {
+        _showErrorDialog('Error connecting to WiFi: $e');
+      }
+    }
+  }
+
+  Future<void> _startFileDownload() async {
+    try {
+      // Set up download callbacks
+      _bluetoothService.setOnDownloadProgressCallback((progress) {
+        print('Download progress: $progress%');
+        // TODO: Update UI with download progress
+      });
+
+      _bluetoothService.setOnDownloadCompleteCallback((success) {
+        if (success) {
+          print('File download completed successfully');
+          // TODO: Show success message and update program list
+        } else {
+          print('File download failed');
+          // TODO: Show error message
+        }
+      });
+
+      // Example: Download a single file
+      // Replace with actual file URL and size
+      const fileUrl = 'https://example.com/program.bcu';
+      const fileSize = 1024000; // 1MB example
+      
+      await _bluetoothService.downloadSingleFile(fileUrl, fileSize);
+      
+    } catch (e) {
+      print('Error starting file download: $e');
+    }
   }
 
   @override

@@ -67,6 +67,16 @@ class BluetoothService extends ChangeNotifier {
   // Callback for device disconnection
   Function(String deviceName)? _onDeviceDisconnected;
 
+  // WiFi and Download callbacks
+  Function(List<String>)? _onWifiListReceived;
+  Function(bool)? _onWifiConnected;
+  Function(int)? _onDownloadProgress;
+  Function(bool)? _onDownloadComplete;
+  Function(String)? _onWifiError;
+
+  // WiFi list storage
+  List<String> _wifiList = [];
+
   // Nordic UART Service UUIDs
   static const String nordicUartServiceUUID =
       '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
@@ -74,6 +84,20 @@ class BluetoothService extends ChangeNotifier {
       '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
   static const String nordicUartNotifyCharacteristicUUID =
       '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+
+  // WiFi and Download Command constants
+  static const String DISABLE_WIFI = "#ESP32DIS!";
+  static const String ENABLE_WIFI = "#ESP32CON!";
+  static const String WIFI_SCAN = "#020Cmd:39WIFI_SCAN!";
+  static const String WIFI_CONNECT = "#023Cmd:37WIFI_CONNECT!";
+  
+  // Response codes
+  static const String WIFI_CONNECT_SUCCESS = "#ESP,47,01!";
+  static const String WIFI_CONNECT_FAIL = "#ESP,47,06!";
+  static const String PASSWORD_ACCEPTED = "#ESP,42,01!";
+  static const String DOWNLOAD_SUCCESS = "#ESP,40,01!";
+  static const String DOWNLOAD_LINK_RECEIVED = "#ESP,40,05!";
+  static const String DOWNLOAD_PROGRESS = "#ESP,50,";
 
   // Getters
   BluetoothConnectionState get connectionState => _connectionState;
@@ -199,6 +223,31 @@ class BluetoothService extends ChangeNotifier {
   /// Set callback for when device gets disconnected
   void setOnDeviceDisconnectedCallback(Function(String deviceName) callback) {
     _onDeviceDisconnected = callback;
+  }
+
+  /// Set callback for WiFi list received
+  void setOnWifiListReceivedCallback(Function(List<String>) callback) {
+    _onWifiListReceived = callback;
+  }
+
+  /// Set callback for WiFi connection status
+  void setOnWifiConnectedCallback(Function(bool) callback) {
+    _onWifiConnected = callback;
+  }
+
+  /// Set callback for download progress
+  void setOnDownloadProgressCallback(Function(int) callback) {
+    _onDownloadProgress = callback;
+  }
+
+  /// Set callback for download completion
+  void setOnDownloadCompleteCallback(Function(bool) callback) {
+    _onDownloadComplete = callback;
+  }
+
+  /// Set callback for WiFi errors
+  void setOnWifiErrorCallback(Function(String) callback) {
+    _onWifiError = callback;
   }
 
   Future<void> startScanning() async {
@@ -1067,6 +1116,35 @@ class BluetoothService extends ChangeNotifier {
       );
     }
 
+    // Handle WiFi scan results
+    if (stringValue.contains("#ESP,49,") && !stringValue.contains("#ESP,49,01!")) {
+      // WiFi scan results
+      String ssid = stringValue.split(',')[2].replaceAll('!', '').trim();
+      _wifiList.add(ssid);
+      print('📶 WiFi scan result: $ssid');
+    } else if (stringValue.contains("#ESP,49,01!")) {
+      // WiFi scan complete
+      print('📶 WiFi scan complete, found ${_wifiList.length} networks');
+      _onWifiListReceived?.call(_wifiList);
+      _wifiList.clear();
+    } else if (stringValue.contains(WIFI_CONNECT_SUCCESS)) {
+      print('📶 WiFi connected successfully');
+      _onWifiConnected?.call(true);
+    } else if (stringValue.contains(WIFI_CONNECT_FAIL)) {
+      print('📶 WiFi connection failed');
+      _onWifiConnected?.call(false);
+    } else if (stringValue.contains(DOWNLOAD_LINK_RECEIVED)) {
+      print('📥 Download started');
+    } else if (stringValue.contains(DOWNLOAD_SUCCESS)) {
+      print('📥 Download completed successfully');
+      _onDownloadComplete?.call(true);
+    } else if (stringValue.contains(DOWNLOAD_PROGRESS)) {
+      String percentage = stringValue.split(',')[2];
+      int progress = int.tryParse(percentage) ?? 0;
+      print('📥 Download progress: $progress%');
+      _onDownloadProgress?.call(progress);
+    }
+
     // If we're sending play commands, check for play command responses
     if (_isSendingPlayCommands && stringValue.isNotEmpty) {
       print('🎵 Play command notification received: "$stringValue"');
@@ -1567,6 +1645,73 @@ class BluetoothService extends ChangeNotifier {
       print('🎵 BluetoothService: Error checking player status: $e');
       return null;
     }
+  }
+
+  // WiFi Commands
+  Future<void> disableWifi() async {
+    await writeCommand(DISABLE_WIFI);
+  }
+
+  Future<void> enableWifi() async {
+    await writeCommand(ENABLE_WIFI);
+  }
+
+  Future<void> scanWifi() async {
+    _wifiList.clear(); // Clear previous results
+    await writeCommand(WIFI_SCAN);
+  }
+
+  Future<void> sendSSID(String ssid) async {
+    String basicCommand = "#Cmd:31$ssid!";
+    String command = "#0${basicCommand.length + 3}Cmd:31$ssid!";
+    await writeCommand(command);
+  }
+
+  Future<void> sendPassword(String password) async {
+    String basicCommand = "#Cmd:32$password!";
+    String command = "#0${basicCommand.length + 3}Cmd:32$password!";
+    await writeCommand(command);
+  }
+
+  Future<void> connectWifi() async {
+    await writeCommand(WIFI_CONNECT);
+  }
+
+  // Download Commands
+  Future<void> downloadSingleFile(String url, int fileSize) async {
+    String basicCommand = "#Cmd:30,$fileSize,$url!";
+    int commandLength = basicCommand.length;
+    int totalLength = commandLength + commandLength.toString().length;
+    
+    String finalCommand;
+    if (totalLength.toString().length > 2) {
+      int finalCommandLength = commandLength + totalLength.toString().length;
+      finalCommand = "#$finalCommandLength#Cmd:30,$fileSize,$url!";
+    } else {
+      finalCommand = totalLength >= 99 
+        ? "#${totalLength + 1}#Cmd:30,$fileSize,$url!"
+        : "#0${totalLength + 1}#Cmd:30,$fileSize,$url!";
+    }
+    
+    await writeCommand(finalCommand);
+  }
+
+  Future<void> downloadBulkFiles(String url, int fileSize) async {
+    String basicCommand = "#Cmd:35,$fileSize,$url!";
+    int commandLength = basicCommand.length;
+    int totalLength = commandLength + commandLength.toString().length;
+    
+    String finalCommand;
+    if (totalLength.toString().length > 2) {
+      int finalCommandLength = commandLength + totalLength.toString().length;
+      finalCommand = "#$finalCommandLength#Cmd:35,$fileSize,$url!";
+    } else {
+      finalCommand = totalLength >= 99 
+        ? "#${totalLength + 1}#Cmd:35,$fileSize,$url!"
+        : "#0${totalLength + 1}#Cmd:35,$fileSize,$url!";
+    }
+    
+    await writeCommand(finalCommand);
   }
 
   @override
