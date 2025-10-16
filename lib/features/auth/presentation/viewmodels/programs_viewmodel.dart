@@ -104,6 +104,8 @@ class ProgramsViewModel extends ChangeNotifier {
                   false, // No favorites by default for filtered programs
               isInDevice: program['isInDevice'] ?? true,
               needsDownload: program['needsDownload'] ?? false,
+              downloadUrl: program['downloadUrl'] ?? program['fileUrl'] ?? program['url'],
+              fileSize: program['fileSize'] ?? program['size'] ?? 0,
             );
           }
           return null;
@@ -612,6 +614,8 @@ class ProgramData {
   final bool isFavorite;
   final bool isInDevice;
   final bool needsDownload;
+  final String? downloadUrl;
+  final int? fileSize;
 
   ProgramData({
     required this.id,
@@ -622,6 +626,8 @@ class ProgramData {
     required this.isFavorite,
     this.isInDevice = true,
     this.needsDownload = false,
+    this.downloadUrl,
+    this.fileSize,
   });
 }
 

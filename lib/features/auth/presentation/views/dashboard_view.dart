@@ -235,9 +235,18 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
           // Scanning Overlay
           Consumer<DashboardViewModel>(
             builder: (context, viewModel, child) {
-              if (viewModel.isBluetoothScanning) {
+              // Debug logging
+              print('🔍 Dashboard: Scanning overlay check - isBluetoothScanning: ${viewModel.isBluetoothScanning}, isBluetoothConnected: ${viewModel.isBluetoothConnected}, isConnecting: ${viewModel.isConnecting}, isExecutingCommands: ${viewModel.isExecutingCommands}');
+              
+              // Hide scanning overlay if device is connected, connecting, executing commands, or if not scanning
+              if (viewModel.isBluetoothScanning && 
+                  !viewModel.isBluetoothConnected && 
+                  !viewModel.isConnecting &&
+                  !viewModel.isExecutingCommands) {
+                print('🔍 Dashboard: Showing scanning overlay');
                 return _buildScanningOverlay(context, viewModel);
               }
+              print('🔍 Dashboard: Hiding scanning overlay');
               return SizedBox.shrink();
             },
           ),

@@ -72,6 +72,7 @@ dependencies:
   flutter_blue_plus: ^1.32.8
   permission_handler: ^11.3.1
   geolocator: ^13.0.1
+  wifi_scan: ^0.4.1+2
   
   # Device information
   device_info_plus: ^10.1.2

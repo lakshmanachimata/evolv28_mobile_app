@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+import 'package:wifi_scan/wifi_scan.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../../../core/services/bluetooth_service.dart';
 import '../../../../shared/widgets/device_disconnected_popup.dart';
@@ -1276,7 +1278,7 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
   String? _selectedNetwork;
   final TextEditingController _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
-  List<String> _wifiNetworks = [];
+  List<WiFiAccessPoint> _wifiNetworks = [];
   bool _isScanning = false;
   final BluetoothService _bluetoothService = BluetoothService();
 
@@ -1292,42 +1294,43 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
     });
 
     try {
-      // Check if device is connected
-      if (!_bluetoothService.isConnected) {
-        _showErrorDialog('Device not connected. Please connect to your Evolv28 device first.');
+      // Check permissions first
+      final locationPermission = await Permission.locationWhenInUse.request();
+      if (!locationPermission.isGranted) {
+        _showPermissionDialog();
         return;
       }
 
-      // Set up WiFi list callback
-      _bluetoothService.setOnWifiListReceivedCallback((networks) {
-        if (mounted) {
-          setState(() {
-            _wifiNetworks = networks;
-            _currentState = WifiScanState.networkList;
-            _isScanning = false;
-          });
-        }
-      });
+      // Check if WiFi scanning is supported
+      final canScan = await WiFiScan.instance.canStartScan();
+      if (canScan != CanStartScan.yes) {
+        _showErrorDialog('WiFi scanning is not available on this device');
+        return;
+      }
 
-      // Set up error callback
-      _bluetoothService.setOnWifiErrorCallback((error) {
-        if (mounted) {
-          setState(() {
-            _isScanning = false;
-          });
-          _showErrorDialog('WiFi scan failed: $error');
-        }
-      });
-
-      // Start WiFi scanning
-      await _bluetoothService.scanWifi();
+      print('📶 Programs View: Starting mobile WiFi scan...');
+      
+      // Start scanning
+      await WiFiScan.instance.startScan();
       
       // Wait for 8 seconds as requested
+      print('📶 Programs View: Waiting 8 seconds for WiFi scan results...');
       await Future.delayed(const Duration(seconds: 8));
       
-      // If no networks found after timeout, show empty list
-      if (mounted && _wifiNetworks.isEmpty) {
+      // Get scan results
+      final results = await WiFiScan.instance.getScannedResults();
+      
+      // Filter for 2.4GHz networks only
+      final filteredNetworks = results.where((network) {
+        // Filter for 2.4GHz networks (frequency between 2400-2500 MHz)
+        return network.frequency >= 2400 && network.frequency <= 2500;
+      }).toList();
+
+      print('📶 Programs View: Found ${filteredNetworks.length} 2.4GHz networks');
+
+      if (mounted) {
         setState(() {
+          _wifiNetworks = filteredNetworks;
           _currentState = WifiScanState.networkList;
           _isScanning = false;
         });
@@ -1340,6 +1343,29 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
         _showErrorDialog('Failed to scan WiFi networks: $e');
       }
     }
+  }
+
+  void _showPermissionDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Permission Required'),
+        content: const Text('Location permission is required to scan for WiFi networks. Please grant permission in settings.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              openAppSettings();
+            },
+            child: const Text('Open Settings'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showErrorDialog(String message) {
@@ -1426,6 +1452,7 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
   }
 
   Widget _buildContent() {
+    print('📶 Programs View: Building content for state: $_currentState');
     switch (_currentState) {
       case WifiScanState.scanning:
         return _buildScanningContent();
@@ -1457,21 +1484,38 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
   }
 
   Widget _buildNetworkListContent() {
+    print('📶 Programs View: Building network list content with ${_wifiNetworks.length} networks');
+    print('📶 Programs View: Networks: $_wifiNetworks');
+    
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Scrollable network list
-        ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.4, // Max 40% of screen height
-          ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              children: _wifiNetworks.map((network) => _buildNetworkItem(network)).toList(),
+        // Show message if no networks found
+        if (_wifiNetworks.isEmpty)
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              'No WiFi networks found',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+              ),
             ),
           ),
-        ),
+        
+        // Scrollable network list
+        if (_wifiNetworks.isNotEmpty)
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.4, // Max 40% of screen height
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                children: _wifiNetworks.map((network) => _buildNetworkItem(network)).toList(),
+              ),
+            ),
+          ),
         
         // TRY AGAIN button
         Padding(
@@ -1504,11 +1548,11 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
     );
   }
 
-  Widget _buildNetworkItem(String network) {
+  Widget _buildNetworkItem(WiFiAccessPoint network) {
     return GestureDetector(
       onTap: () {
         setState(() {
-          _selectedNetwork = network;
+          _selectedNetwork = network.ssid;
           _currentState = WifiScanState.passwordInput;
         });
       },
@@ -1519,7 +1563,7 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              network.isNotEmpty ? network : 'Hidden Network',
+              network.ssid.isNotEmpty ? network.ssid : 'Hidden Network',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -1541,8 +1585,8 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
   }
 
   Widget _buildPasswordInputContent() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 64),
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 64),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1597,6 +1641,7 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
           
           const SizedBox(height: 24),
           
+          
           // Connect button
           SizedBox(
             width: double.infinity,
@@ -1622,13 +1667,7 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
           ),
           
           const SizedBox(height: 24),
-          
-          // Chat Qn Icon
-          SvgPicture.asset(
-            'assets/images/chat_qn_icon.svg',
-            width: 48,
-            height: 46.71,
-          ),
+        
         ],
       ),
     );
@@ -1652,13 +1691,15 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
         return;
       }
 
+      print('📶 Programs View: Connecting to WiFi - SSID: $_selectedNetwork, Program: ${widget.program.title}');
+
       // Set up WiFi connection callback
       _bluetoothService.setOnWifiConnectedCallback((success) {
         if (mounted) {
           if (success) {
-            print('WiFi connected successfully');
+            print('📶 Programs View: WiFi connected successfully, starting file download');
             Navigator.pop(context);
-            // TODO: Start file download process
+            // Start file download process with program information
             _startFileDownload();
           } else {
             _showErrorDialog('Failed to connect to WiFi network');
@@ -1682,31 +1723,42 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
 
   Future<void> _startFileDownload() async {
     try {
+      print('📶 Programs View: Starting file download for program: ${widget.program.title}');
+      
       // Set up download callbacks
       _bluetoothService.setOnDownloadProgressCallback((progress) {
-        print('Download progress: $progress%');
+        print('📶 Programs View: Download progress: $progress%');
         // TODO: Update UI with download progress
       });
 
       _bluetoothService.setOnDownloadCompleteCallback((success) {
         if (success) {
-          print('File download completed successfully');
+          print('📶 Programs View: File download completed successfully for: ${widget.program.title}');
           // TODO: Show success message and update program list
         } else {
-          print('File download failed');
+          print('📶 Programs View: File download failed for: ${widget.program.title}');
           // TODO: Show error message
         }
       });
 
-      // Example: Download a single file
-      // Replace with actual file URL and size
-      const fileUrl = 'https://example.com/program.bcu';
-      const fileSize = 1024000; // 1MB example
+      // Get file information from program data
+      String fileName = widget.program.title;
+      String fileUrl = widget.program.downloadUrl ?? ''; // Assuming there's a downloadUrl field
+      int fileSize = widget.program.fileSize ?? 0; // Assuming there's a fileSize field
       
-      await _bluetoothService.downloadSingleFile(fileUrl, fileSize);
+      print('📶 Programs View: Download details - File: $fileName, URL: $fileUrl, Size: $fileSize bytes');
+      
+      // Start download with program-specific information
+      if (fileUrl.isNotEmpty && fileSize > 0) {
+        await _bluetoothService.downloadSingleFile(fileUrl, fileSize);
+      } else {
+        print('📶 Programs View: No download URL or file size available for program: ${widget.program.title}');
+        // TODO: Show error message about missing download information
+      }
       
     } catch (e) {
-      print('Error starting file download: $e');
+      print('📶 Programs View: Error starting file download: $e');
+      // TODO: Show error message
     }
   }
 

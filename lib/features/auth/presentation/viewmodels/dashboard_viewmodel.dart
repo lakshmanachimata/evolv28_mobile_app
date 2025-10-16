@@ -262,6 +262,14 @@ class DashboardViewModel extends ChangeNotifier {
 
     // Set up Bluetooth listener
     _bluetoothListener = () {
+      print('🔍 DashboardViewModel: Bluetooth listener triggered - isConnected: ${_bluetoothService.isConnected}, isScanning: ${_bluetoothService.isScanning}');
+      
+      // Reset connecting state if device is now connected
+      if (_bluetoothService.isConnected && _isConnecting) {
+        _isConnecting = false;
+        print('🎵 Dashboard: Device connected, resetting connecting state');
+      }
+      
       // Check if command sequence just completed and we haven't checked player status yet
       if (!_bluetoothService.isExecutingCommands &&
           _bluetoothService.isConnected &&
@@ -374,6 +382,12 @@ class DashboardViewModel extends ChangeNotifier {
 
     // Listen to Bluetooth service changes
     _bluetoothListener = () {
+      // Reset connecting state if device is now connected
+      if (_bluetoothService.isConnected && _isConnecting) {
+        _isConnecting = false;
+        print('🎵 Dashboard: Device connected, resetting connecting state');
+      }
+      
       // Check if command sequence just completed and we haven't checked player status yet
       if (!_bluetoothService.isExecutingCommands &&
           _bluetoothService.isConnected &&
@@ -1354,6 +1368,18 @@ class DashboardViewModel extends ChangeNotifier {
       return;
     }
 
+    // Don't attempt auto-connection if device is already connected
+    if (_bluetoothService.isConnected) {
+      print('🎵 Dashboard: Device already connected, skipping auto-connection');
+      return;
+    }
+
+    // Don't attempt auto-connection if commands are being executed (programs being fetched)
+    if (_bluetoothService.isExecutingCommands) {
+      print('🎵 Dashboard: Commands being executed, skipping auto-connection');
+      return;
+    }
+
     _isAutoConnectionRunning = true;
 
     try {
@@ -1368,15 +1394,6 @@ class DashboardViewModel extends ChangeNotifier {
       
       if (!hasLocationPermission || !hasBluetoothPermission) {
         print('🎵 Dashboard: Permissions not granted - skipping auto-connection');
-        _isAutoConnectionRunning = false;
-        return;
-      }
-
-      // Check if Bluetooth service is already connected
-      if (_bluetoothService.isConnected) {
-        print(
-          '🎵 Dashboard: Device already connected, skipping auto-connection',
-        );
         _isAutoConnectionRunning = false;
         return;
       }

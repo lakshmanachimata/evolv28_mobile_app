@@ -378,6 +378,13 @@ class BluetoothService extends ChangeNotifier {
   }
 
   void _stopScanning() {
+    // Double-check connection state before stopping scanning
+    if (_connectionState == BluetoothConnectionState.connected ||
+        _connectionState == BluetoothConnectionState.connecting) {
+      print('🛑 Skipping _stopScanning - device is already connected or connecting');
+      return;
+    }
+
     _scanSubscription?.cancel();
     ble.FlutterBluePlus.stopScan();
     _scanTimer?.cancel();
@@ -603,6 +610,16 @@ class BluetoothService extends ChangeNotifier {
       _connectionState = BluetoothConnectionState.connected;
       _statusMessage = '${device.platformName} is connected';
       print('✅ Device connected: ${device.platformName}');
+      print('🔍 BluetoothService: Connection state changed to connected, isScanning: $isScanning');
+
+      // Immediately stop all scanning-related timers and subscriptions
+      // to prevent "no devices found" message after connection
+      _scanSubscription?.cancel();
+      ble.FlutterBluePlus.stopScan();
+      _scanTimer?.cancel();
+      _countdownTimer?.cancel();
+      _scanCountdown = 0;
+      print('🛑 Stopped scanning immediately after device connection');
 
       // Start monitoring device disconnection
       _startDisconnectionMonitoring(device);
@@ -653,6 +670,16 @@ class BluetoothService extends ChangeNotifier {
       _connectionState = BluetoothConnectionState.connected;
       _statusMessage = '${device.platformName} is connected';
       print('✅ Unknown device connected: ${device.platformName}');
+      print('🔍 BluetoothService: Unknown device connection state changed to connected, isScanning: $isScanning');
+
+      // Immediately stop all scanning-related timers and subscriptions
+      // to prevent "no devices found" message after connection
+      _scanSubscription?.cancel();
+      ble.FlutterBluePlus.stopScan();
+      _scanTimer?.cancel();
+      _countdownTimer?.cancel();
+      _scanCountdown = 0;
+      print('🛑 Stopped scanning immediately after unknown device connection');
 
       // Start monitoring device disconnection
       _startDisconnectionMonitoring(device);
@@ -1070,6 +1097,11 @@ class BluetoothService extends ChangeNotifier {
     print('As string: "$stringValue"');
     print('Length: ${value.length}');
     print('=============================');
+    
+    // Debug: Log all responses for WiFi debugging
+    if (stringValue.contains("#ESP,") || stringValue.contains("WIFI") || stringValue.contains("wifi")) {
+      print('📶 Potential WiFi response: $stringValue');
+    }
 
     // Store the latest notification response for play command waiting
     _lastNotificationResponse = stringValue;
@@ -1653,12 +1685,19 @@ class BluetoothService extends ChangeNotifier {
   }
 
   Future<void> enableWifi() async {
+    print('📶 BluetoothService: Enabling WiFi with command: $ENABLE_WIFI');
     await writeCommand(ENABLE_WIFI);
+    print('📶 BluetoothService: Enable WiFi command sent');
   }
 
   Future<void> scanWifi() async {
     _wifiList.clear(); // Clear previous results
+    print('📶 BluetoothService: Starting WiFi scan with command: $WIFI_SCAN');
     await writeCommand(WIFI_SCAN);
+    print('📶 BluetoothService: WiFi scan command sent');
+    
+    // Add a temporary debug to see if device responds at all
+    print('📶 BluetoothService: Waiting for any device responses...');
   }
 
   Future<void> sendSSID(String ssid) async {
