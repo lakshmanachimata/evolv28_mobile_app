@@ -29,6 +29,13 @@ class _ProgramsViewBody extends StatefulWidget {
 }
 
 class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
+  // Download progress tracking
+  bool _isDownloading = false;
+  int _downloadProgress = 0;
+  String _downloadingFilename = '';
+  bool _showDownloadCompleteDialog = false;
+  Timer? _downloadStatusTimer;
+
   @override
   void initState() {
     super.initState();
@@ -48,7 +55,144 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
         );
         ProgramsViewModel.clearProgramIdFromDashboard();
       }
+
+      // Set up download progress callbacks
+      final bluetoothService = BluetoothService();
+      bluetoothService.setOnDownloadStatusResponseCallback((status) {
+        print('📶 Programs View: Download status: $status');
+        _handleDownloadStatus(status);
+      });
+
+      bluetoothService.setOnDownloadProgressWithFilenameCallback((
+        filename,
+        progress,
+      ) {
+        print(
+          '📶 Programs View: Download progress: $progress% - File: $filename',
+        );
+        if (mounted) {
+          setState(() {
+            _isDownloading = true;
+            _downloadProgress = progress;
+            _downloadingFilename = filename;
+          });
+        }
+      });
     });
+  }
+
+  void _startDownloadStatusPolling() {
+    print('📶 Programs View: Starting download status polling every 5 seconds');
+
+    // Clear any existing timer
+    _downloadStatusTimer?.cancel();
+
+    // Start polling every 5 seconds
+    _downloadStatusTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      print('📶 Programs View: Polling download status...');
+      final bluetoothService = BluetoothService();
+      bluetoothService.checkDownloadStatus();
+    });
+  }
+
+  void _stopDownloadStatusPolling() {
+    print('📶 Programs View: Stopping download status polling');
+    _downloadStatusTimer?.cancel();
+    _downloadStatusTimer = null;
+  }
+
+  void _handleDownloadStatus(String status) {
+    switch (status) {
+      case 'LINK_RECEIVED':
+        print('📶 Programs View: Download link received - command processed');
+        break;
+      case 'SUCCESS':
+        print('📶 Programs View: Download completed successfully!');
+        _stopDownloadStatusPolling();
+        if (mounted) {
+          setState(() {
+            _isDownloading = false;
+            _downloadProgress = 100;
+            _showDownloadCompleteDialog = true;
+          });
+        }
+        break;
+      case 'INTERNET_ERROR':
+        print('📶 Programs View: Download failed - Internet not available');
+        _stopDownloadStatusPolling();
+        _showErrorDialog('Download failed: Internet not available');
+        break;
+      case 'SD_CARD_ERROR':
+        print('📶 Programs View: Download failed - SD card error');
+        _stopDownloadStatusPolling();
+        _showErrorDialog('Download failed: SD card error');
+        break;
+      case 'WRONG_LINK':
+        print('📶 Programs View: Download failed - Wrong link');
+        _stopDownloadStatusPolling();
+        _showErrorDialog('Download failed: Invalid download link');
+        break;
+      case 'WIFI_CONNECT_ERROR':
+        print('📶 Programs View: Download failed - WiFi connect error');
+        _stopDownloadStatusPolling();
+        _showErrorDialog('Download failed: WiFi connection error');
+        break;
+      case 'SOCKET_CLOSED':
+        print(
+          '📶 Programs View: Download failed - Socket closed during download',
+        );
+        _stopDownloadStatusPolling();
+        _showErrorDialog('Download failed: Connection lost during download');
+        break;
+      case 'UNSTABLE_NETWORK':
+        print('📶 Programs View: Download failed - Unstable network');
+        _stopDownloadStatusPolling();
+        _showErrorDialog('Download failed: Unstable network connection');
+        break;
+      case 'FORBIDDEN_ERROR':
+        print('📶 Programs View: Download failed - File forbidden (403)');
+        _stopDownloadStatusPolling();
+        _showErrorDialog('Download failed: File access forbidden');
+        break;
+      case 'FILE_LINK_ERROR':
+        print('📶 Programs View: Download failed - File link error (404)');
+        _stopDownloadStatusPolling();
+        _showErrorDialog('Download failed: File not found');
+        break;
+      case 'FILE_LENGTH_ERROR':
+        print('📶 Programs View: Download failed - File length error');
+        _stopDownloadStatusPolling();
+        _showErrorDialog('Download failed: File length error');
+        break;
+      default:
+        print('📶 Programs View: Unknown download status: $status');
+        break;
+    }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Error'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Method to start download status polling (can be called from WiFi scan bottom sheet)
+  void startDownloadStatusPolling() {
+    _startDownloadStatusPolling();
   }
 
   String _formatProgramName(String fileName) {
@@ -152,6 +296,188 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
     );
   }
 
+  Widget _buildDownloadProgressOverlay() {
+    return Container(
+      color: Colors.black.withOpacity(0.7), // Semi-transparent dark overlay
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Circular progress indicator
+            SizedBox(
+              width: 80,
+              height: 80,
+              child: CircularProgressIndicator(
+                value: _downloadProgress / 100.0,
+                strokeWidth: 6,
+                backgroundColor: Colors.white.withOpacity(0.3),
+                valueColor: const AlwaysStoppedAnimation<Color>(
+                  Color(0xFFF17961),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Program name
+            Text(
+              _downloadingFilename.toUpperCase(),
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+              textAlign: TextAlign.center,
+            ),
+
+            const SizedBox(height: 8),
+
+            // "is downloading..." text
+            const Text(
+              'is downloading...',
+              style: TextStyle(fontSize: 16, color: Colors.white),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Progress percentage
+            Text(
+              '$_downloadProgress%',
+              style: const TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+
+            const SizedBox(height: 32),
+
+            // Warning message
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                'Do not close your application while downloading. This may corrupt the files in the evolv28 device',
+                style: TextStyle(fontSize: 12, color: Colors.white),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDownloadCompleteDialog() {
+    return Container(
+      color: Colors.black.withOpacity(0.7),
+      child: Center(
+        child: Container(
+          width: 300,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Close button
+              Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _showDownloadCompleteDialog = false;
+                      });
+                    },
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Success icon
+              Container(
+                width: 60,
+                height: 60,
+                decoration: const BoxDecoration(
+                  color: Colors.green,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.check, color: Colors.white, size: 30),
+              ),
+
+              const SizedBox(height: 16),
+
+              // "Completed" text
+              const Text(
+                'Completed',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              // Success message
+              const Text(
+                'The Program Download Completed Successfully',
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+
+              const SizedBox(height: 24),
+
+              // DONE button
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _showDownloadCompleteDialog = false;
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF17961),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      'DONE',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -185,11 +511,23 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
                   return SizedBox.shrink();
                 },
               ),
+
+              // Download progress overlay
+              if (_isDownloading) _buildDownloadProgressOverlay(),
+
+              // Download completion dialog
+              if (_showDownloadCompleteDialog) _buildDownloadCompleteDialog(),
             ],
           );
         },
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _stopDownloadStatusPolling();
+    super.dispose();
   }
 
   Widget _buildBackground(ProgramsViewModel viewModel) {
@@ -368,6 +706,7 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
         return _WifiScanBottomSheet(
           program: program,
           onClose: () => Navigator.pop(context),
+          onStartDownloadPolling: startDownloadStatusPolling,
         );
       },
     );
@@ -1316,8 +1655,13 @@ class _CustomSliderThumbShape extends SliderComponentShape {
 class _WifiScanBottomSheet extends StatefulWidget {
   final ProgramData program;
   final VoidCallback onClose;
+  final VoidCallback? onStartDownloadPolling;
 
-  const _WifiScanBottomSheet({required this.program, required this.onClose});
+  const _WifiScanBottomSheet({
+    required this.program,
+    required this.onClose,
+    this.onStartDownloadPolling,
+  });
 
   @override
   State<_WifiScanBottomSheet> createState() => _WifiScanBottomSheetState();
@@ -1551,56 +1895,60 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(40),
-          topRight: Radius.circular(40),
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const SizedBox(width: 24), // Spacer for centering
-                Text(
-                  _getTitle(),
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                GestureDetector(
-                  onTap: widget.onClose,
-                  child: Container(
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF17961),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.close,
-                      color: Colors.white,
-                      size: 16,
-                    ),
-                  ),
-                ),
-              ],
+    return Stack(
+      children: [
+        Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(40),
+              topRight: Radius.circular(40),
             ),
           ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const SizedBox(width: 24), // Spacer for centering
+                    Text(
+                      _getTitle(),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: widget.onClose,
+                      child: Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF17961),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
-          // Content based on current state
-          _buildContent(),
-        ],
-      ),
+              // Content based on current state
+              _buildContent(),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -1795,8 +2143,13 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
                 child: TextField(
                   controller: _passwordController,
                   obscureText: !_isPasswordVisible,
+                  style: const TextStyle(color: Colors.black, fontSize: 16),
                   decoration: InputDecoration(
                     hintText: 'Enter password',
+                    hintStyle: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 16,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -2006,17 +2359,7 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
         '📶 Programs View: Starting file download for program: ${widget.program.title}',
       );
 
-      // Set up download status callback
-      _bluetoothService.setOnDownloadStatusResponseCallback((status) {
-        print('📶 Programs View: Download status: $status');
-        _handleDownloadStatus(status);
-      });
-
-      // Set up download progress callback
-      _bluetoothService.setOnDownloadProgressUpdateCallback((progress) {
-        print('📶 Programs View: Download progress: $progress%');
-        // TODO: Update UI with download progress
-      });
+      // Note: Download progress callbacks are handled by the main programs view
 
       // Set up download complete callback (legacy)
       _bluetoothService.setOnDownloadCompleteCallback((success) {
@@ -2045,7 +2388,7 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
         await _bluetoothService.downloadSingleFile(fileUrl, programSize);
 
         // Start polling for download status every 5 seconds
-        _startDownloadStatusPolling();
+        widget.onStartDownloadPolling?.call();
       } else {
         print(
           '📶 Programs View: No download URL or program size available for program: ${widget.program.title}',
@@ -2057,90 +2400,6 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
     } catch (e) {
       print('📶 Programs View: Error starting file download: $e');
       _showErrorDialog('Error starting file download: $e');
-    }
-  }
-
-  Timer? _downloadStatusTimer;
-
-  void _startDownloadStatusPolling() {
-    print('📶 Programs View: Starting download status polling every 5 seconds');
-
-    // Clear any existing timer
-    _downloadStatusTimer?.cancel();
-
-    // Start polling every 5 seconds
-    _downloadStatusTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      print('📶 Programs View: Polling download status...');
-      _bluetoothService.checkDownloadStatus();
-    });
-  }
-
-  void _stopDownloadStatusPolling() {
-    print('📶 Programs View: Stopping download status polling');
-    _downloadStatusTimer?.cancel();
-    _downloadStatusTimer = null;
-  }
-
-  void _handleDownloadStatus(String status) {
-    switch (status) {
-      case 'LINK_RECEIVED':
-        print('📶 Programs View: Download link received - command processed');
-        break;
-      case 'SUCCESS':
-        print('📶 Programs View: Download completed successfully!');
-        _stopDownloadStatusPolling();
-        // TODO: Show success message and update program list
-        break;
-      case 'INTERNET_ERROR':
-        print('📶 Programs View: Download failed - Internet not available');
-        _stopDownloadStatusPolling();
-        _showErrorDialog('Download failed: Internet not available');
-        break;
-      case 'SD_CARD_ERROR':
-        print('📶 Programs View: Download failed - SD card error');
-        _stopDownloadStatusPolling();
-        _showErrorDialog('Download failed: SD card error');
-        break;
-      case 'WRONG_LINK':
-        print('📶 Programs View: Download failed - Wrong link');
-        _stopDownloadStatusPolling();
-        _showErrorDialog('Download failed: Invalid download link');
-        break;
-      case 'WIFI_CONNECT_ERROR':
-        print('📶 Programs View: Download failed - WiFi connect error');
-        _stopDownloadStatusPolling();
-        _showErrorDialog('Download failed: WiFi connection error');
-        break;
-      case 'SOCKET_CLOSED':
-        print(
-          '📶 Programs View: Download failed - Socket closed during download',
-        );
-        _stopDownloadStatusPolling();
-        _showErrorDialog('Download failed: Connection lost during download');
-        break;
-      case 'UNSTABLE_NETWORK':
-        print('📶 Programs View: Download failed - Unstable network');
-        _stopDownloadStatusPolling();
-        _showErrorDialog('Download failed: Unstable network connection');
-        break;
-      case 'FORBIDDEN_ERROR':
-        print('📶 Programs View: Download failed - File forbidden (403)');
-        _stopDownloadStatusPolling();
-        _showErrorDialog('Download failed: File access forbidden');
-        break;
-      case 'FILE_LINK_ERROR':
-        print('📶 Programs View: Download failed - File link error (404)');
-        _stopDownloadStatusPolling();
-        _showErrorDialog('Download failed: File not found');
-        break;
-      case 'FILE_LENGTH_ERROR':
-        print('📶 Programs View: Download failed - File length error');
-        _stopDownloadStatusPolling();
-        _showErrorDialog('Download failed: File length error');
-        break;
-      default:
-        print('📶 Programs View: Unknown download status: $status');
-        break;
     }
   }
 
@@ -2185,7 +2444,6 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
   @override
   void dispose() {
     _passwordController.dispose();
-    _stopDownloadStatusPolling(); // Cancel any active download status polling
     super.dispose();
   }
 }

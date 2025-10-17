@@ -84,6 +84,7 @@ class BluetoothService extends ChangeNotifier {
   Function(String)?
   _onDownloadStatusResponse; // For all download status responses
   Function(int)? _onDownloadProgressUpdate; // For download progress percentage
+  Function(String, int)? _onDownloadProgressWithFilename; // For progress with filename
 
   // WiFi list storage
   List<String> _wifiList = [];
@@ -311,6 +312,11 @@ class BluetoothService extends ChangeNotifier {
   /// Set callback for download progress updates (#ESP,50,XX,00!)
   void setOnDownloadProgressUpdateCallback(Function(int) callback) {
     _onDownloadProgressUpdate = callback;
+  }
+
+  /// Set callback for download progress updates with filename (#ESP,50,XX,01,01,filename.cur,single!)
+  void setOnDownloadProgressWithFilenameCallback(Function(String, int) callback) {
+    _onDownloadProgressWithFilename = callback;
   }
 
   Future<void> startScanning() async {
@@ -1327,13 +1333,26 @@ class BluetoothService extends ChangeNotifier {
       print('📥 Download: File length error');
       _onDownloadStatusResponse?.call('FILE_LENGTH_ERROR');
     } else if (stringValue.contains(DOWNLOAD_PROGRESS)) {
-      // Handle download progress: #ESP,50,XX,00!
+      // Handle download progress: #ESP,50,XX,01,01,filename.cur,single!
       try {
-        String percentage = stringValue.split(',')[2];
-        int progress = int.tryParse(percentage) ?? 0;
-        print('📥 Download progress: $progress%');
-        _onDownloadProgress?.call(progress);
-        _onDownloadProgressUpdate?.call(progress);
+        List<String> parts = stringValue.split(',');
+        if (parts.length >= 6) {
+          String percentage = parts[2];
+          String filename = parts[5].replaceAll('!', ''); // Remove trailing !
+          int progress = int.tryParse(percentage) ?? 0;
+          
+          print('📥 Download progress: $progress% - File: $filename');
+          _onDownloadProgress?.call(progress);
+          _onDownloadProgressUpdate?.call(progress);
+          _onDownloadProgressWithFilename?.call(filename, progress);
+        } else {
+          // Fallback for old format: #ESP,50,XX,00!
+          String percentage = parts[2];
+          int progress = int.tryParse(percentage) ?? 0;
+          print('📥 Download progress: $progress%');
+          _onDownloadProgress?.call(progress);
+          _onDownloadProgressUpdate?.call(progress);
+        }
       } catch (e) {
         print('📥 Download: Error parsing progress: $e');
       }
