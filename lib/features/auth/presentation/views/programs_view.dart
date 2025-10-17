@@ -115,6 +115,11 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
             _downloadProgress = 100;
             _showDownloadCompleteDialog = true;
           });
+          
+          // Refresh programs list after a short delay to ensure device has processed the download
+          Future.delayed(const Duration(seconds: 2), () {
+            _refreshProgramsList();
+          });
         }
         break;
       case 'INTERNET_ERROR':
@@ -193,6 +198,23 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
   // Method to start download status polling (can be called from WiFi scan bottom sheet)
   void startDownloadStatusPolling() {
     _startDownloadStatusPolling();
+  }
+
+  // Method to refresh programs list after download completion
+  Future<void> _refreshProgramsList() async {
+    try {
+      print('📶 Programs View: Refreshing programs list after download completion...');
+      
+      // Get the ProgramsViewModel
+      final viewModel = Provider.of<ProgramsViewModel>(context, listen: false);
+      
+      // Refresh programs from dashboard (this will trigger Bluetooth command sequence)
+      await viewModel.refreshProgramsFromDashboard();
+      
+      print('📶 Programs View: Programs list refreshed successfully');
+    } catch (e) {
+      print('📶 Programs View: Error refreshing programs list: $e');
+    }
   }
 
   String _formatProgramName(String fileName) {
