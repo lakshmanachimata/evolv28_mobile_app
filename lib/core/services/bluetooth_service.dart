@@ -84,7 +84,8 @@ class BluetoothService extends ChangeNotifier {
   Function(String)?
   _onDownloadStatusResponse; // For all download status responses
   Function(int)? _onDownloadProgressUpdate; // For download progress percentage
-  Function(String, int)? _onDownloadProgressWithFilename; // For progress with filename
+  Function(String, int)?
+  _onDownloadProgressWithFilename; // For progress with filename
 
   // WiFi list storage
   List<String> _wifiList = [];
@@ -315,12 +316,17 @@ class BluetoothService extends ChangeNotifier {
   }
 
   /// Set callback for download progress updates with filename (#ESP,50,XX,01,01,filename.cur,single!)
-  void setOnDownloadProgressWithFilenameCallback(Function(String, int) callback) {
+  void setOnDownloadProgressWithFilenameCallback(
+    Function(String, int) callback,
+  ) {
     _onDownloadProgressWithFilename = callback;
   }
 
   Future<void> startScanning() async {
-    if (_connectionState == BluetoothConnectionState.scanning) return;
+    if (_connectionState == BluetoothConnectionState.scanning ||
+        _connectionState == BluetoothConnectionState.connecting ||
+        _connectionState == BluetoothConnectionState.connected)
+      return;
 
     try {
       if (Platform.isMacOS) {
@@ -1345,7 +1351,7 @@ class BluetoothService extends ChangeNotifier {
           String percentage = parts[2];
           String filename = parts[5].replaceAll('!', ''); // Remove trailing !
           int progress = int.tryParse(percentage) ?? 0;
-          
+
           print('📥 Download progress: $progress% - File: $filename');
           _onDownloadProgress?.call(progress);
           _onDownloadProgressUpdate?.call(progress);
@@ -1423,7 +1429,8 @@ class BluetoothService extends ChangeNotifier {
 
       for (final line in lines) {
         final trimmedLine = line.trim();
-        if (trimmedLine.toLowerCase().contains('.bcu') || trimmedLine.toLowerCase().contains('.cur')) {
+        if (trimmedLine.toLowerCase().contains('.bcu') ||
+            trimmedLine.toLowerCase().contains('.cur')) {
           // Use regex to find all .bcu and .cur filenames
           final filePattern = RegExp(
             r'([a-zA-Z0-9_\-\.]+\.(?:bcu|cur))',
@@ -1436,7 +1443,8 @@ class BluetoothService extends ChangeNotifier {
             if (filename.isNotEmpty && filename.length > 4) {
               // Clean up any trailing punctuation
               filename = filename.replaceAll(RegExp(r'[,;:\s]+$'), '');
-              if (filename.toLowerCase().endsWith('.bcu') || filename.toLowerCase().endsWith('.cur')) {
+              if (filename.toLowerCase().endsWith('.bcu') ||
+                  filename.toLowerCase().endsWith('.cur')) {
                 programFiles.add(filename);
               }
             }
@@ -1447,7 +1455,9 @@ class BluetoothService extends ChangeNotifier {
       // Remove duplicates and sort
       programFiles.toSet().toList()..sort();
 
-      print('Found ${programFiles.length} program files (.bcu/.cur): $programFiles');
+      print(
+        'Found ${programFiles.length} program files (.bcu/.cur): $programFiles',
+      );
 
       // Convert .bcu files to wellness programs format
       _availablePrograms = _convertBcuFilesToWellnessPrograms(programFiles);
@@ -1928,16 +1938,17 @@ class BluetoothService extends ChangeNotifier {
   // Download Commands
   Future<void> downloadSingleFile(String url, String programSize) async {
     const String defaultValue = "Cmd:30";
-    
+
     // Construct the basic command: #defaultValue,fileSize,url!
     String constructCmd = "#$defaultValue,$programSize,$url!";
     int constructCmdLength = constructCmd.length;
     int finalLength = constructCmdLength + constructCmdLength.toString().length;
-    
+
     String finalCommand;
-    
+
     if (finalLength.toString().length > 2) {
-      int finalCommandLength = constructCmdLength + finalLength.toString().length;
+      int finalCommandLength =
+          constructCmdLength + finalLength.toString().length;
       finalCommand = "#$finalCommandLength$defaultValue,$programSize,$url!";
     } else {
       if (finalLength >= 99) {
@@ -1946,7 +1957,7 @@ class BluetoothService extends ChangeNotifier {
         finalCommand = "#0${finalLength + 1}$defaultValue,$programSize,$url!";
       }
     }
-    
+
     print('📶 BluetoothService: Download command: $finalCommand');
     await writeCommand(finalCommand);
   }

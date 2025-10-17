@@ -224,8 +224,9 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
               print(
                 'DEBUG: isExecutingCommands: ${viewModel.isExecutingCommands}, isSendingPlayCommands: ${viewModel.isSendingPlayCommands}',
               );
-              if (viewModel.isExecutingCommands ||
-                  viewModel.isSendingPlayCommands) {
+              if (viewModel.isBluetoothConnected &&
+                  (viewModel.isExecutingCommands ||
+                      viewModel.isSendingPlayCommands)) {
                 return _buildLoadingOverlay(context);
               }
               return SizedBox.shrink();
@@ -566,6 +567,9 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
               onTap: isClickable
                   ? () async {
                       print('🎵 Dashboard View: Connect card tapped');
+                      if (viewModel.isBluetoothConnected) {
+                        await viewModel.disconnectBluetoothDevice();
+                      }
                       await viewModel.connectBluetoothDevice();
                     }
                   : null,

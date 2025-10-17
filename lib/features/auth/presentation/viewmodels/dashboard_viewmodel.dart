@@ -116,7 +116,8 @@ class DashboardViewModel extends ChangeNotifier {
   bool _isConnecting = false; // Track connection state
   bool _connectionSuccessful = false; // Track successful connection
   bool _programsLoaded = false; // Track when programs are successfully loaded
-  bool _cachedConnectionState = false; // Cached connection state to prevent false negatives
+  bool _cachedConnectionState =
+      false; // Cached connection state to prevent false negatives
   bool _showTroubleshootingScreen = false; // Track troubleshooting screen state
 
   // Device mapping error state
@@ -147,6 +148,7 @@ class DashboardViewModel extends ChangeNotifier {
     }
     return _bluetoothService.isConnected;
   }
+
   bool get isBluetoothScanning => _bluetoothService.isScanning;
   String get bluetoothStatusMessage => _bluetoothService.statusMessage;
   String get bluetoothErrorMessage => _bluetoothService.errorMessage;
@@ -272,32 +274,38 @@ class DashboardViewModel extends ChangeNotifier {
 
     // Set up Bluetooth listener
     _bluetoothListener = () {
-      print('🔍 DashboardViewModel: Bluetooth listener triggered - isConnected: ${_bluetoothService.isConnected}, isScanning: ${_bluetoothService.isScanning}');
-      
+      print(
+        '🔍 DashboardViewModel: Bluetooth listener triggered - isConnected: ${_bluetoothService.isConnected}, isScanning: ${_bluetoothService.isScanning}',
+      );
+
       // Update connection state based on BluetoothService state
       if (_bluetoothService.isConnected) {
         // Update cached connection state
         _cachedConnectionState = true;
-        
+
         if (_isConnecting) {
           _isConnecting = false;
           _connectionSuccessful = true;
           print('🎵 Dashboard: Device connected, updating connection state');
         } else if (!_connectionSuccessful) {
           _connectionSuccessful = true;
-          print('🎵 Dashboard: Device already connected, updating connection state');
+          print(
+            '🎵 Dashboard: Device already connected, updating connection state',
+          );
         }
       } else {
         // Clear cached connection state when disconnected
         _cachedConnectionState = false;
-        
+
         if (_connectionSuccessful) {
           _connectionSuccessful = false;
           _programsLoaded = false;
-          print('🎵 Dashboard: Device disconnected, resetting connection state');
+          print(
+            '🎵 Dashboard: Device disconnected, resetting connection state',
+          );
         }
       }
-      
+
       // Check if command sequence just completed and we haven't checked player status yet
       if (!_bluetoothService.isExecutingCommands &&
           _bluetoothService.isConnected &&
@@ -329,8 +337,10 @@ class DashboardViewModel extends ChangeNotifier {
 
   // Check initial connection state
   void _checkInitialConnectionState() {
-    print('🔍 DashboardViewModel: Checking initial connection state - isConnected: ${_bluetoothService.isConnected}');
-    
+    print(
+      '🔍 DashboardViewModel: Checking initial connection state - isConnected: ${_bluetoothService.isConnected}',
+    );
+
     if (_bluetoothService.isConnected) {
       _connectionSuccessful = true;
       _cachedConnectionState = true; // Set cached state
@@ -341,7 +351,7 @@ class DashboardViewModel extends ChangeNotifier {
       _cachedConnectionState = false; // Clear cached state
       print('🎵 Dashboard: Device not connected on initialization');
     }
-    
+
     notifyListeners();
   }
 
@@ -437,26 +447,30 @@ class DashboardViewModel extends ChangeNotifier {
       if (_bluetoothService.isConnected) {
         // Update cached connection state
         _cachedConnectionState = true;
-        
+
         if (_isConnecting) {
           _isConnecting = false;
           _connectionSuccessful = true;
           print('🎵 Dashboard: Device connected, updating connection state');
         } else if (!_connectionSuccessful) {
           _connectionSuccessful = true;
-          print('🎵 Dashboard: Device already connected, updating connection state');
+          print(
+            '🎵 Dashboard: Device already connected, updating connection state',
+          );
         }
       } else {
         // Clear cached connection state when disconnected
         _cachedConnectionState = false;
-        
+
         if (_connectionSuccessful) {
           _connectionSuccessful = false;
           _programsLoaded = false;
-          print('🎵 Dashboard: Device disconnected, resetting connection state');
+          print(
+            '🎵 Dashboard: Device disconnected, resetting connection state',
+          );
         }
       }
-      
+
       // Check if command sequence just completed and we haven't checked player status yet
       if (!_bluetoothService.isExecutingCommands &&
           _bluetoothService.isConnected &&
@@ -969,7 +983,8 @@ class DashboardViewModel extends ChangeNotifier {
 
       // Create union by matching music data with Bluetooth programs
       final filteredPrograms = <dynamic>[];
-      final matchedMusicIds = <String>{}; // Track which music items have been matched
+      final matchedMusicIds =
+          <String>{}; // Track which music items have been matched
 
       for (final musicItem in _musicData) {
         if (musicItem is Map<String, dynamic>) {
@@ -1005,7 +1020,8 @@ class DashboardViewModel extends ChangeNotifier {
                         matchingBluetoothProgram.split('|')[1];
                     // Add the specific music file info
                     enhancedMusicItem['matchedMusicFile'] = musicFile;
-                    enhancedMusicItem['isInDevice'] = true; // Mark as available in device
+                    enhancedMusicItem['isInDevice'] =
+                        true; // Mark as available in device
 
                     filteredPrograms.add(enhancedMusicItem);
                     matchedMusicIds.add(musicId);
@@ -1038,7 +1054,8 @@ class DashboardViewModel extends ChangeNotifier {
                     matchingBluetoothProgram.split('|')[0];
                 enhancedMusicItem['bluetoothProgramId'] =
                     matchingBluetoothProgram.split('|')[1];
-                enhancedMusicItem['isInDevice'] = true; // Mark as available in device
+                enhancedMusicItem['isInDevice'] =
+                    true; // Mark as available in device
 
                 filteredPrograms.add(enhancedMusicItem);
                 matchedMusicIds.add(musicId);
@@ -1062,12 +1079,18 @@ class DashboardViewModel extends ChangeNotifier {
                 final musicName = _extractMusicName(musicFile);
                 final musicId = _extractMusicId(musicFile);
 
-                if (musicName != null && musicId != null && !matchedMusicIds.contains(musicId)) {
+                if (musicName != null &&
+                    musicId != null &&
+                    !matchedMusicIds.contains(musicId)) {
                   // This is a user program not available in device
-                  final enhancedMusicItem = Map<String, dynamic>.from(musicItem);
+                  final enhancedMusicItem = Map<String, dynamic>.from(
+                    musicItem,
+                  );
                   enhancedMusicItem['matchedMusicFile'] = musicFile;
-                  enhancedMusicItem['isInDevice'] = false; // Mark as not available in device
-                  enhancedMusicItem['needsDownload'] = true; // Mark as needing download
+                  enhancedMusicItem['isInDevice'] =
+                      false; // Mark as not available in device
+                  enhancedMusicItem['needsDownload'] =
+                      true; // Mark as needing download
 
                   filteredPrograms.add(enhancedMusicItem);
                   print(
@@ -1081,11 +1104,15 @@ class DashboardViewModel extends ChangeNotifier {
             final musicName = _extractMusicName(musicItem);
             final musicId = _extractMusicId(musicItem);
 
-            if (musicName != null && musicId != null && !matchedMusicIds.contains(musicId)) {
+            if (musicName != null &&
+                musicId != null &&
+                !matchedMusicIds.contains(musicId)) {
               // This is a user program not available in device
               final enhancedMusicItem = Map<String, dynamic>.from(musicItem);
-              enhancedMusicItem['isInDevice'] = false; // Mark as not available in device
-              enhancedMusicItem['needsDownload'] = true; // Mark as needing download
+              enhancedMusicItem['isInDevice'] =
+                  false; // Mark as not available in device
+              enhancedMusicItem['needsDownload'] =
+                  true; // Mark as needing download
 
               filteredPrograms.add(enhancedMusicItem);
               print(
@@ -1460,11 +1487,15 @@ class DashboardViewModel extends ChangeNotifier {
       );
 
       // Check permissions before starting scan
-      final hasLocationPermission = await LocationPermissionHelper.isLocationPermissionGranted();
-      final hasBluetoothPermission = await BluetoothPermissionHelper.isBluetoothEnabled();
-      
+      final hasLocationPermission =
+          await LocationPermissionHelper.isLocationPermissionGranted();
+      final hasBluetoothPermission =
+          await BluetoothPermissionHelper.isBluetoothEnabled();
+
       if (!hasLocationPermission || !hasBluetoothPermission) {
-        print('🎵 Dashboard: Permissions not granted - skipping auto-connection');
+        print(
+          '🎵 Dashboard: Permissions not granted - skipping auto-connection',
+        );
         _isAutoConnectionRunning = false;
         return;
       }
@@ -1835,7 +1866,9 @@ class DashboardViewModel extends ChangeNotifier {
     final playingFile = _bluetoothService.currentPlayingFile;
 
     if (playingFile != null) {
-      print('🎵 Dashboard: Program is playing: $playingFile (from command sequence)');
+      print(
+        '🎵 Dashboard: Program is playing: $playingFile (from command sequence)',
+      );
       _showPlayerCard = true;
       _isPlaying = true;
       _currentPlayingProgramId = playingFile;
@@ -1846,7 +1879,9 @@ class DashboardViewModel extends ChangeNotifier {
       );
       notifyListeners();
     } else {
-      print('🎵 Dashboard: No program currently playing (from command sequence)');
+      print(
+        '🎵 Dashboard: No program currently playing (from command sequence)',
+      );
       _showPlayerCard = false;
       _isPlaying = false;
       _currentPlayingProgramId = null;
@@ -1993,16 +2028,20 @@ class DashboardViewModel extends ChangeNotifier {
       await _bluetoothService.disconnect();
     } else {
       // Check permissions before starting scan
-      final hasLocationPermission = await LocationPermissionHelper.isLocationPermissionGranted();
-      final hasBluetoothPermission = await BluetoothPermissionHelper.isBluetoothEnabled();
-      
+      final hasLocationPermission =
+          await LocationPermissionHelper.isLocationPermissionGranted();
+      final hasBluetoothPermission =
+          await BluetoothPermissionHelper.isBluetoothEnabled();
+
       if (!hasLocationPermission || !hasBluetoothPermission) {
-        print('🎵 Dashboard: Permissions not granted - triggering permission flow');
+        print(
+          '🎵 Dashboard: Permissions not granted - triggering permission flow',
+        );
         // Use the dedicated method to trigger permission flow
         triggerPermissionFlow();
         return;
       }
-      
+
       // Only start scanning if we're not already showing dialogs or scanning
       if (!_showUnknownDeviceDialog && !_showDeviceSelectionDialog) {
         print('🎵 Dashboard: connectBluetoothDevice() - Starting new scan');
@@ -2247,13 +2286,18 @@ class DashboardViewModel extends ChangeNotifier {
       print('🚀 Auto-starting Bluetooth scan on dashboard load...');
       // Small delay to ensure UI is fully loaded
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       // Double-check permissions before starting scan
-      final hasLocationPermission = await LocationPermissionHelper.isLocationPermissionGranted();
-      final hasBluetoothPermission = await BluetoothPermissionHelper.isBluetoothEnabled();
-      
+      final hasLocationPermission =
+          await LocationPermissionHelper.isLocationPermissionGranted();
+      final hasBluetoothPermission =
+          await BluetoothPermissionHelper.isBluetoothEnabled();
+
       if (hasLocationPermission && hasBluetoothPermission) {
-        await _bluetoothService.startScanning();
+        if (_bluetoothService.isConnected) {
+        } else {
+          await _bluetoothService.startScanning();
+        }
         print('🎵 Dashboard: Bluetooth scanning completed');
       } else {
         print('🎵 Dashboard: Permissions not granted - skipping scan');
@@ -2272,11 +2316,15 @@ class DashboardViewModel extends ChangeNotifier {
     );
 
     // Double-check permissions before starting scan
-    final hasLocationPermission = await LocationPermissionHelper.isLocationPermissionGranted();
-    final hasBluetoothPermission = await BluetoothPermissionHelper.isBluetoothEnabled();
-    
+    final hasLocationPermission =
+        await LocationPermissionHelper.isLocationPermissionGranted();
+    final hasBluetoothPermission =
+        await BluetoothPermissionHelper.isBluetoothEnabled();
+
     if (!hasLocationPermission || !hasBluetoothPermission) {
-      print('🎵 Dashboard: Permissions not granted - skipping automatic scanning');
+      print(
+        '🎵 Dashboard: Permissions not granted - skipping automatic scanning',
+      );
       return;
     }
 
@@ -2553,16 +2601,22 @@ class DashboardViewModel extends ChangeNotifier {
 
   // Clear the no devices found callback to prevent showing bottom sheet after programs are loaded
   void _clearNoDevicesFoundCallback() {
-    print('🎵 Dashboard: Clearing no devices found callback - programs loaded successfully');
+    print(
+      '🎵 Dashboard: Clearing no devices found callback - programs loaded successfully',
+    );
     _bluetoothService.setOnNoDevicesFoundCallback(() {
       // Empty callback - do nothing when no devices found
-      print('🎵 Dashboard: No devices found callback disabled - programs already loaded');
+      print(
+        '🎵 Dashboard: No devices found callback disabled - programs already loaded',
+      );
     });
   }
 
   // Restore the no devices found callback when connection is lost
   void _restoreNoDevicesFoundCallback() {
-    print('🎵 Dashboard: Restoring no devices found callback - connection lost');
+    print(
+      '🎵 Dashboard: Restoring no devices found callback - connection lost',
+    );
     _bluetoothService.setOnNoDevicesFoundCallback(() {
       print('🎵 Dashboard: No devices found during scanning');
       _unknownDevices = []; // Empty list to trigger no device found UI
@@ -2998,25 +3052,25 @@ class DashboardViewModel extends ChangeNotifier {
   // Handle device disconnection
   void _handleDeviceDisconnection(String deviceName) {
     print('🎵 Dashboard: Handling device disconnection for: $deviceName');
-    
+
     // Reset connection state
     _isConnecting = false;
     _connectionSuccessful = false;
     _programsLoaded = false;
     _cachedConnectionState = false; // Clear cached state
-    
+
     // Reset player state
     _showPlayerCard = false;
     _isPlaying = false;
     _currentPlayingProgramId = null;
-    
+
     // Clear any ongoing operations
     _scannedDevices.clear();
     _selectedDeviceId = '';
-    
+
     // Update UI
     notifyListeners();
-    
+
     // Show disconnection popup
     // Note: This will be handled by the view layer
     _showDeviceDisconnectedPopup = true;
@@ -3027,10 +3081,10 @@ class DashboardViewModel extends ChangeNotifier {
   // State for device disconnection popup
   bool _showDeviceDisconnectedPopup = false;
   String _disconnectedDeviceName = '';
-  
+
   bool get showDeviceDisconnectedPopup => _showDeviceDisconnectedPopup;
   String get disconnectedDeviceName => _disconnectedDeviceName;
-  
+
   void closeDeviceDisconnectedPopup() {
     _showDeviceDisconnectedPopup = false;
     _disconnectedDeviceName = '';
@@ -3040,10 +3094,14 @@ class DashboardViewModel extends ChangeNotifier {
   // Check if all required permissions are granted
   Future<bool> arePermissionsGranted() async {
     try {
-      final hasLocationPermission = await LocationPermissionHelper.isLocationPermissionGranted();
-      final hasBluetoothPermission = await BluetoothPermissionHelper.isBluetoothEnabled();
-      
-      print('🎵 Dashboard: Permission check - Location: $hasLocationPermission, Bluetooth: $hasBluetoothPermission');
+      final hasLocationPermission =
+          await LocationPermissionHelper.isLocationPermissionGranted();
+      final hasBluetoothPermission =
+          await BluetoothPermissionHelper.isBluetoothEnabled();
+
+      print(
+        '🎵 Dashboard: Permission check - Location: $hasLocationPermission, Bluetooth: $hasBluetoothPermission',
+      );
       return hasLocationPermission && hasBluetoothPermission;
     } catch (e) {
       print('🎵 Dashboard: Error checking permissions: $e');
@@ -3054,18 +3112,18 @@ class DashboardViewModel extends ChangeNotifier {
   // Manually trigger permission flow (called when user clicks connect card without permissions)
   void triggerPermissionFlow() {
     print('🎵 Dashboard: Manually triggering permission flow');
-    
+
     // Reset all permission flow flags to allow restart
     _permissionFlowInitiated = false;
     _permissionFlowInProgress = false;
     _permissionFlowCompleted = false;
     _shouldTriggerPermissionFlow = true;
-    
+
     // Reset dialog flags to allow showing permission dialogs again
     _bluetoothDialogShown = false;
     _bluetoothScanPermissionDialogShown = false;
     _locationPermissionDialogShown = false;
-    
+
     notifyListeners();
   }
 
