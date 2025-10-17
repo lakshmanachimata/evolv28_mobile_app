@@ -384,7 +384,7 @@ class BluetoothService extends ChangeNotifier {
         // Only stop scanning if we're not already connected or connecting
         if (_connectionState != BluetoothConnectionState.connected &&
             _connectionState != BluetoothConnectionState.connecting) {
-          _stopScanning(connectedDevice!);
+          _stopScanning(connectedDevice);
         }
       });
     } catch (e) {
