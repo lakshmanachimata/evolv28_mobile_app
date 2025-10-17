@@ -425,17 +425,7 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Center(
-                        child: program.iconPath.endsWith('.png')
-                            ? Image.asset(
-                                program.iconPath,
-                                width: 32,
-                                height: 32,
-                              )
-                            : SvgPicture.asset(
-                                program.iconPath,
-                                width: 32,
-                                height: 32,
-                              ),
+                        child: _buildProgramIcon(program.iconPath),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -1225,6 +1215,57 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
       ),
     );
   }
+
+  Widget _buildProgramIcon(String iconPath) {
+    // Check if it's a network URL
+    if (iconPath.startsWith('http://') || iconPath.startsWith('https://')) {
+      return Image.network(
+        iconPath,
+        width: 32,
+        height: 32,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          // Fallback to default icon if network image fails
+          return SvgPicture.asset(
+            'assets/images/sleep_better.svg',
+            width: 32,
+            height: 32,
+          );
+        },
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return SizedBox(
+            width: 32,
+            height: 32,
+            child: Center(
+              child: CircularProgressIndicator(
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded /
+                        loadingProgress.expectedTotalBytes!
+                    : null,
+                strokeWidth: 2,
+              ),
+            ),
+          );
+        },
+      );
+    }
+    
+    // Handle local assets
+    if (iconPath.endsWith('.png')) {
+      return Image.asset(
+        iconPath,
+        width: 32,
+        height: 32,
+      );
+    } else {
+      return SvgPicture.asset(
+        iconPath,
+        width: 32,
+        height: 32,
+      );
+    }
+  }
 }
 
 class _CustomSliderThumbShape extends SliderComponentShape {
@@ -1313,6 +1354,9 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
 
     try {
       print('📶 Programs View: Starting Bluetooth WiFi scan...');
+      
+      // First check WiFi status
+      await _checkWifiStatus();
 
       // Set up WiFi enable response callback
       _bluetoothService.setOnWifiEnableResponseCallback((response) {
@@ -1654,7 +1698,7 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              network.ssid.isNotEmpty ? 'network.ssid' : 'Hidden Network',
+              network.ssid.isNotEmpty ? network.ssid : 'Hidden Network',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -1731,7 +1775,7 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
 
           // Connect button
           SizedBox(
-            width: double.infinity,
+            width: 160,
             child: ElevatedButton(
               onPressed: () async {
                 // Handle WiFi connection
@@ -1781,18 +1825,18 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
         '📶 Programs View: Connecting to WiFi - SSID: $_selectedNetwork, Program: ${widget.program.title}',
       );
 
-      // Set up WiFi connection callback
-      _bluetoothService.setOnWifiConnectedCallback((success) {
+      // Set up WiFi connection response callback
+      _bluetoothService.setOnWifiConnectionResponseCallback((response) {
         if (mounted) {
-          if (success) {
+          if (response == 'SUCCESS') {
             print(
-              '📶 Programs View: WiFi connected successfully, starting file download',
+              '📶 Programs View: WiFi credentials match, connection successful',
             );
             Navigator.pop(context);
             // Start file download process with program information
             _startFileDownload();
-          } else {
-            _showErrorDialog('Failed to connect to WiFi network');
+          } else if (response == 'FAILURE') {
+            _showErrorDialog('WiFi credentials mismatch. Please check your password.');
           }
         }
       });
@@ -1860,6 +1904,40 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
     } catch (e) {
       print('📶 Programs View: Error starting file download: $e');
       // TODO: Show error message
+    }
+  }
+
+  Future<void> _checkWifiStatus() async {
+    try {
+      print('📶 Programs View: Checking WiFi status...');
+      
+      // Set up WiFi status response callback
+      _bluetoothService.setOnWifiStatusResponseCallback((status) {
+        if (mounted) {
+          print('📶 Programs View: WiFi status: $status');
+          if (status == 'CONNECTED') {
+            // Device is already connected to WiFi, skip scanning
+            setState(() {
+              _isEnablingWifi = false;
+              _isScanning = false;
+            });
+            print('📶 Programs View: Device already connected to WiFi, skipping scan');
+            // You could show a message or proceed directly to password input
+          } else if (status == 'DISCONNECTED') {
+            // Device is not connected, proceed with normal flow
+            print('📶 Programs View: Device not connected to WiFi, proceeding with scan');
+          }
+        }
+      });
+      
+      // Send WiFi status check command
+      await _bluetoothService.checkWifiStatus();
+      
+      // Wait a bit for response
+      await Future.delayed(const Duration(milliseconds: 1000));
+    } catch (e) {
+      print('📶 Programs View: Error checking WiFi status: $e');
+      // Continue with normal flow if status check fails
     }
   }
 

@@ -75,6 +75,8 @@ class BluetoothService extends ChangeNotifier {
   Function(bool)? _onDownloadComplete;
   Function(String)? _onWifiError;
   Function(String)? _onWifiEnableResponse;
+  Function(String)? _onWifiConnectionResponse; // For #ESP,47,01! and #ESP,47,06!
+  Function(String)? _onWifiStatusResponse; // For #WIFI_CONNECTED! and #WIFI_DIS_CONNECTED!
 
   // WiFi list storage
   List<String> _wifiList = [];
@@ -93,10 +95,13 @@ class BluetoothService extends ChangeNotifier {
   static const String ENABLE_WIFI = "#ESP32CON!";
   static const String WIFI_SCAN = "#020Cmd:39WIFI_SCAN!";
   static const String WIFI_CONNECT = "#023Cmd:37WIFI_CONNECT!";
-
-  // Response codes
-  static const String WIFI_CONNECT_SUCCESS = "#ESP,47,01!";
-  static const String WIFI_CONNECT_FAIL = "#ESP,47,06!";
+  static const String WIFI_STATUS = "#WIFISTAT!";
+  
+  // WiFi connection response codes
+  static const String WIFI_CONNECTED = "#WIFI_CONNECTED!";
+  static const String WIFI_DISCONNECTED = "#WIFI_DIS_CONNECTED!";
+  static const String WIFI_CREDENTIALS_MATCH = "#ESP,47,01!";
+  static const String WIFI_CREDENTIALS_MISMATCH = "#ESP,47,06!";
   static const String PASSWORD_ACCEPTED = "#ESP,42,01!";
   static const String DOWNLOAD_SUCCESS = "#ESP,40,01!";
   static const String DOWNLOAD_LINK_RECEIVED = "#ESP,40,05!";
@@ -256,6 +261,16 @@ class BluetoothService extends ChangeNotifier {
   /// Set callback for WiFi enable response
   void setOnWifiEnableResponseCallback(Function(String) callback) {
     _onWifiEnableResponse = callback;
+  }
+
+  /// Set callback for WiFi connection response (#ESP,47,01! and #ESP,47,06!)
+  void setOnWifiConnectionResponseCallback(Function(String) callback) {
+    _onWifiConnectionResponse = callback;
+  }
+
+  /// Set callback for WiFi status response (#WIFI_CONNECTED! and #WIFI_DIS_CONNECTED!)
+  void setOnWifiStatusResponseCallback(Function(String) callback) {
+    _onWifiStatusResponse = callback;
   }
 
   Future<void> startScanning() async {
@@ -1221,12 +1236,22 @@ class BluetoothService extends ChangeNotifier {
       // WiFi enable failure response
       print('📶 WiFi enable failure: $stringValue');
       _onWifiEnableResponse?.call('FAILURE');
-    } else if (stringValue.contains(WIFI_CONNECT_SUCCESS)) {
-      print('📶 WiFi connected successfully');
-      _onWifiConnected?.call(true);
-    } else if (stringValue.contains(WIFI_CONNECT_FAIL)) {
-      print('📶 WiFi connection failed');
-      _onWifiConnected?.call(false);
+    } else if (stringValue.contains(WIFI_CONNECTED)) {
+      // WiFi status: connected
+      print('📶 WiFi status: Connected');
+      _onWifiStatusResponse?.call('CONNECTED');
+    } else if (stringValue.contains(WIFI_DISCONNECTED)) {
+      // WiFi status: disconnected
+      print('📶 WiFi status: Disconnected');
+      _onWifiStatusResponse?.call('DISCONNECTED');
+    } else if (stringValue.contains(WIFI_CREDENTIALS_MATCH)) {
+      // WiFi connection: credentials match
+      print('📶 WiFi connection: Credentials match');
+      _onWifiConnectionResponse?.call('SUCCESS');
+    } else if (stringValue.contains(WIFI_CREDENTIALS_MISMATCH)) {
+      // WiFi connection: credentials mismatch
+      print('📶 WiFi connection: Credentials mismatch');
+      _onWifiConnectionResponse?.call('FAILURE');
     } else if (stringValue.contains(DOWNLOAD_LINK_RECEIVED)) {
       print('📥 Download started');
     } else if (stringValue.contains(DOWNLOAD_SUCCESS)) {
@@ -1765,18 +1790,28 @@ class BluetoothService extends ChangeNotifier {
 
   Future<void> sendSSID(String ssid) async {
     String basicCommand = "#Cmd:31$ssid!";
-    String command = "#0${basicCommand.length + 3}Cmd:31$ssid!";
+    String commandLength = (basicCommand.length + 3).toString().padLeft(3, '0');
+    String command = "#$commandLength$basicCommand";
+    print('📶 BluetoothService: Sending SSID: $ssid with command: $command');
     await writeCommand(command);
   }
 
   Future<void> sendPassword(String password) async {
     String basicCommand = "#Cmd:32$password!";
-    String command = "#0${basicCommand.length + 3}Cmd:32$password!";
+    String commandLength = (basicCommand.length + 3).toString().padLeft(3, '0');
+    String command = "#$commandLength$basicCommand";
+    print('📶 BluetoothService: Sending password with command: $command');
     await writeCommand(command);
   }
 
   Future<void> connectWifi() async {
+    print('📶 BluetoothService: Connecting to WiFi with command: $WIFI_CONNECT');
     await writeCommand(WIFI_CONNECT);
+  }
+
+  Future<void> checkWifiStatus() async {
+    print('📶 BluetoothService: Checking WiFi status with command: $WIFI_STATUS');
+    await writeCommand(WIFI_STATUS);
   }
 
   // Download Commands

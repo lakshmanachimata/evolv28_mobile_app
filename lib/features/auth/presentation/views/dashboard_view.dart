@@ -837,9 +837,10 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
               // Get filtered programs (union of music data and Bluetooth programs)
               final filteredPrograms = viewModel.filteredPrograms;
 
-              // Extract program names and IDs from filtered programs
+              // Extract program names, IDs, and icons from filtered programs
               final programNames = <String>[];
               final programIds = <String>[];
+              final programIcons = <String>[];
 
               for (final program in filteredPrograms) {
                 if (program is Map<String, dynamic>) {
@@ -852,9 +853,20 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                       program['bluetoothProgramId'] ??
                       program['id']?.toString() ??
                       '';
+                  
+                  // Get icon URL from music data
+                  String? iconUrl = program['icon'];
+                  if (iconUrl == null && program['matchedMusicFile'] != null) {
+                    final matchedFile = program['matchedMusicFile'] as Map<String, dynamic>;
+                    iconUrl = matchedFile['icon'];
+                  }
+                  
+                  // Fallback to hardcoded icon if no URL available
+                  final iconPath = iconUrl ?? _getIconPathForProgram(programName);
 
                   programNames.add(programName);
                   programIds.add(programId);
+                  programIcons.add(iconPath);
                 }
               }
 
@@ -876,12 +888,15 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                   final programId = programIds.length > index
                       ? programIds[index]
                       : '';
+                  final iconPath = programIcons.length > index
+                      ? programIcons[index]
+                      : _getIconPathForProgram(programName);
 
                   return Row(
                     children: [
                       _buildFeatureIcon(
                         programName,
-                        _getIconPathForProgram(programName),
+                        iconPath,
                         viewModel,
                         programId: programId,
                       ),
@@ -927,9 +942,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
               ),
             ),
             child: Center(
-              child: iconPath.endsWith('.svg')
-                  ? SvgPicture.asset(iconPath, width: 30, height: 30)
-                  : Image.asset(iconPath, width: 30, height: 30),
+              child: _buildIconWidget(iconPath, 30),
             ),
           ),
           const SizedBox(height: 8),
@@ -2715,6 +2728,49 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
         ),
       ),
     );
+  }
+
+  Widget _buildIconWidget(String iconPath, double size) {
+    // Check if it's a network URL
+    if (iconPath.startsWith('http://') || iconPath.startsWith('https://')) {
+      return Image.network(
+        iconPath,
+        width: size,
+        height: size,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          // Fallback to default icon if network image fails
+          return SvgPicture.asset(
+            'assets/images/sleep_better.svg',
+            width: size,
+            height: size,
+          );
+        },
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return SizedBox(
+            width: size,
+            height: size,
+            child: Center(
+              child: CircularProgressIndicator(
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded /
+                        loadingProgress.expectedTotalBytes!
+                    : null,
+                strokeWidth: 2,
+              ),
+            ),
+          );
+        },
+      );
+    }
+    
+    // Handle local assets
+    if (iconPath.endsWith('.svg')) {
+      return SvgPicture.asset(iconPath, width: size, height: size);
+    } else {
+      return Image.asset(iconPath, width: size, height: size);
+    }
   }
 }
 

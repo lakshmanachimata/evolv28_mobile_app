@@ -98,7 +98,7 @@ class ProgramsViewModel extends ChangeNotifier {
               id: programId,
               title: programName,
               recommendedTime: _getRecommendedTime(programName),
-              iconPath: _getIconPath(programName),
+              iconPath: _getIconPathFromData(program) ?? _getIconPath(programName),
               isLocked: false,
               isFavorite:
                   false, // No favorites by default for filtered programs
@@ -171,7 +171,21 @@ class ProgramsViewModel extends ChangeNotifier {
     }
   }
 
-  // Get icon path based on program name
+  // Get icon path from music data, fallback to hardcoded paths
+  String? _getIconPathFromData(Map<String, dynamic> program) {
+    // First try to get icon from the main music item
+    String? iconUrl = program['icon'];
+    
+    // If not found, try to get from matchedMusicFile (for musicfiles array entries)
+    if (iconUrl == null && program['matchedMusicFile'] != null) {
+      final matchedFile = program['matchedMusicFile'] as Map<String, dynamic>;
+      iconUrl = matchedFile['icon'];
+    }
+    
+    return iconUrl;
+  }
+
+  // Get icon path based on program name (fallback)
   String _getIconPath(String programName) {
     switch (programName) {
       case 'Sleep Better':
