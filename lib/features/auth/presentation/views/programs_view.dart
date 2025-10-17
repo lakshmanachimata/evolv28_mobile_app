@@ -370,12 +370,16 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
   Widget _buildDownloadCompleteDialog() {
     return Container(
       color: Colors.black.withOpacity(0.7),
-      child: Center(
+      child: Align(
+        alignment: Alignment.bottomCenter,
         child: Container(
-          width: 300,
+          width: double.infinity,
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(40),
+              topRight: Radius.circular(40),
+            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -395,7 +399,7 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
                       width: 24,
                       height: 24,
                       decoration: BoxDecoration(
-                        color: Colors.red,
+                        color: const Color(0xFFF17961),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
@@ -434,17 +438,20 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
               const SizedBox(height: 8),
 
               // Success message
-              const Text(
-                'The Program Download Completed Successfully',
-                style: TextStyle(fontSize: 14, color: Colors.grey),
-                textAlign: TextAlign.center,
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  'The Program Download Completed Successfully',
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
               ),
 
               const SizedBox(height: 24),
 
               // DONE button
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -471,6 +478,7 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
                   ),
                 ),
               ),
+              const SizedBox(height: 64),
             ],
           ),
         ),
