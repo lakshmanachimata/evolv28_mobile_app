@@ -35,6 +35,9 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
   String _downloadingFilename = '';
   bool _showDownloadCompleteDialog = false;
   Timer? _downloadStatusTimer;
+  
+  // Refresh popup state
+  bool _showRefreshPopup = false;
 
   @override
   void initState() {
@@ -214,6 +217,53 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
       print('📶 Programs View: Programs list refreshed successfully');
     } catch (e) {
       print('📶 Programs View: Error refreshing programs list: $e');
+    }
+  }
+
+  // Method to refresh programs from device with popup
+  Future<void> _refreshProgramsFromDevice() async {
+    try {
+      print('📶 Programs View: Starting refresh from device...');
+      
+      // Show refresh popup
+      _displayRefreshPopup();
+      
+      // Get BluetoothService and start command sequence
+      final bluetoothService = BluetoothService();
+      await bluetoothService.startCommandSequence();
+      
+      // Get the ProgramsViewModel
+      final viewModel = Provider.of<ProgramsViewModel>(context, listen: false);
+      
+      // Refresh programs from dashboard after command sequence
+      await viewModel.refreshProgramsFromDashboard();
+      
+      print('📶 Programs View: Programs refreshed from device successfully');
+      
+      // Hide refresh popup
+      _hideRefreshPopup();
+    } catch (e) {
+      print('📶 Programs View: Error refreshing programs from device: $e');
+      _hideRefreshPopup();
+      _showErrorDialog('Error refreshing programs: $e');
+    }
+  }
+
+  // Show refresh popup
+  void _displayRefreshPopup() {
+    if (mounted) {
+      setState(() {
+        _showRefreshPopup = true;
+      });
+    }
+  }
+
+  // Hide refresh popup
+  void _hideRefreshPopup() {
+    if (mounted) {
+      setState(() {
+        _showRefreshPopup = false;
+      });
     }
   }
 
@@ -476,12 +526,15 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        _showDownloadCompleteDialog = false;
-                      });
-                    },
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        setState(() {
+                          _showDownloadCompleteDialog = false;
+                        });
+                        
+                        // Start command sequence to get programs from device
+                        await _refreshProgramsFromDevice();
+                      },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFF17961),
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -501,6 +554,66 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
                 ),
               ),
               const SizedBox(height: 64),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRefreshPopup() {
+    return Container(
+      color: Colors.black.withOpacity(0.7),
+      child: Center(
+        child: Container(
+          width: 300,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 32),
+              
+              // Loading indicator
+              const SizedBox(
+                width: 60,
+                height: 60,
+                child: CircularProgressIndicator(
+                  strokeWidth: 6,
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFF17961)),
+                ),
+              ),
+              
+              const SizedBox(height: 24),
+              
+              // Title
+              const Text(
+                'Refreshing Programs',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Description
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  'Getting latest programs from your device...',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              
+              const SizedBox(height: 32),
             ],
           ),
         ),
@@ -545,8 +658,11 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
               // Download progress overlay
               if (_isDownloading) _buildDownloadProgressOverlay(),
 
-              // Download completion dialog
-              if (_showDownloadCompleteDialog) _buildDownloadCompleteDialog(),
+                     // Download completion dialog
+                     if (_showDownloadCompleteDialog) _buildDownloadCompleteDialog(),
+
+                     // Refresh popup
+                     if (_showRefreshPopup) _buildRefreshPopup(),
             ],
           );
         },

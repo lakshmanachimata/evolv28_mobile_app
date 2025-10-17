@@ -799,6 +799,11 @@ class BluetoothService extends ChangeNotifier {
     }
   }
 
+  /// Public method to start command sequence to get programs from device
+  Future<void> startCommandSequence() async {
+    await _startCommandSequence();
+  }
+
   /// Start monitoring device disconnection
   void _startDisconnectionMonitoring(ble.BluetoothDevice device) {
     print('🔍 Starting disconnection monitoring for: ${device.platformName}');
