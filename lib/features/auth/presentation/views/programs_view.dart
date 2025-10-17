@@ -2286,9 +2286,9 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
-            'Please enter Wifi Password for updating your latest Files',
-            style: TextStyle(fontSize: 16, color: Colors.grey),
+          Text(
+            'Connect device to $_selectedNetwork',
+            style: const TextStyle(fontSize: 16, color: Colors.grey),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),

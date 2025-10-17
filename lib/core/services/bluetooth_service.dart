@@ -56,6 +56,10 @@ class BluetoothService extends ChangeNotifier {
   Completer<String>? _responseCompleter;
   String? _lastNotificationResponse;
 
+  // Command logging tracking
+  String? _pendingCommandForLogging;
+  DateTime? _pendingCommandTimestamp;
+
   // User devices for validation
   List<dynamic> _userDevices = [];
 
@@ -1284,65 +1288,83 @@ class BluetoothService extends ChangeNotifier {
         List<String> finalList = List<String>.from(_wifiList);
         _onWifiListReceived?.call(finalList);
         _wifiList.clear();
+        _logCommandWithResponse(stringValue);
       }
     } else if (stringValue.contains("#ACK!")) {
       // WiFi enable success response
       print('📶 WiFi enable success: $stringValue');
       _onWifiEnableResponse?.call('SUCCESS');
+      _logCommandWithResponse(stringValue);
     } else if (stringValue.contains("#NACK!")) {
       // WiFi enable failure response
       print('📶 WiFi enable failure: $stringValue');
       _onWifiEnableResponse?.call('FAILURE');
+      _logCommandWithResponse(stringValue);
     } else if (stringValue.contains(WIFI_CONNECTED)) {
       // WiFi status: connected
       print('📶 WiFi status: Connected');
       _onWifiStatusResponse?.call('CONNECTED');
+      _logCommandWithResponse(stringValue);
     } else if (stringValue.contains(WIFI_DISCONNECTED)) {
       // WiFi status: disconnected
       print('📶 WiFi status: Disconnected');
       _onWifiStatusResponse?.call('DISCONNECTED');
+      _logCommandWithResponse(stringValue);
     } else if (stringValue.contains(WIFI_CREDENTIALS_MATCH)) {
       // WiFi connection: credentials match
       print('📶 WiFi connection: Credentials match');
       _onWifiConnectionResponse?.call('SUCCESS');
+      _logCommandWithResponse(stringValue);
     } else if (stringValue.contains(WIFI_CREDENTIALS_MISMATCH)) {
       // WiFi connection: credentials mismatch
       print('📶 WiFi connection: Credentials mismatch');
       _onWifiConnectionResponse?.call('FAILURE');
+      _logCommandWithResponse(stringValue);
     } else if (stringValue.contains(DOWNLOAD_LINK_RECEIVED)) {
       print('📥 Download: Link received - Command received');
       _onDownloadStatusResponse?.call('LINK_RECEIVED');
+      _logCommandWithResponse(stringValue);
     } else if (stringValue.contains(DOWNLOAD_SUCCESS)) {
       print('📥 Download: Successfully downloaded');
       _onDownloadStatusResponse?.call('SUCCESS');
       _onDownloadComplete?.call(true);
+      _logCommandWithResponse(stringValue);
     } else if (stringValue.contains(DOWNLOAD_INTERNET_ERROR)) {
       print('📥 Download: Internet not available');
       _onDownloadStatusResponse?.call('INTERNET_ERROR');
+      _logCommandWithResponse(stringValue);
     } else if (stringValue.contains(DOWNLOAD_SD_CARD_ERROR)) {
       print('📥 Download: SD card error');
       _onDownloadStatusResponse?.call('SD_CARD_ERROR');
+      _logCommandWithResponse(stringValue);
     } else if (stringValue.contains(DOWNLOAD_WRONG_LINK)) {
       print('📥 Download: Wrong link - Download fail');
       _onDownloadStatusResponse?.call('WRONG_LINK');
+      _logCommandWithResponse(stringValue);
     } else if (stringValue.contains(DOWNLOAD_WIFI_CONNECT_ERROR)) {
       print('📥 Download: WiFi connect error');
       _onDownloadStatusResponse?.call('WIFI_CONNECT_ERROR');
+      _logCommandWithResponse(stringValue);
     } else if (stringValue.contains(DOWNLOAD_SOCKET_CLOSED)) {
       print('📥 Download: Socket closed during download');
       _onDownloadStatusResponse?.call('SOCKET_CLOSED');
+      _logCommandWithResponse(stringValue);
     } else if (stringValue.contains(DOWNLOAD_UNSTABLE_NETWORK)) {
       print('📥 Download: Unstable network cause download failure');
       _onDownloadStatusResponse?.call('UNSTABLE_NETWORK');
+      _logCommandWithResponse(stringValue);
     } else if (stringValue.contains(DOWNLOAD_FORBIDDEN_ERROR)) {
       print('📥 Download: File forbidden error (403)');
       _onDownloadStatusResponse?.call('FORBIDDEN_ERROR');
+      _logCommandWithResponse(stringValue);
     } else if (stringValue.contains(DOWNLOAD_FILE_LINK_ERROR)) {
       print('📥 Download: File link error (404)');
       _onDownloadStatusResponse?.call('FILE_LINK_ERROR');
+      _logCommandWithResponse(stringValue);
     } else if (stringValue.contains(DOWNLOAD_FILE_LENGTH_ERROR)) {
       print('📥 Download: File length error');
       _onDownloadStatusResponse?.call('FILE_LENGTH_ERROR');
+      _logCommandWithResponse(stringValue);
     } else if (stringValue.contains(DOWNLOAD_PROGRESS)) {
       // Handle download progress: #ESP,50,XX,01,01,filename.cur,single!
       try {
@@ -1367,6 +1389,7 @@ class BluetoothService extends ChangeNotifier {
       } catch (e) {
         print('📥 Download: Error parsing progress: $e');
       }
+      _logCommandWithResponse(stringValue);
     }
 
     // If we're sending play commands, check for play command responses
@@ -1875,6 +1898,29 @@ class BluetoothService extends ChangeNotifier {
     }
   }
 
+  // Helper method to log command and wait for response
+  void _logCommandAndWaitForResponse(String command) {
+    _pendingCommandForLogging = command;
+    _pendingCommandTimestamp = DateTime.now();
+    print('📶 BluetoothService: Command logged for response: $command');
+  }
+
+  // Helper method to log command with actual response
+  void _logCommandWithResponse(String response) {
+    if (_pendingCommandForLogging != null && _pendingCommandTimestamp != null) {
+      _loggingService.sendBleCommandLog(
+        command: _pendingCommandForLogging!,
+        response: response,
+        reqTime: _pendingCommandTimestamp!.millisecondsSinceEpoch,
+      );
+      print('📶 BluetoothService: Logged command with response: $_pendingCommandForLogging -> $response');
+      
+      // Clear pending command
+      _pendingCommandForLogging = null;
+      _pendingCommandTimestamp = null;
+    }
+  }
+
   // WiFi Commands
   Future<void> disableWifi() async {
     await writeCommand(DISABLE_WIFI);
@@ -1884,6 +1930,9 @@ class BluetoothService extends ChangeNotifier {
     print('📶 BluetoothService: Enabling WiFi with command: $ENABLE_WIFI');
     await writeCommand(ENABLE_WIFI);
     print('📶 BluetoothService: Enable WiFi command sent');
+    
+    // Log command and wait for response
+    _logCommandAndWaitForResponse(ENABLE_WIFI);
   }
 
   Future<void> scanWifi() async {
@@ -1895,6 +1944,9 @@ class BluetoothService extends ChangeNotifier {
 
     // Add a temporary debug to see if device responds at all
     print('📶 BluetoothService: Waiting for any device responses...');
+    
+    // Log command and wait for response
+    _logCommandAndWaitForResponse(WIFI_SCAN);
   }
 
   Future<void> sendSSID(String ssid) async {
@@ -1903,6 +1955,9 @@ class BluetoothService extends ChangeNotifier {
     String command = "#$commandLength$basicCommand";
     print('📶 BluetoothService: Sending SSID: $ssid with command: $command');
     await writeCommand(command);
+    
+    // Log command and wait for response
+    _logCommandAndWaitForResponse(command);
   }
 
   Future<void> sendPassword(String password) async {
@@ -1911,6 +1966,9 @@ class BluetoothService extends ChangeNotifier {
     String command = "#$commandLength$basicCommand";
     print('📶 BluetoothService: Sending password with command: $command');
     await writeCommand(command);
+    
+    // Log command and wait for response
+    _logCommandAndWaitForResponse(command);
   }
 
   Future<void> connectWifi() async {
@@ -1918,6 +1976,9 @@ class BluetoothService extends ChangeNotifier {
       '📶 BluetoothService: Connecting to WiFi with command: $WIFI_CONNECT',
     );
     await writeCommand(WIFI_CONNECT);
+    
+    // Log command and wait for response
+    _logCommandAndWaitForResponse(WIFI_CONNECT);
   }
 
   Future<void> checkWifiStatus() async {
@@ -1925,6 +1986,9 @@ class BluetoothService extends ChangeNotifier {
       '📶 BluetoothService: Checking WiFi status with command: $WIFI_STATUS',
     );
     await writeCommand(WIFI_STATUS);
+    
+    // Log command and wait for response
+    _logCommandAndWaitForResponse(WIFI_STATUS);
   }
 
   /// Send download status command to get current download progress
@@ -1933,6 +1997,9 @@ class BluetoothService extends ChangeNotifier {
       '📶 BluetoothService: Checking download status with command: $DOWNLOAD_STATUS_COMMAND',
     );
     await writeCommand(DOWNLOAD_STATUS_COMMAND);
+    
+    // Log command and wait for response
+    _logCommandAndWaitForResponse(DOWNLOAD_STATUS_COMMAND);
   }
 
   // Download Commands
@@ -1960,6 +2027,9 @@ class BluetoothService extends ChangeNotifier {
 
     print('📶 BluetoothService: Download command: $finalCommand');
     await writeCommand(finalCommand);
+    
+    // Log command and wait for response
+    _logCommandAndWaitForResponse(finalCommand);
   }
 
   Future<void> downloadBulkFiles(String url, int fileSize) async {
