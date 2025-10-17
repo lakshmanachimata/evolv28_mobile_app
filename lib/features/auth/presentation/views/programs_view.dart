@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -1330,6 +1332,14 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
   bool _isScanning = false;
   bool _isEnablingWifi = false;
   String? _wifiEnableResponse;
+
+  // WiFi connection step tracking
+  bool _isSettingSSID = false;
+  bool _isSettingPassword = false;
+  bool _isConnecting = false;
+  bool _isSettingDownloadUrl = false;
+  String? _connectionError;
+
   final BluetoothService _bluetoothService = BluetoothService();
 
   @override
@@ -1607,6 +1617,15 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
 
   Widget _buildContent() {
     print('📶 Programs View: Building content for state: $_currentState');
+
+    // Show scanning content if any connection step is active
+    if (_isSettingSSID ||
+        _isSettingPassword ||
+        _isConnecting ||
+        _isSettingDownloadUrl) {
+      return _buildScanningContent();
+    }
+
     switch (_currentState) {
       case WifiScanState.scanning:
         return _buildScanningContent();
@@ -1618,16 +1637,32 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
   }
 
   Widget _buildScanningContent() {
+    String statusText;
+
+    if (_isEnablingWifi) {
+      statusText =
+          'Enabling WiFi on device ${_bluetoothService.connectedDevice?.platformName ?? 'Unknown Device'}';
+    } else if (_isSettingSSID) {
+      statusText = 'Setting up SSID...';
+    } else if (_isSettingPassword) {
+      statusText = 'Setting up password...';
+    } else if (_isConnecting) {
+      statusText = 'Connecting to WiFi...';
+    } else if (_isSettingDownloadUrl) {
+      statusText = 'Setting download URL...';
+    } else {
+      statusText = 'WiFi Scan in Progress';
+    }
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 64),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            _isEnablingWifi
-                ? 'Enabling WiFi on device ${_bluetoothService.connectedDevice?.platformName ?? 'Unknown Device'}'
-                : 'Wi Fi Scan in Progress',
+            statusText,
             style: const TextStyle(fontSize: 16, color: Colors.grey),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),
           _buildLoadingIndicator(),
@@ -1845,37 +1880,123 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
       }
 
       print(
-        '📶 Programs View: Connecting to WiFi - SSID: $_selectedNetwork, Program: ${widget.program.title}',
+        '📶 Programs View: Starting WiFi connection - SSID: $_selectedNetwork, Program: ${widget.program.title}',
       );
+
+      // Step 1: Setting up SSID
+      setState(() {
+        _isSettingSSID = true;
+        _isSettingPassword = false;
+        _isConnecting = false;
+        _isSettingDownloadUrl = false;
+        _connectionError = null;
+      });
+
+      print('📶 Programs View: Step 1 - Setting up SSID...');
+      await _bluetoothService.sendSSID(_selectedNetwork!);
+      await Future.delayed(const Duration(milliseconds: 1000));
+
+      // Step 2: Setting up password
+      setState(() {
+        _isSettingSSID = false;
+        _isSettingPassword = true;
+      });
+
+      print('📶 Programs View: Step 2 - Setting up password...');
+      await _bluetoothService.sendPassword(_passwordController.text);
+      await Future.delayed(const Duration(milliseconds: 1000));
+
+      // Step 3: Connecting to WiFi
+      setState(() {
+        _isSettingPassword = false;
+        _isConnecting = true;
+      });
+
+      print('📶 Programs View: Step 3 - Connecting to WiFi...');
 
       // Set up WiFi connection response callback
       _bluetoothService.setOnWifiConnectionResponseCallback((response) {
         if (mounted) {
           if (response == 'SUCCESS') {
-            print(
-              '📶 Programs View: WiFi credentials match, connection successful',
-            );
-            Navigator.pop(context);
-            // Start file download process with program information
-            _startFileDownload();
+            print('📶 Programs View: WiFi connection successful!');
+            _handleWifiConnectionSuccess();
           } else if (response == 'FAILURE') {
-            _showErrorDialog(
+            print(
+              '📶 Programs View: WiFi connection failed - credentials mismatch',
+            );
+            _handleWifiConnectionFailure(
               'WiFi credentials mismatch. Please check your password.',
             );
           }
         }
       });
 
-      // Send SSID and password to device
-      await _bluetoothService.sendSSID(_selectedNetwork!);
-      await Future.delayed(const Duration(milliseconds: 500));
-      await _bluetoothService.sendPassword(_passwordController.text);
-      await Future.delayed(const Duration(milliseconds: 500));
       await _bluetoothService.connectWifi();
     } catch (e) {
-      if (mounted) {
-        _showErrorDialog('Error connecting to WiFi: $e');
+      print('📶 Programs View: Error during WiFi connection: $e');
+      _handleWifiConnectionFailure('Error connecting to WiFi: $e');
+    }
+  }
+
+  void _handleWifiConnectionSuccess() {
+    setState(() {
+      _isConnecting = false;
+      _isSettingDownloadUrl = true;
+    });
+
+    print('📶 Programs View: Step 4 - Setting download URL...');
+
+    // Step 4: Setting download URL
+    _setDownloadUrl();
+  }
+
+  void _handleWifiConnectionFailure(String error) {
+    setState(() {
+      _isSettingSSID = false;
+      _isSettingPassword = false;
+      _isConnecting = false;
+      _isSettingDownloadUrl = false;
+      _connectionError = error;
+    });
+
+    _showErrorDialog(error);
+  }
+
+  Future<void> _setDownloadUrl() async {
+    try {
+      // Get the download URL and program size from the program
+      final downloadUrl = widget.program.downloadUrl;
+      final programSize = widget.program.programSize;
+
+      if (downloadUrl != null &&
+          downloadUrl.isNotEmpty &&
+          programSize != null &&
+          programSize.isNotEmpty) {
+        print(
+          '📶 Programs View: Download URL: $downloadUrl, Size: $programSize',
+        );
+
+        // Send download command
+        // await _bluetoothService.downloadSingleFile(downloadUrl, programSize);
+
+        // Wait a bit for the command to be processed
+        await Future.delayed(const Duration(milliseconds: 1000));
+
+        print('📶 Programs View: Download URL sent successfully');
+
+        // Close the bottom sheet and start file download process
+        Navigator.pop(context);
+        _startFileDownload();
+      } else {
+        print(
+          '📶 Programs View: No download URL or program size available for this program',
+        );
+        Navigator.pop(context);
+        _startFileDownload();
       }
+    } catch (e) {
+      print('📶 Programs View: Error setting download URL: $e');
+      _handleWifiConnectionFailure('Error setting download URL: $e');
     }
   }
 
@@ -1885,12 +2006,19 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
         '📶 Programs View: Starting file download for program: ${widget.program.title}',
       );
 
-      // Set up download callbacks
-      _bluetoothService.setOnDownloadProgressCallback((progress) {
+      // Set up download status callback
+      _bluetoothService.setOnDownloadStatusResponseCallback((status) {
+        print('📶 Programs View: Download status: $status');
+        _handleDownloadStatus(status);
+      });
+
+      // Set up download progress callback
+      _bluetoothService.setOnDownloadProgressUpdateCallback((progress) {
         print('📶 Programs View: Download progress: $progress%');
         // TODO: Update UI with download progress
       });
 
+      // Set up download complete callback (legacy)
       _bluetoothService.setOnDownloadCompleteCallback((success) {
         if (success) {
           print(
@@ -1906,23 +2034,113 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
       });
 
       // Get file information from program data
-      String fileName = widget.program.title;
-      String fileUrl =
-          widget.program.downloadUrl ??
-          ''; // Assuming there's a downloadUrl field
+      String fileUrl = widget.program.downloadUrl ?? '';
+      String? programSize = widget.program.programSize;
 
       // Start download with program-specific information
-      if (fileUrl.isNotEmpty) {
-        await _bluetoothService.downloadSingleFile(fileUrl);
+      if (fileUrl.isNotEmpty && programSize != null && programSize.isNotEmpty) {
+        print(
+          '📶 Programs View: Starting download for URL: $fileUrl, Size: $programSize',
+        );
+        await _bluetoothService.downloadSingleFile(fileUrl, programSize);
+
+        // Start polling for download status every 5 seconds
+        _startDownloadStatusPolling();
       } else {
         print(
-          '📶 Programs View: No download URL or file size available for program: ${widget.program.title}',
+          '📶 Programs View: No download URL or program size available for program: ${widget.program.title}',
         );
-        // TODO: Show error message about missing download information
+        _showErrorDialog(
+          'No download URL or program size available for this program',
+        );
       }
     } catch (e) {
       print('📶 Programs View: Error starting file download: $e');
-      // TODO: Show error message
+      _showErrorDialog('Error starting file download: $e');
+    }
+  }
+
+  Timer? _downloadStatusTimer;
+
+  void _startDownloadStatusPolling() {
+    print('📶 Programs View: Starting download status polling every 5 seconds');
+
+    // Clear any existing timer
+    _downloadStatusTimer?.cancel();
+
+    // Start polling every 5 seconds
+    _downloadStatusTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      print('📶 Programs View: Polling download status...');
+      _bluetoothService.checkDownloadStatus();
+    });
+  }
+
+  void _stopDownloadStatusPolling() {
+    print('📶 Programs View: Stopping download status polling');
+    _downloadStatusTimer?.cancel();
+    _downloadStatusTimer = null;
+  }
+
+  void _handleDownloadStatus(String status) {
+    switch (status) {
+      case 'LINK_RECEIVED':
+        print('📶 Programs View: Download link received - command processed');
+        break;
+      case 'SUCCESS':
+        print('📶 Programs View: Download completed successfully!');
+        _stopDownloadStatusPolling();
+        // TODO: Show success message and update program list
+        break;
+      case 'INTERNET_ERROR':
+        print('📶 Programs View: Download failed - Internet not available');
+        _stopDownloadStatusPolling();
+        _showErrorDialog('Download failed: Internet not available');
+        break;
+      case 'SD_CARD_ERROR':
+        print('📶 Programs View: Download failed - SD card error');
+        _stopDownloadStatusPolling();
+        _showErrorDialog('Download failed: SD card error');
+        break;
+      case 'WRONG_LINK':
+        print('📶 Programs View: Download failed - Wrong link');
+        _stopDownloadStatusPolling();
+        _showErrorDialog('Download failed: Invalid download link');
+        break;
+      case 'WIFI_CONNECT_ERROR':
+        print('📶 Programs View: Download failed - WiFi connect error');
+        _stopDownloadStatusPolling();
+        _showErrorDialog('Download failed: WiFi connection error');
+        break;
+      case 'SOCKET_CLOSED':
+        print(
+          '📶 Programs View: Download failed - Socket closed during download',
+        );
+        _stopDownloadStatusPolling();
+        _showErrorDialog('Download failed: Connection lost during download');
+        break;
+      case 'UNSTABLE_NETWORK':
+        print('📶 Programs View: Download failed - Unstable network');
+        _stopDownloadStatusPolling();
+        _showErrorDialog('Download failed: Unstable network connection');
+        break;
+      case 'FORBIDDEN_ERROR':
+        print('📶 Programs View: Download failed - File forbidden (403)');
+        _stopDownloadStatusPolling();
+        _showErrorDialog('Download failed: File access forbidden');
+        break;
+      case 'FILE_LINK_ERROR':
+        print('📶 Programs View: Download failed - File link error (404)');
+        _stopDownloadStatusPolling();
+        _showErrorDialog('Download failed: File not found');
+        break;
+      case 'FILE_LENGTH_ERROR':
+        print('📶 Programs View: Download failed - File length error');
+        _stopDownloadStatusPolling();
+        _showErrorDialog('Download failed: File length error');
+        break;
+      default:
+        print('📶 Programs View: Unknown download status: $status');
+        break;
     }
   }
 
@@ -1967,6 +2185,7 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
   @override
   void dispose() {
     _passwordController.dispose();
+    _stopDownloadStatusPolling(); // Cancel any active download status polling
     super.dispose();
   }
 }

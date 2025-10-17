@@ -80,6 +80,11 @@ class BluetoothService extends ChangeNotifier {
   Function(String)?
   _onWifiStatusResponse; // For #WIFI_CONNECTED! and #WIFI_DIS_CONNECTED!
 
+  // Download status callbacks
+  Function(String)?
+  _onDownloadStatusResponse; // For all download status responses
+  Function(int)? _onDownloadProgressUpdate; // For download progress percentage
+
   // WiFi list storage
   List<String> _wifiList = [];
   bool _wifiScanCompleted = false; // Flag to prevent multiple callbacks
@@ -105,9 +110,32 @@ class BluetoothService extends ChangeNotifier {
   static const String WIFI_CREDENTIALS_MATCH = "#ESP,47,01!";
   static const String WIFI_CREDENTIALS_MISMATCH = "#ESP,47,06!";
   static const String PASSWORD_ACCEPTED = "#ESP,42,01!";
-  static const String DOWNLOAD_SUCCESS = "#ESP,40,01!";
-  static const String DOWNLOAD_LINK_RECEIVED = "#ESP,40,05!";
-  static const String DOWNLOAD_PROGRESS = "#ESP,50,";
+
+  // Download status constants
+  static const String DOWNLOAD_SUCCESS =
+      "#ESP,40,01!"; // Successfully Downloaded
+  static const String DOWNLOAD_INTERNET_ERROR =
+      "#ESP,40,02!"; // Internet not Available
+  static const String DOWNLOAD_SD_CARD_ERROR = "#ESP,40,03!"; // SD card error
+  static const String DOWNLOAD_WRONG_LINK =
+      "#ESP,40,04!"; // Download fail, wrong link
+  static const String DOWNLOAD_LINK_RECEIVED = "#ESP,40,05!"; // Link Received
+  static const String DOWNLOAD_WIFI_CONNECT_ERROR =
+      "#ESP,40,06!"; // Wifi Connect error
+  static const String DOWNLOAD_SOCKET_CLOSED =
+      "#ESP,40,07!"; // Socket closed during download
+  static const String DOWNLOAD_UNSTABLE_NETWORK =
+      "#ESP,40,08!"; // Unstable network cause download failure
+  static const String DOWNLOAD_FORBIDDEN_ERROR =
+      "#ESP,40,403!"; // file forbidden_error
+  static const String DOWNLOAD_FILE_LINK_ERROR =
+      "#ESP,40,404!"; // file link error
+  static const String DOWNLOAD_FILE_LENGTH_ERROR =
+      "#ESP,40,11!"; // FILE_LENGTH_ERROR
+  static const String DOWNLOAD_PROGRESS =
+      "#ESP,50,"; // Download progress percentage
+  static const String DOWNLOAD_STATUS_COMMAND =
+      "#DOWNLOAD_STATUS!"; // Command to get download status
 
   // Getters
   BluetoothConnectionState get connectionState => _connectionState;
@@ -273,6 +301,16 @@ class BluetoothService extends ChangeNotifier {
   /// Set callback for WiFi status response (#WIFI_CONNECTED! and #WIFI_DIS_CONNECTED!)
   void setOnWifiStatusResponseCallback(Function(String) callback) {
     _onWifiStatusResponse = callback;
+  }
+
+  /// Set callback for download status response (all download status codes)
+  void setOnDownloadStatusResponseCallback(Function(String) callback) {
+    _onDownloadStatusResponse = callback;
+  }
+
+  /// Set callback for download progress updates (#ESP,50,XX,00!)
+  void setOnDownloadProgressUpdateCallback(Function(int) callback) {
+    _onDownloadProgressUpdate = callback;
   }
 
   Future<void> startScanning() async {
@@ -1255,15 +1293,50 @@ class BluetoothService extends ChangeNotifier {
       print('📶 WiFi connection: Credentials mismatch');
       _onWifiConnectionResponse?.call('FAILURE');
     } else if (stringValue.contains(DOWNLOAD_LINK_RECEIVED)) {
-      print('📥 Download started');
+      print('📥 Download: Link received - Command received');
+      _onDownloadStatusResponse?.call('LINK_RECEIVED');
     } else if (stringValue.contains(DOWNLOAD_SUCCESS)) {
-      print('📥 Download completed successfully');
+      print('📥 Download: Successfully downloaded');
+      _onDownloadStatusResponse?.call('SUCCESS');
       _onDownloadComplete?.call(true);
+    } else if (stringValue.contains(DOWNLOAD_INTERNET_ERROR)) {
+      print('📥 Download: Internet not available');
+      _onDownloadStatusResponse?.call('INTERNET_ERROR');
+    } else if (stringValue.contains(DOWNLOAD_SD_CARD_ERROR)) {
+      print('📥 Download: SD card error');
+      _onDownloadStatusResponse?.call('SD_CARD_ERROR');
+    } else if (stringValue.contains(DOWNLOAD_WRONG_LINK)) {
+      print('📥 Download: Wrong link - Download fail');
+      _onDownloadStatusResponse?.call('WRONG_LINK');
+    } else if (stringValue.contains(DOWNLOAD_WIFI_CONNECT_ERROR)) {
+      print('📥 Download: WiFi connect error');
+      _onDownloadStatusResponse?.call('WIFI_CONNECT_ERROR');
+    } else if (stringValue.contains(DOWNLOAD_SOCKET_CLOSED)) {
+      print('📥 Download: Socket closed during download');
+      _onDownloadStatusResponse?.call('SOCKET_CLOSED');
+    } else if (stringValue.contains(DOWNLOAD_UNSTABLE_NETWORK)) {
+      print('📥 Download: Unstable network cause download failure');
+      _onDownloadStatusResponse?.call('UNSTABLE_NETWORK');
+    } else if (stringValue.contains(DOWNLOAD_FORBIDDEN_ERROR)) {
+      print('📥 Download: File forbidden error (403)');
+      _onDownloadStatusResponse?.call('FORBIDDEN_ERROR');
+    } else if (stringValue.contains(DOWNLOAD_FILE_LINK_ERROR)) {
+      print('📥 Download: File link error (404)');
+      _onDownloadStatusResponse?.call('FILE_LINK_ERROR');
+    } else if (stringValue.contains(DOWNLOAD_FILE_LENGTH_ERROR)) {
+      print('📥 Download: File length error');
+      _onDownloadStatusResponse?.call('FILE_LENGTH_ERROR');
     } else if (stringValue.contains(DOWNLOAD_PROGRESS)) {
-      String percentage = stringValue.split(',')[2];
-      int progress = int.tryParse(percentage) ?? 0;
-      print('📥 Download progress: $progress%');
-      _onDownloadProgress?.call(progress);
+      // Handle download progress: #ESP,50,XX,00!
+      try {
+        String percentage = stringValue.split(',')[2];
+        int progress = int.tryParse(percentage) ?? 0;
+        print('📥 Download progress: $progress%');
+        _onDownloadProgress?.call(progress);
+        _onDownloadProgressUpdate?.call(progress);
+      } catch (e) {
+        print('📥 Download: Error parsing progress: $e');
+      }
     }
 
     // If we're sending play commands, check for play command responses
@@ -1820,11 +1893,35 @@ class BluetoothService extends ChangeNotifier {
     await writeCommand(WIFI_STATUS);
   }
 
+  /// Send download status command to get current download progress
+  Future<void> checkDownloadStatus() async {
+    print(
+      '📶 BluetoothService: Checking download status with command: $DOWNLOAD_STATUS_COMMAND',
+    );
+    await writeCommand(DOWNLOAD_STATUS_COMMAND);
+  }
+
   // Download Commands
-  Future<void> downloadSingleFile(String url) async {
-    String basicCommand = "#Cmd:30$url!";
-    String commandLength = basicCommand.length.toString().padLeft(3, '0');
-    String finalCommand = "#$commandLength$basicCommand";
+  Future<void> downloadSingleFile(String url, String programSize) async {
+    const String defaultValue = "Cmd:30";
+    
+    // Construct the basic command: #defaultValue,fileSize,url!
+    String constructCmd = "#$defaultValue,$programSize,$url!";
+    int constructCmdLength = constructCmd.length;
+    int finalLength = constructCmdLength + constructCmdLength.toString().length;
+    
+    String finalCommand;
+    
+    if (finalLength.toString().length > 2) {
+      int finalCommandLength = constructCmdLength + finalLength.toString().length;
+      finalCommand = "#$finalCommandLength$defaultValue,$programSize,$url!";
+    } else {
+      if (finalLength >= 99) {
+        finalCommand = "#${finalLength + 1}$defaultValue,$programSize,$url!";
+      } else {
+        finalCommand = "#0${finalLength + 1}$defaultValue,$programSize,$url!";
+      }
+    }
     
     print('📶 BluetoothService: Download command: $finalCommand');
     await writeCommand(finalCommand);
