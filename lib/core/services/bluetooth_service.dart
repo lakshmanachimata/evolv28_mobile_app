@@ -75,8 +75,10 @@ class BluetoothService extends ChangeNotifier {
   Function(bool)? _onDownloadComplete;
   Function(String)? _onWifiError;
   Function(String)? _onWifiEnableResponse;
-  Function(String)? _onWifiConnectionResponse; // For #ESP,47,01! and #ESP,47,06!
-  Function(String)? _onWifiStatusResponse; // For #WIFI_CONNECTED! and #WIFI_DIS_CONNECTED!
+  Function(String)?
+  _onWifiConnectionResponse; // For #ESP,47,01! and #ESP,47,06!
+  Function(String)?
+  _onWifiStatusResponse; // For #WIFI_CONNECTED! and #WIFI_DIS_CONNECTED!
 
   // WiFi list storage
   List<String> _wifiList = [];
@@ -96,7 +98,7 @@ class BluetoothService extends ChangeNotifier {
   static const String WIFI_SCAN = "#020Cmd:39WIFI_SCAN!";
   static const String WIFI_CONNECT = "#023Cmd:37WIFI_CONNECT!";
   static const String WIFI_STATUS = "#WIFISTAT!";
-  
+
   // WiFi connection response codes
   static const String WIFI_CONNECTED = "#WIFI_CONNECTED!";
   static const String WIFI_DISCONNECTED = "#WIFI_DIS_CONNECTED!";
@@ -259,7 +261,7 @@ class BluetoothService extends ChangeNotifier {
   }
 
   /// Set callback for WiFi enable response
-  void setOnWifiEnableResponseCallback(Function(String) callback) {
+  void setOnWifiEnableResponseCallback(Function(String)? callback) {
     _onWifiEnableResponse = callback;
   }
 
@@ -1805,31 +1807,26 @@ class BluetoothService extends ChangeNotifier {
   }
 
   Future<void> connectWifi() async {
-    print('📶 BluetoothService: Connecting to WiFi with command: $WIFI_CONNECT');
+    print(
+      '📶 BluetoothService: Connecting to WiFi with command: $WIFI_CONNECT',
+    );
     await writeCommand(WIFI_CONNECT);
   }
 
   Future<void> checkWifiStatus() async {
-    print('📶 BluetoothService: Checking WiFi status with command: $WIFI_STATUS');
+    print(
+      '📶 BluetoothService: Checking WiFi status with command: $WIFI_STATUS',
+    );
     await writeCommand(WIFI_STATUS);
   }
 
   // Download Commands
-  Future<void> downloadSingleFile(String url, int fileSize) async {
-    String basicCommand = "#Cmd:30,$fileSize,$url!";
-    int commandLength = basicCommand.length;
-    int totalLength = commandLength + commandLength.toString().length;
-
-    String finalCommand;
-    if (totalLength.toString().length > 2) {
-      int finalCommandLength = commandLength + totalLength.toString().length;
-      finalCommand = "#$finalCommandLength#Cmd:30,$fileSize,$url!";
-    } else {
-      finalCommand = totalLength >= 99
-          ? "#${totalLength + 1}#Cmd:30,$fileSize,$url!"
-          : "#0${totalLength + 1}#Cmd:30,$fileSize,$url!";
-    }
-
+  Future<void> downloadSingleFile(String url) async {
+    String basicCommand = "#Cmd:30$url!";
+    String commandLength = basicCommand.length.toString().padLeft(3, '0');
+    String finalCommand = "#$commandLength$basicCommand";
+    
+    print('📶 BluetoothService: Download command: $finalCommand');
     await writeCommand(finalCommand);
   }
 

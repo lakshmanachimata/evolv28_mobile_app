@@ -424,9 +424,7 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
                         color: const Color(0xFFF8F9FA),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Center(
-                        child: _buildProgramIcon(program.iconPath),
-                      ),
+                      child: Center(child: _buildProgramIcon(program.iconPath)),
                     ),
                     const SizedBox(width: 16),
 
@@ -558,6 +556,8 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
         iconPath: _getIconPathForProgram(programName),
         isLocked: false,
         isFavorite: false,
+        filepath: null,
+        programSize: null,
       );
     } else {
       // Handle regular programs
@@ -1241,7 +1241,7 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
               child: CircularProgressIndicator(
                 value: loadingProgress.expectedTotalBytes != null
                     ? loadingProgress.cumulativeBytesLoaded /
-                        loadingProgress.expectedTotalBytes!
+                          loadingProgress.expectedTotalBytes!
                     : null,
                 strokeWidth: 2,
               ),
@@ -1250,20 +1250,12 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
         },
       );
     }
-    
+
     // Handle local assets
     if (iconPath.endsWith('.png')) {
-      return Image.asset(
-        iconPath,
-        width: 32,
-        height: 32,
-      );
+      return Image.asset(iconPath, width: 32, height: 32);
     } else {
-      return SvgPicture.asset(
-        iconPath,
-        width: 32,
-        height: 32,
-      );
+      return SvgPicture.asset(iconPath, width: 32, height: 32);
     }
   }
 }
@@ -1354,7 +1346,7 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
 
     try {
       print('📶 Programs View: Starting Bluetooth WiFi scan...');
-      
+
       // First check WiFi status
       await _checkWifiStatus();
 
@@ -1458,6 +1450,13 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
       // Start WiFi scan
       print('📶 Programs View: Starting WiFi scan...');
       await _bluetoothService.scanWifi();
+
+      // Clear the WiFi enable response callback since scanning has started
+      // No need to handle WiFi enable responses anymore
+      _bluetoothService.setOnWifiEnableResponseCallback(null);
+      print(
+        '📶 Programs View: WiFi enable callback cleared - scanning started',
+      );
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -1469,6 +1468,10 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
   }
 
   void _showWifiEnableFailureDialog() {
+    // Clear the WiFi enable response callback since enable failed
+    _bluetoothService.setOnWifiEnableResponseCallback(null);
+    print('📶 Programs View: WiFi enable callback cleared - enable failed');
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -1505,6 +1508,26 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
 
     try {
       print('📶 Programs View: Retrying WiFi enable...');
+
+      // Set up WiFi enable response callback again for retry
+      _bluetoothService.setOnWifiEnableResponseCallback((response) {
+        print('📶 Programs View: WiFi enable retry response: $response');
+        if (mounted) {
+          setState(() {
+            _wifiEnableResponse = response;
+            _isEnablingWifi = false;
+          });
+
+          if (response == 'SUCCESS') {
+            // WiFi enable successful, continue with scanning
+            _continueWithWifiScanning();
+          } else if (response == 'FAILURE') {
+            // WiFi enable failed again, show retry dialog
+            _showWifiEnableFailureDialog();
+          }
+        }
+      });
+
       await _bluetoothService.enableWifi();
     } catch (e) {
       if (mounted) {
@@ -1836,7 +1859,9 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
             // Start file download process with program information
             _startFileDownload();
           } else if (response == 'FAILURE') {
-            _showErrorDialog('WiFi credentials mismatch. Please check your password.');
+            _showErrorDialog(
+              'WiFi credentials mismatch. Please check your password.',
+            );
           }
         }
       });
@@ -1885,16 +1910,10 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
       String fileUrl =
           widget.program.downloadUrl ??
           ''; // Assuming there's a downloadUrl field
-      int fileSize =
-          widget.program.fileSize ?? 0; // Assuming there's a fileSize field
-
-      print(
-        '📶 Programs View: Download details - File: $fileName, URL: $fileUrl, Size: $fileSize bytes',
-      );
 
       // Start download with program-specific information
-      if (fileUrl.isNotEmpty && fileSize > 0) {
-        await _bluetoothService.downloadSingleFile(fileUrl, fileSize);
+      if (fileUrl.isNotEmpty) {
+        await _bluetoothService.downloadSingleFile(fileUrl);
       } else {
         print(
           '📶 Programs View: No download URL or file size available for program: ${widget.program.title}',
@@ -1910,7 +1929,7 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
   Future<void> _checkWifiStatus() async {
     try {
       print('📶 Programs View: Checking WiFi status...');
-      
+
       // Set up WiFi status response callback
       _bluetoothService.setOnWifiStatusResponseCallback((status) {
         if (mounted) {
@@ -1921,18 +1940,22 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
               _isEnablingWifi = false;
               _isScanning = false;
             });
-            print('📶 Programs View: Device already connected to WiFi, skipping scan');
+            print(
+              '📶 Programs View: Device already connected to WiFi, skipping scan',
+            );
             // You could show a message or proceed directly to password input
           } else if (status == 'DISCONNECTED') {
             // Device is not connected, proceed with normal flow
-            print('📶 Programs View: Device not connected to WiFi, proceeding with scan');
+            print(
+              '📶 Programs View: Device not connected to WiFi, proceeding with scan',
+            );
           }
         }
       });
-      
+
       // Send WiFi status check command
       await _bluetoothService.checkWifiStatus();
-      
+
       // Wait a bit for response
       await Future.delayed(const Duration(milliseconds: 1000));
     } catch (e) {

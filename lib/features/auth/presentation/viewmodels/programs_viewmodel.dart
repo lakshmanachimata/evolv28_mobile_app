@@ -47,23 +47,27 @@ class ProgramsViewModel extends ChangeNotifier {
   // Method to refresh programs from DashboardViewModel
   Future<void> refreshProgramsFromDashboard() async {
     try {
-      print('ProgramsViewModel: Refreshing programs from DashboardViewModel...');
-      
+      print(
+        'ProgramsViewModel: Refreshing programs from DashboardViewModel...',
+      );
+
       // Get filtered programs from DashboardViewModel using static reference
       final dashboardViewModel = DashboardViewModel.instance;
       if (dashboardViewModel == null) {
         print('ProgramsViewModel: DashboardViewModel instance not available');
         return;
       }
-      
+
       // Trigger the DashboardViewModel to update its filtered programs
       // This will process the union between music data and Bluetooth programs
       await dashboardViewModel.loadMusicDataLocal();
-      
+
       print('ProgramsViewModel: Programs refreshed successfully');
       notifyListeners();
     } catch (e) {
-      print('ProgramsViewModel: Error refreshing programs from DashboardViewModel: $e');
+      print(
+        'ProgramsViewModel: Error refreshing programs from DashboardViewModel: $e',
+      );
     }
   }
 
@@ -72,10 +76,12 @@ class ProgramsViewModel extends ChangeNotifier {
     // Get filtered programs from DashboardViewModel using static reference
     final dashboardViewModel = DashboardViewModel.instance;
     if (dashboardViewModel == null) {
-      print('ProgramsViewModel: DashboardViewModel instance not available, using default programs');
+      print(
+        'ProgramsViewModel: DashboardViewModel instance not available, using default programs',
+      );
       return _getDefaultPrograms();
     }
-    
+
     final filteredPrograms = dashboardViewModel.filteredPrograms;
 
     // If no filtered programs available, use default programs
@@ -98,14 +104,17 @@ class ProgramsViewModel extends ChangeNotifier {
               id: programId,
               title: programName,
               recommendedTime: _getRecommendedTime(programName),
-              iconPath: _getIconPathFromData(program) ?? _getIconPath(programName),
+              iconPath:
+                  _getIconPathFromData(program) ?? _getIconPath(programName),
               isLocked: false,
               isFavorite:
                   false, // No favorites by default for filtered programs
               isInDevice: program['isInDevice'] ?? true,
               needsDownload: program['needsDownload'] ?? false,
-              downloadUrl: program['downloadUrl'] ?? program['fileUrl'] ?? program['url'],
-              fileSize: program['fileSize'] ?? program['size'] ?? 0,
+              downloadUrl: _getDownloadUrl(program) ?? '',
+              filepath: program['filepath'],
+              fileSize: 0,
+              programSize: _getFileSize(program) ?? '0',
             );
           }
           return null;
@@ -125,6 +134,8 @@ class ProgramsViewModel extends ChangeNotifier {
         iconPath: 'assets/images/sleep_better.svg',
         isLocked: false,
         isFavorite: true,
+        filepath: null,
+        programSize: null,
       ),
       ProgramData(
         id: 'improve_mood',
@@ -133,6 +144,8 @@ class ProgramsViewModel extends ChangeNotifier {
         iconPath: 'assets/images/improve_mood.svg',
         isLocked: false,
         isFavorite: false,
+        filepath: null,
+        programSize: null,
       ),
       ProgramData(
         id: 'focus_better',
@@ -141,6 +154,8 @@ class ProgramsViewModel extends ChangeNotifier {
         iconPath: 'assets/images/focus_better.svg',
         isLocked: false,
         isFavorite: false,
+        filepath: null,
+        programSize: null,
       ),
       ProgramData(
         id: 'remove_stress',
@@ -149,6 +164,8 @@ class ProgramsViewModel extends ChangeNotifier {
         iconPath: 'assets/images/remove_stress.svg',
         isLocked: false,
         isFavorite: false,
+        filepath: null,
+        programSize: null,
       ),
     ];
   }
@@ -171,17 +188,43 @@ class ProgramsViewModel extends ChangeNotifier {
     }
   }
 
+  String? _getDownloadUrl(Map<String, dynamic> program) {
+    // First try to get downloadUrl from the main music item
+    String? downloadUrl = program['downloadUrl'];
+
+    // If not found, try to get from matchedMusicFile (for musicfiles array entries)
+    if (downloadUrl == null && program['matchedMusicFile'] != null) {
+      final matchedFile = program['matchedMusicFile'] as Map<String, dynamic>;
+      downloadUrl = matchedFile['filepath'];
+    }
+
+    return downloadUrl;
+  }
+
+  String? _getFileSize(Map<String, dynamic> program) {
+    // First try to get fileSize from the main music item
+    String? fileSize = program['programsize'];
+
+    // If not found, try to get from matchedMusicFile (for musicfiles array entries)
+    if (fileSize == null && program['matchedMusicFile'] != null) {
+      final matchedFile = program['matchedMusicFile'] as Map<String, dynamic>;
+      fileSize = matchedFile['programsize'];
+    }
+
+    return fileSize;
+  }
+
   // Get icon path from music data, fallback to hardcoded paths
   String? _getIconPathFromData(Map<String, dynamic> program) {
     // First try to get icon from the main music item
     String? iconUrl = program['icon'];
-    
+
     // If not found, try to get from matchedMusicFile (for musicfiles array entries)
     if (iconUrl == null && program['matchedMusicFile'] != null) {
       final matchedFile = program['matchedMusicFile'] as Map<String, dynamic>;
       iconUrl = matchedFile['icon'];
     }
-    
+
     return iconUrl;
   }
 
@@ -206,20 +249,22 @@ class ProgramsViewModel extends ChangeNotifier {
   // Extract program name from program data
   String _extractProgramName(Map<String, dynamic> program) {
     // For programs not in device, get name from matchedMusicFile
-    if (program['needsDownload'] == true && program['matchedMusicFile'] != null) {
+    if (program['needsDownload'] == true &&
+        program['matchedMusicFile'] != null) {
       final musicFile = program['matchedMusicFile'] as Map<String, dynamic>;
-      final musicName = musicFile['name'] ??
+      final musicName =
+          musicFile['name'] ??
           musicFile['title'] ??
           musicFile['musicName'] ??
           musicFile['programName'] ??
           musicFile['filename'] ??
           musicFile['file_name'];
-      
+
       if (musicName != null && musicName.isNotEmpty) {
         return musicName;
       }
     }
-    
+
     // For programs in device, use Bluetooth program name or fallback to user program name
     return program['bluetoothProgramName'] ??
         program['name'] ??
@@ -548,7 +593,7 @@ class ProgramsViewModel extends ChangeNotifier {
   // Handle device disconnection
   void _handleDeviceDisconnection(String deviceName) {
     print('🎵 Programs: Handling device disconnection for: $deviceName');
-    
+
     // Reset player state
     _isPlaying = false;
     _currentPlayingProgramId = null;
@@ -556,10 +601,10 @@ class ProgramsViewModel extends ChangeNotifier {
     _isPlaySuccessful = false;
     _selectedBcuFile = null;
     _currentView = 'programs';
-    
+
     // Update UI
     notifyListeners();
-    
+
     // Show disconnection popup
     _showDeviceDisconnectedPopup = true;
     _disconnectedDeviceName = deviceName;
@@ -569,10 +614,10 @@ class ProgramsViewModel extends ChangeNotifier {
   // State for device disconnection popup
   bool _showDeviceDisconnectedPopup = false;
   String _disconnectedDeviceName = '';
-  
+
   bool get showDeviceDisconnectedPopup => _showDeviceDisconnectedPopup;
   String get disconnectedDeviceName => _disconnectedDeviceName;
-  
+
   void closeDeviceDisconnectedPopup() {
     _showDeviceDisconnectedPopup = false;
     _disconnectedDeviceName = '';
@@ -629,7 +674,9 @@ class ProgramData {
   final bool isInDevice;
   final bool needsDownload;
   final String? downloadUrl;
+  final String? filepath;
   final int? fileSize;
+  final String? programSize;
 
   ProgramData({
     required this.id,
@@ -641,7 +688,9 @@ class ProgramData {
     this.isInDevice = true,
     this.needsDownload = false,
     this.downloadUrl,
+    this.filepath,
     this.fileSize,
+    this.programSize,
   });
 }
 
