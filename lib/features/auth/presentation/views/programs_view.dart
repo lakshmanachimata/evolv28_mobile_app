@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:provider/provider.dart';
-import 'package:wifi_scan/wifi_scan.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
 
 import '../../../../core/services/bluetooth_service.dart';
 import '../../../../shared/widgets/device_disconnected_popup.dart';
@@ -384,9 +383,14 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: program.needsDownload 
+            ? Border.all(color: Colors.orange.withOpacity(0.3), width: 1)
+            : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: program.needsDownload 
+                ? Colors.orange.withOpacity(0.1)
+                : Colors.black.withOpacity(0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -396,7 +400,14 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () => viewModel.selectProgram(program.id),
+          onTap: () {
+            if (program.needsDownload) {
+              print('🎵 Programs: Card tapped for download - program: ${program.id}');
+              _showWifiScanBottomSheet(context, program);
+            } else {
+              viewModel.selectProgram(program.id);
+            }
+          },
           child: Stack(
             children: [
               Padding(
@@ -471,32 +482,34 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
                           ),
                         ),
 
-                         const SizedBox(width: 8),
-                         GestureDetector(
-                           onTap: program.needsDownload ? null : () {
-                             print(
-                               '🎵 Programs: Play button tapped for program: ${program.id}',
-                             );
-                             viewModel.playBluetoothProgram(program.id);
-                           },
-                           child: Container(
-                             width: 36,
-                             height: 36,
-                             decoration: BoxDecoration(
-                               color: program.needsDownload 
-                                   ? const Color(0xFFF17961).withOpacity(0.3)
-                                   : const Color(0xFFF17961),
-                               borderRadius: BorderRadius.circular(18),
-                             ),
-                             child: Icon(
-                               Icons.play_arrow,
-                               color: program.needsDownload 
-                                   ? Colors.white.withOpacity(0.5)
-                                   : Colors.white,
-                               size: 20,
-                             ),
-                           ),
-                         ),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: program.needsDownload
+                              ? null
+                              : () {
+                                  print(
+                                    '🎵 Programs: Play button tapped for program: ${program.id}',
+                                  );
+                                  viewModel.playBluetoothProgram(program.id);
+                                },
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: program.needsDownload
+                                  ? const Color(0xFFF17961).withOpacity(0.3)
+                                  : const Color(0xFFF17961),
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: Icon(
+                              Icons.play_arrow,
+                              color: program.needsDownload
+                                  ? Colors.white.withOpacity(0.5)
+                                  : Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -1278,7 +1291,7 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
   String? _selectedNetwork;
   final TextEditingController _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
-  List<WiFiAccessPoint> _wifiNetworks = [];
+  List<WiFiNetwork> _wifiNetworks = [];
   bool _isScanning = false;
   final BluetoothService _bluetoothService = BluetoothService();
 
@@ -1294,47 +1307,35 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
     });
 
     try {
-      // Check permissions first
-      final locationPermission = await Permission.locationWhenInUse.request();
-      if (!locationPermission.isGranted) {
-        _showPermissionDialog();
-        return;
-      }
+      print('📶 Programs View: Starting Bluetooth WiFi scan...');
 
-      // Check if WiFi scanning is supported
-      final canScan = await WiFiScan.instance.canStartScan();
-      if (canScan != CanStartScan.yes) {
-        _showErrorDialog('WiFi scanning is not available on this device');
-        return;
-      }
+      // Set up WiFi list received callback
+      _bluetoothService.setOnWifiListReceivedCallback((wifiList) {
+        print('📶 Programs View: Received WiFi list from Bluetooth: $wifiList');
+        if (mounted) {
+          // Convert string list to WiFiNetwork list
+          final networks = wifiList.map((ssid) => WiFiNetwork(ssid: ssid)).toList();
 
-      print('📶 Programs View: Starting mobile WiFi scan...');
-      
-      // Start scanning
-      await WiFiScan.instance.startScan();
-      
-      // Wait for 8 seconds as requested
-      print('📶 Programs View: Waiting 8 seconds for WiFi scan results...');
-      await Future.delayed(const Duration(seconds: 8));
-      
-      // Get scan results
-      final results = await WiFiScan.instance.getScannedResults();
-      
-      // Filter for 2.4GHz networks only
-      final filteredNetworks = results.where((network) {
-        // Filter for 2.4GHz networks (frequency between 2400-2500 MHz)
-        return network.frequency >= 2400 && network.frequency <= 2500;
-      }).toList();
+          setState(() {
+            _wifiNetworks = networks;
+            _currentState = WifiScanState.networkList;
+            _isScanning = false;
+          });
+        }
+      });
 
-      print('📶 Programs View: Found ${filteredNetworks.length} 2.4GHz networks');
+      // Enable WiFi first
+      print('📶 Programs View: Enabling WiFi...');
+      await _bluetoothService.enableWifi();
 
-      if (mounted) {
-        setState(() {
-          _wifiNetworks = filteredNetworks;
-          _currentState = WifiScanState.networkList;
-          _isScanning = false;
-        });
-      }
+      // Wait 1 second as requested
+      print('📶 Programs View: Waiting 1 second before scanning...');
+      await Future.delayed(const Duration(seconds: 1));
+
+      // Start WiFi scan
+      print('📶 Programs View: Starting WiFi scan...');
+      await _bluetoothService.scanWifi();
+
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -1350,7 +1351,9 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Permission Required'),
-        content: const Text('Location permission is required to scan for WiFi networks. Please grant permission in settings.'),
+        content: const Text(
+          'Location permission is required to scan for WiFi networks. Please grant permission in settings.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -1397,7 +1400,6 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          
           // Header
           Padding(
             padding: const EdgeInsets.all(20),
@@ -1432,7 +1434,7 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
               ],
             ),
           ),
-          
+
           // Content based on current state
           _buildContent(),
         ],
@@ -1471,10 +1473,7 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
         children: [
           const Text(
             'Wi Fi Scan in Progress',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey,
-            ),
+            style: TextStyle(fontSize: 16, color: Colors.grey),
           ),
           const SizedBox(height: 32),
           _buildLoadingIndicator(),
@@ -1484,9 +1483,11 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
   }
 
   Widget _buildNetworkListContent() {
-    print('📶 Programs View: Building network list content with ${_wifiNetworks.length} networks');
+    print(
+      '📶 Programs View: Building network list content with ${_wifiNetworks.length} networks',
+    );
     print('📶 Programs View: Networks: $_wifiNetworks');
-    
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -1496,39 +1497,42 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
             padding: const EdgeInsets.all(24),
             child: Text(
               'No WiFi networks found',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
             ),
           ),
-        
+
         // Scrollable network list
         if (_wifiNetworks.isNotEmpty)
           ConstrainedBox(
             constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.4, // Max 40% of screen height
+              maxHeight:
+                  MediaQuery.of(context).size.height *
+                  0.4, // Max 40% of screen height
             ),
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
-                children: _wifiNetworks.map((network) => _buildNetworkItem(network)).toList(),
+                children: _wifiNetworks
+                    .map((network) => _buildNetworkItem(network))
+                    .toList(),
               ),
             ),
           ),
-        
+
         // TRY AGAIN button
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 64),
           child: SizedBox(
             width: 120,
             child: ElevatedButton(
-              onPressed: _isScanning ? null : () {
-                setState(() {
-                  _currentState = WifiScanState.scanning;
-                });
-                _startScanning();
-              },
+              onPressed: _isScanning
+                  ? null
+                  : () {
+                      setState(() {
+                        _currentState = WifiScanState.scanning;
+                      });
+                      _startScanning();
+                    },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFF17961),
                 foregroundColor: Colors.white,
@@ -1548,7 +1552,7 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
     );
   }
 
-  Widget _buildNetworkItem(WiFiAccessPoint network) {
+  Widget _buildNetworkItem(WiFiNetwork network) {
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -1563,20 +1567,15 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              network.ssid.isNotEmpty ? network.ssid : 'Hidden Network',
+              network.ssid.isNotEmpty
+                  ? '${network.ssid} (${network.frequency})'
+                  : 'Hidden Network',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '2.4 Ghz',
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
+              textAlign: TextAlign.left,
             ),
           ],
         ),
@@ -1586,20 +1585,22 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
 
   Widget _buildPasswordInputContent() {
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 64),
+      padding: EdgeInsets.fromLTRB(
+        24,
+        24,
+        24,
+        MediaQuery.of(context).viewInsets.bottom + 64,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const Text(
             'Please enter Wifi Password for updating your latest Files',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey,
-            ),
+            style: TextStyle(fontSize: 16, color: Colors.grey),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
-          
+
           // Password field with Show text on the right
           Row(
             children: [
@@ -1609,7 +1610,9 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
                   obscureText: !_isPasswordVisible,
                   decoration: InputDecoration(
                     hintText: 'Enter password',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 12,
@@ -1638,10 +1641,9 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 24),
-          
-          
+
           // Connect button
           SizedBox(
             width: double.infinity,
@@ -1665,9 +1667,8 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
               ),
             ),
           ),
-          
+
           const SizedBox(height: 24),
-        
         ],
       ),
     );
@@ -1691,13 +1692,17 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
         return;
       }
 
-      print('📶 Programs View: Connecting to WiFi - SSID: $_selectedNetwork, Program: ${widget.program.title}');
+      print(
+        '📶 Programs View: Connecting to WiFi - SSID: $_selectedNetwork, Program: ${widget.program.title}',
+      );
 
       // Set up WiFi connection callback
       _bluetoothService.setOnWifiConnectedCallback((success) {
         if (mounted) {
           if (success) {
-            print('📶 Programs View: WiFi connected successfully, starting file download');
+            print(
+              '📶 Programs View: WiFi connected successfully, starting file download',
+            );
             Navigator.pop(context);
             // Start file download process with program information
             _startFileDownload();
@@ -1713,7 +1718,6 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
       await _bluetoothService.sendPassword(_passwordController.text);
       await Future.delayed(const Duration(milliseconds: 500));
       await _bluetoothService.connectWifi();
-      
     } catch (e) {
       if (mounted) {
         _showErrorDialog('Error connecting to WiFi: $e');
@@ -1723,8 +1727,10 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
 
   Future<void> _startFileDownload() async {
     try {
-      print('📶 Programs View: Starting file download for program: ${widget.program.title}');
-      
+      print(
+        '📶 Programs View: Starting file download for program: ${widget.program.title}',
+      );
+
       // Set up download callbacks
       _bluetoothService.setOnDownloadProgressCallback((progress) {
         print('📶 Programs View: Download progress: $progress%');
@@ -1733,29 +1739,39 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
 
       _bluetoothService.setOnDownloadCompleteCallback((success) {
         if (success) {
-          print('📶 Programs View: File download completed successfully for: ${widget.program.title}');
+          print(
+            '📶 Programs View: File download completed successfully for: ${widget.program.title}',
+          );
           // TODO: Show success message and update program list
         } else {
-          print('📶 Programs View: File download failed for: ${widget.program.title}');
+          print(
+            '📶 Programs View: File download failed for: ${widget.program.title}',
+          );
           // TODO: Show error message
         }
       });
 
       // Get file information from program data
       String fileName = widget.program.title;
-      String fileUrl = widget.program.downloadUrl ?? ''; // Assuming there's a downloadUrl field
-      int fileSize = widget.program.fileSize ?? 0; // Assuming there's a fileSize field
-      
-      print('📶 Programs View: Download details - File: $fileName, URL: $fileUrl, Size: $fileSize bytes');
-      
+      String fileUrl =
+          widget.program.downloadUrl ??
+          ''; // Assuming there's a downloadUrl field
+      int fileSize =
+          widget.program.fileSize ?? 0; // Assuming there's a fileSize field
+
+      print(
+        '📶 Programs View: Download details - File: $fileName, URL: $fileUrl, Size: $fileSize bytes',
+      );
+
       // Start download with program-specific information
       if (fileUrl.isNotEmpty && fileSize > 0) {
         await _bluetoothService.downloadSingleFile(fileUrl, fileSize);
       } else {
-        print('📶 Programs View: No download URL or file size available for program: ${widget.program.title}');
+        print(
+          '📶 Programs View: No download URL or file size available for program: ${widget.program.title}',
+        );
         // TODO: Show error message about missing download information
       }
-      
     } catch (e) {
       print('📶 Programs View: Error starting file download: $e');
       // TODO: Show error message
@@ -1770,3 +1786,13 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
 }
 
 enum WifiScanState { scanning, networkList, passwordInput }
+
+class WiFiNetwork {
+  final String ssid;
+  final String frequency;
+
+  WiFiNetwork({
+    required this.ssid,
+    this.frequency = '2.4 GHz',
+  });
+}
