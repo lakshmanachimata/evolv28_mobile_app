@@ -104,6 +104,26 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
     _downloadStatusTimer = null;
   }
 
+  // Helper method to handle download errors
+  void _handleDownloadError(String errorMessage) {
+    print('📶 Programs View: Handling download error: $errorMessage');
+    _stopDownloadStatusPolling();
+    
+    if (mounted) {
+      setState(() {
+        _isDownloading = false;
+        _downloadProgress = 0;
+        _downloadingFilename = '';
+        _showDownloadCompleteDialog = false;
+      });
+      
+      // Immediately refresh programs from device
+      _refreshProgramsFromDevice();
+    }
+    
+    _showErrorDialog(errorMessage);
+  }
+
   void _handleDownloadStatus(String status) {
     switch (status) {
       case 'LINK_RECEIVED':
@@ -127,50 +147,41 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
         break;
       case 'INTERNET_ERROR':
         print('📶 Programs View: Download failed - Internet not available');
-        _stopDownloadStatusPolling();
-        _showErrorDialog('Download failed: Internet not available');
+        _handleDownloadError('Download failed: Internet not available');
         break;
       case 'SD_CARD_ERROR':
         print('📶 Programs View: Download failed - SD card error');
-        _stopDownloadStatusPolling();
-        _showErrorDialog('Download failed: SD card error');
+        _handleDownloadError('Download failed: SD card error');
         break;
       case 'WRONG_LINK':
         print('📶 Programs View: Download failed - Wrong link');
-        _stopDownloadStatusPolling();
-        _showErrorDialog('Download failed: Invalid download link');
+        _handleDownloadError('Download failed: Invalid download link');
         break;
       case 'WIFI_CONNECT_ERROR':
         print('📶 Programs View: Download failed - WiFi connect error');
-        _stopDownloadStatusPolling();
-        _showErrorDialog('Download failed: WiFi connection error');
+        _handleDownloadError('Download failed: WiFi connection error');
         break;
       case 'SOCKET_CLOSED':
         print(
           '📶 Programs View: Download failed - Socket closed during download',
         );
-        _stopDownloadStatusPolling();
-        _showErrorDialog('Download failed: Connection lost during download');
+        _handleDownloadError('Download failed: Connection lost during download');
         break;
       case 'UNSTABLE_NETWORK':
         print('📶 Programs View: Download failed - Unstable network');
-        _stopDownloadStatusPolling();
-        _showErrorDialog('Download failed: Unstable network connection');
+        _handleDownloadError('Download failed: Unstable network connection');
         break;
       case 'FORBIDDEN_ERROR':
         print('📶 Programs View: Download failed - File forbidden (403)');
-        _stopDownloadStatusPolling();
-        _showErrorDialog('Download failed: File access forbidden');
+        _handleDownloadError('Download failed: File access forbidden');
         break;
       case 'FILE_LINK_ERROR':
         print('📶 Programs View: Download failed - File link error (404)');
-        _stopDownloadStatusPolling();
-        _showErrorDialog('Download failed: File not found');
+        _handleDownloadError('Download failed: File not found');
         break;
       case 'FILE_LENGTH_ERROR':
         print('📶 Programs View: Download failed - File length error');
-        _stopDownloadStatusPolling();
-        _showErrorDialog('Download failed: File length error');
+        _handleDownloadError('Download failed: File length error');
         break;
       default:
         print('📶 Programs View: Unknown download status: $status');

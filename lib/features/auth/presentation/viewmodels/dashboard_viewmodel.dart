@@ -266,10 +266,22 @@ class DashboardViewModel extends ChangeNotifier {
     _bluetoothListener = () {
       print('🔍 DashboardViewModel: Bluetooth listener triggered - isConnected: ${_bluetoothService.isConnected}, isScanning: ${_bluetoothService.isScanning}');
       
-      // Reset connecting state if device is now connected
-      if (_bluetoothService.isConnected && _isConnecting) {
-        _isConnecting = false;
-        print('🎵 Dashboard: Device connected, resetting connecting state');
+      // Update connection state based on BluetoothService state
+      if (_bluetoothService.isConnected) {
+        if (_isConnecting) {
+          _isConnecting = false;
+          _connectionSuccessful = true;
+          print('🎵 Dashboard: Device connected, updating connection state');
+        } else if (!_connectionSuccessful) {
+          _connectionSuccessful = true;
+          print('🎵 Dashboard: Device already connected, updating connection state');
+        }
+      } else {
+        if (_connectionSuccessful) {
+          _connectionSuccessful = false;
+          _programsLoaded = false;
+          print('🎵 Dashboard: Device disconnected, resetting connection state');
+        }
       }
       
       // Check if command sequence just completed and we haven't checked player status yet
@@ -295,7 +307,26 @@ class DashboardViewModel extends ChangeNotifier {
     // Start Bluetooth state monitoring
     _startBluetoothStateMonitoring();
 
+    // Check initial connection state
+    _checkInitialConnectionState();
+
     print('🎵 Dashboard: Minimal initialization completed');
+  }
+
+  // Check initial connection state
+  void _checkInitialConnectionState() {
+    print('🔍 DashboardViewModel: Checking initial connection state - isConnected: ${_bluetoothService.isConnected}');
+    
+    if (_bluetoothService.isConnected) {
+      _connectionSuccessful = true;
+      print('🎵 Dashboard: Device already connected on initialization');
+    } else {
+      _connectionSuccessful = false;
+      _programsLoaded = false;
+      print('🎵 Dashboard: Device not connected on initialization');
+    }
+    
+    notifyListeners();
   }
 
   // Initialize the dashboard
@@ -386,10 +417,22 @@ class DashboardViewModel extends ChangeNotifier {
 
     // Listen to Bluetooth service changes
     _bluetoothListener = () {
-      // Reset connecting state if device is now connected
-      if (_bluetoothService.isConnected && _isConnecting) {
-        _isConnecting = false;
-        print('🎵 Dashboard: Device connected, resetting connecting state');
+      // Update connection state based on BluetoothService state
+      if (_bluetoothService.isConnected) {
+        if (_isConnecting) {
+          _isConnecting = false;
+          _connectionSuccessful = true;
+          print('🎵 Dashboard: Device connected, updating connection state');
+        } else if (!_connectionSuccessful) {
+          _connectionSuccessful = true;
+          print('🎵 Dashboard: Device already connected, updating connection state');
+        }
+      } else {
+        if (_connectionSuccessful) {
+          _connectionSuccessful = false;
+          _programsLoaded = false;
+          print('🎵 Dashboard: Device disconnected, resetting connection state');
+        }
       }
       
       // Check if command sequence just completed and we haven't checked player status yet
@@ -2933,6 +2976,11 @@ class DashboardViewModel extends ChangeNotifier {
   // Handle device disconnection
   void _handleDeviceDisconnection(String deviceName) {
     print('🎵 Dashboard: Handling device disconnection for: $deviceName');
+    
+    // Reset connection state
+    _isConnecting = false;
+    _connectionSuccessful = false;
+    _programsLoaded = false;
     
     // Reset player state
     _showPlayerCard = false;
