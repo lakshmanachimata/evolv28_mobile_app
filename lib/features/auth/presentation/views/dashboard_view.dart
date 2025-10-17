@@ -1000,18 +1000,19 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
     return SvgPicture.asset(iconPath, width: 50, height: 50);
   }
 
-  Widget _buildProgramIconForBluetooth(String bcuFileName) {
-    // Convert bcu filename to program name and get icon
-    final programName = bcuFileName.replaceAll('.bcu', '').replaceAll('_', ' ');
+  Widget _buildProgramIconForBluetooth(String fileName) {
+    // Convert filename (.bcu or .cur) to program name and get icon
+    final programName = fileName.replaceAll('.bcu', '').replaceAll('.cur', '').replaceAll('_', ' ');
     final iconPath = _getIconPathForProgram(programName);
 
     return SvgPicture.asset(iconPath, width: 50, height: 50);
   }
 
-  String _formatProgramName(String bcuFileName) {
-    // Convert bcu filename to readable program name
-    return bcuFileName
+  String _formatProgramName(String fileName) {
+    // Convert filename (.bcu or .cur) to readable program name
+    return fileName
         .replaceAll('.bcu', '')
+        .replaceAll('.cur', '')
         .replaceAll('_', ' ')
         .split(' ')
         .map(

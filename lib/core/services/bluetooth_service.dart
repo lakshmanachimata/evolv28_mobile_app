@@ -1060,9 +1060,9 @@ class BluetoothService extends ChangeNotifier {
         );
         _currentPlayingFile = null;
       } else {
-        // Extract filename that contains .bcu from the entire response string
-        final RegExp bcuFileRegex = RegExp(r'([A-Za-z0-9_]+\.bcu)');
-        final Match? match = bcuFileRegex.firstMatch(response);
+        // Extract filename that contains .bcu or .cur from the entire response string
+        final RegExp fileRegex = RegExp(r'([A-Za-z0-9_]+\.(?:bcu|cur))');
+        final Match? match = fileRegex.firstMatch(response);
 
         if (match != null) {
           final filename = match.group(1);
@@ -1073,13 +1073,13 @@ class BluetoothService extends ChangeNotifier {
             _currentPlayingFile = filename;
           } else {
             print(
-              '🎵 BluetoothService: Playing status but no .bcu filename found (from command sequence)',
+              '🎵 BluetoothService: Playing status but no .bcu/.cur filename found (from command sequence)',
             );
             _currentPlayingFile = null;
           }
         } else {
           print(
-            '🎵 BluetoothService: Playing status but no .bcu filename found in response (from command sequence)',
+            '🎵 BluetoothService: Playing status but no .bcu/.cur filename found in response (from command sequence)',
           );
           _currentPlayingFile = null;
         }
@@ -1412,26 +1412,26 @@ class BluetoothService extends ChangeNotifier {
       print('=== PROGRAM LIST RESPONSE ===');
       print('Full response: $response');
 
-      // Parse the response to extract .bcu files
+      // Parse the response to extract .bcu and .cur files
       final lines = response.split('\n');
       final programFiles = <String>[];
 
       for (final line in lines) {
         final trimmedLine = line.trim();
-        if (trimmedLine.toLowerCase().contains('.bcu')) {
-          // Use regex to find all .bcu filenames
-          final bcuPattern = RegExp(
-            r'([a-zA-Z0-9_\-\.]+\.bcu)',
+        if (trimmedLine.toLowerCase().contains('.bcu') || trimmedLine.toLowerCase().contains('.cur')) {
+          // Use regex to find all .bcu and .cur filenames
+          final filePattern = RegExp(
+            r'([a-zA-Z0-9_\-\.]+\.(?:bcu|cur))',
             caseSensitive: false,
           );
-          final matches = bcuPattern.allMatches(trimmedLine);
+          final matches = filePattern.allMatches(trimmedLine);
 
           for (final match in matches) {
             String filename = match.group(1) ?? '';
             if (filename.isNotEmpty && filename.length > 4) {
               // Clean up any trailing punctuation
               filename = filename.replaceAll(RegExp(r'[,;:\s]+$'), '');
-              if (filename.toLowerCase().endsWith('.bcu')) {
+              if (filename.toLowerCase().endsWith('.bcu') || filename.toLowerCase().endsWith('.cur')) {
                 programFiles.add(filename);
               }
             }
@@ -1442,7 +1442,7 @@ class BluetoothService extends ChangeNotifier {
       // Remove duplicates and sort
       programFiles.toSet().toList()..sort();
 
-      print('Found ${programFiles.length} .bcu program files: $programFiles');
+      print('Found ${programFiles.length} program files (.bcu/.cur): $programFiles');
 
       // Convert .bcu files to wellness programs format
       _availablePrograms = _convertBcuFilesToWellnessPrograms(programFiles);

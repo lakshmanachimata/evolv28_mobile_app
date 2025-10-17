@@ -196,8 +196,8 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
   }
 
   String _formatProgramName(String fileName) {
-    // Remove .bcu extension and convert to title case
-    String name = fileName.replaceAll('.bcu', '');
+    // Remove .bcu or .cur extension and convert to title case
+    String name = fileName.replaceAll('.bcu', '').replaceAll('.cur', '');
     // Replace underscores with spaces
     name = name.replaceAll('_', ' ');
     // Convert to title case (first letter of each word capitalized)
