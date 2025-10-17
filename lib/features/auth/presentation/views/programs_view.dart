@@ -2487,7 +2487,7 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
         );
 
         // Send download command
-        // await _bluetoothService.downloadSingleFile(downloadUrl, programSize);
+        await _bluetoothService.downloadSingleFile(downloadUrl, programSize);
 
         // Wait a bit for the command to be processed
         await Future.delayed(const Duration(milliseconds: 1000));

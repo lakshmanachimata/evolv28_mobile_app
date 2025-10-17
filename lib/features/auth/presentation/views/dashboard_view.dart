@@ -236,11 +236,13 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
           Consumer<DashboardViewModel>(
             builder: (context, viewModel, child) {
               // Debug logging
-              print('🔍 Dashboard: Scanning overlay check - isBluetoothScanning: ${viewModel.isBluetoothScanning}, isBluetoothConnected: ${viewModel.isBluetoothConnected}, isConnecting: ${viewModel.isConnecting}, isExecutingCommands: ${viewModel.isExecutingCommands}');
-              
+              print(
+                '🔍 Dashboard: Scanning overlay check - isBluetoothScanning: ${viewModel.isBluetoothScanning}, isBluetoothConnected: ${viewModel.isBluetoothConnected}, isConnecting: ${viewModel.isConnecting}, isExecutingCommands: ${viewModel.isExecutingCommands}',
+              );
+
               // Hide scanning overlay if device is connected, connecting, executing commands, or if not scanning
-              if (viewModel.isBluetoothScanning && 
-                  !viewModel.isBluetoothConnected && 
+              if (viewModel.isBluetoothScanning &&
+                  !viewModel.isBluetoothConnected &&
                   !viewModel.isConnecting &&
                   !viewModel.isExecutingCommands) {
                 print('🔍 Dashboard: Showing scanning overlay');
@@ -853,16 +855,18 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                       program['bluetoothProgramId'] ??
                       program['id']?.toString() ??
                       '';
-                  
+
                   // Get icon URL from music data
                   String? iconUrl = program['icon'];
                   if (iconUrl == null && program['matchedMusicFile'] != null) {
-                    final matchedFile = program['matchedMusicFile'] as Map<String, dynamic>;
+                    final matchedFile =
+                        program['matchedMusicFile'] as Map<String, dynamic>;
                     iconUrl = matchedFile['icon'];
                   }
-                  
+
                   // Fallback to hardcoded icon if no URL available
-                  final iconPath = iconUrl ?? _getIconPathForProgram(programName);
+                  final iconPath =
+                      iconUrl ?? _getIconPathForProgram(programName);
 
                   programNames.add(programName);
                   programIds.add(programId);
@@ -941,9 +945,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                 width: 2,
               ),
             ),
-            child: Center(
-              child: _buildIconWidget(iconPath, 30),
-            ),
+            child: Center(child: _buildIconWidget(iconPath, 30)),
           ),
           const SizedBox(height: 8),
           Text(
@@ -1002,7 +1004,10 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
 
   Widget _buildProgramIconForBluetooth(String fileName) {
     // Convert filename (.bcu or .cur) to program name and get icon
-    final programName = fileName.replaceAll('.bcu', '').replaceAll('.cur', '').replaceAll('_', ' ');
+    final programName = fileName
+        .replaceAll('.bcu', '')
+        .replaceAll('.cur', '')
+        .replaceAll('_', ' ');
     final iconPath = _getIconPathForProgram(programName);
 
     return SvgPicture.asset(iconPath, width: 50, height: 50);
@@ -2704,7 +2709,9 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
                   child: ElevatedButton(
                     onPressed: () {
                       viewModel.closeDeviceDisconnectedPopup();
-                      DeviceDisconnectedPopup.navigateToDashboardAndScan(context);
+                      DeviceDisconnectedPopup.navigateToDashboardAndScan(
+                        context,
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFF07A60),
@@ -2756,7 +2763,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
               child: CircularProgressIndicator(
                 value: loadingProgress.expectedTotalBytes != null
                     ? loadingProgress.cumulativeBytesLoaded /
-                        loadingProgress.expectedTotalBytes!
+                          loadingProgress.expectedTotalBytes!
                     : null,
                 strokeWidth: 2,
               ),
@@ -2765,7 +2772,7 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
         },
       );
     }
-    
+
     // Handle local assets
     if (iconPath.endsWith('.svg')) {
       return SvgPicture.asset(iconPath, width: size, height: size);

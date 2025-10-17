@@ -116,6 +116,7 @@ class DashboardViewModel extends ChangeNotifier {
   bool _isConnecting = false; // Track connection state
   bool _connectionSuccessful = false; // Track successful connection
   bool _programsLoaded = false; // Track when programs are successfully loaded
+  bool _cachedConnectionState = false; // Cached connection state to prevent false negatives
   bool _showTroubleshootingScreen = false; // Track troubleshooting screen state
 
   // Device mapping error state
@@ -138,7 +139,14 @@ class DashboardViewModel extends ChangeNotifier {
 
   // Bluetooth getters
   BluetoothService get bluetoothService => _bluetoothService;
-  bool get isBluetoothConnected => _bluetoothService.isConnected;
+  bool get isBluetoothConnected {
+    // Use cached state if available, otherwise fall back to BluetoothService
+    // This prevents false negatives during state transitions
+    if (_cachedConnectionState) {
+      return true;
+    }
+    return _bluetoothService.isConnected;
+  }
   bool get isBluetoothScanning => _bluetoothService.isScanning;
   String get bluetoothStatusMessage => _bluetoothService.statusMessage;
   String get bluetoothErrorMessage => _bluetoothService.errorMessage;
@@ -268,6 +276,9 @@ class DashboardViewModel extends ChangeNotifier {
       
       // Update connection state based on BluetoothService state
       if (_bluetoothService.isConnected) {
+        // Update cached connection state
+        _cachedConnectionState = true;
+        
         if (_isConnecting) {
           _isConnecting = false;
           _connectionSuccessful = true;
@@ -277,6 +288,9 @@ class DashboardViewModel extends ChangeNotifier {
           print('🎵 Dashboard: Device already connected, updating connection state');
         }
       } else {
+        // Clear cached connection state when disconnected
+        _cachedConnectionState = false;
+        
         if (_connectionSuccessful) {
           _connectionSuccessful = false;
           _programsLoaded = false;
@@ -319,10 +333,12 @@ class DashboardViewModel extends ChangeNotifier {
     
     if (_bluetoothService.isConnected) {
       _connectionSuccessful = true;
+      _cachedConnectionState = true; // Set cached state
       print('🎵 Dashboard: Device already connected on initialization');
     } else {
       _connectionSuccessful = false;
       _programsLoaded = false;
+      _cachedConnectionState = false; // Clear cached state
       print('🎵 Dashboard: Device not connected on initialization');
     }
     
@@ -419,6 +435,9 @@ class DashboardViewModel extends ChangeNotifier {
     _bluetoothListener = () {
       // Update connection state based on BluetoothService state
       if (_bluetoothService.isConnected) {
+        // Update cached connection state
+        _cachedConnectionState = true;
+        
         if (_isConnecting) {
           _isConnecting = false;
           _connectionSuccessful = true;
@@ -428,6 +447,9 @@ class DashboardViewModel extends ChangeNotifier {
           print('🎵 Dashboard: Device already connected, updating connection state');
         }
       } else {
+        // Clear cached connection state when disconnected
+        _cachedConnectionState = false;
+        
         if (_connectionSuccessful) {
           _connectionSuccessful = false;
           _programsLoaded = false;
@@ -2981,6 +3003,7 @@ class DashboardViewModel extends ChangeNotifier {
     _isConnecting = false;
     _connectionSuccessful = false;
     _programsLoaded = false;
+    _cachedConnectionState = false; // Clear cached state
     
     // Reset player state
     _showPlayerCard = false;
