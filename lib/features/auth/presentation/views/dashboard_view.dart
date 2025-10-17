@@ -524,7 +524,13 @@ class _DashboardViewBodyState extends State<_DashboardViewBody> {
             IconData iconData;
             bool isClickable = true;
 
-            if (viewModel.connectionSuccessful) {
+            if (viewModel.connectionSuccessful && viewModel.programsLoaded) {
+              title = 'Connected';
+              subtitle = 'Connected to ${viewModel.deviceName}';
+              iconColor = Colors.green;
+              iconData = Icons.bluetooth_connected;
+              isClickable = false;
+            } else if (viewModel.connectionSuccessful) {
               title = 'Connected';
               subtitle = 'Your Evolv28 device is connected';
               iconColor = Colors.green;

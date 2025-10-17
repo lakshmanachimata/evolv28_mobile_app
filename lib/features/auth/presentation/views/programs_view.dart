@@ -383,12 +383,12 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: program.needsDownload 
+        border: program.needsDownload
             ? Border.all(color: Colors.orange.withOpacity(0.3), width: 1)
             : null,
         boxShadow: [
           BoxShadow(
-            color: program.needsDownload 
+            color: program.needsDownload
                 ? Colors.orange.withOpacity(0.1)
                 : Colors.black.withOpacity(0.05),
             blurRadius: 8,
@@ -402,7 +402,9 @@ class _ProgramsViewBodyState extends State<_ProgramsViewBody> {
           borderRadius: BorderRadius.circular(16),
           onTap: () {
             if (program.needsDownload) {
-              print('🎵 Programs: Card tapped for download - program: ${program.id}');
+              print(
+                '🎵 Programs: Card tapped for download - program: ${program.id}',
+              );
               _showWifiScanBottomSheet(context, program);
             } else {
               viewModel.selectProgram(program.id);
@@ -1293,6 +1295,8 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
   bool _isPasswordVisible = false;
   List<WiFiNetwork> _wifiNetworks = [];
   bool _isScanning = false;
+  bool _isEnablingWifi = false;
+  String? _wifiEnableResponse;
   final BluetoothService _bluetoothService = BluetoothService();
 
   @override
@@ -1304,17 +1308,39 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
   void _startScanning() async {
     setState(() {
       _isScanning = true;
+      _isEnablingWifi = true;
     });
 
     try {
       print('📶 Programs View: Starting Bluetooth WiFi scan...');
+
+      // Set up WiFi enable response callback
+      _bluetoothService.setOnWifiEnableResponseCallback((response) {
+        print('📶 Programs View: WiFi enable response: $response');
+        if (mounted) {
+          setState(() {
+            _wifiEnableResponse = response;
+            _isEnablingWifi = false;
+          });
+
+          if (response == 'SUCCESS') {
+            // WiFi enable successful, continue with scanning
+            _continueWithWifiScanning();
+          } else if (response == 'FAILURE') {
+            // WiFi enable failed, show retry dialog
+            _showWifiEnableFailureDialog();
+          }
+        }
+      });
 
       // Set up WiFi list received callback
       _bluetoothService.setOnWifiListReceivedCallback((wifiList) {
         print('📶 Programs View: Received WiFi list from Bluetooth: $wifiList');
         if (mounted) {
           // Convert string list to WiFiNetwork list
-          final networks = wifiList.map((ssid) => WiFiNetwork(ssid: ssid)).toList();
+          final networks = wifiList
+              .map((ssid) => WiFiNetwork(ssid: ssid))
+              .toList();
 
           setState(() {
             _wifiNetworks = networks;
@@ -1327,19 +1353,11 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
       // Enable WiFi first
       print('📶 Programs View: Enabling WiFi...');
       await _bluetoothService.enableWifi();
-
-      // Wait 1 second as requested
-      print('📶 Programs View: Waiting 1 second before scanning...');
-      await Future.delayed(const Duration(seconds: 1));
-
-      // Start WiFi scan
-      print('📶 Programs View: Starting WiFi scan...');
-      await _bluetoothService.scanWifi();
-
     } catch (e) {
       if (mounted) {
         setState(() {
           _isScanning = false;
+          _isEnablingWifi = false;
         });
         _showErrorDialog('Failed to scan WiFi networks: $e');
       }
@@ -1385,6 +1403,73 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
         ],
       ),
     );
+  }
+
+  void _continueWithWifiScanning() async {
+    try {
+      // Wait 1 second as requested
+      print('📶 Programs View: Waiting 1 second before scanning...');
+      await Future.delayed(const Duration(seconds: 1));
+
+      // Start WiFi scan
+      print('📶 Programs View: Starting WiFi scan...');
+      await _bluetoothService.scanWifi();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isScanning = false;
+        });
+        _showErrorDialog('Failed to start WiFi scan: $e');
+      }
+    }
+  }
+
+  void _showWifiEnableFailureDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('WiFi Enable Failed'),
+        content: const Text(
+          'Failed to enable WiFi on the device. Please try again after some time.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Close the bottom sheet
+              Navigator.pop(context);
+            },
+            child: const Text('OK'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Retry WiFi enable
+              _retryWifiEnable();
+            },
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _retryWifiEnable() async {
+    setState(() {
+      _isEnablingWifi = true;
+    });
+
+    try {
+      print('📶 Programs View: Retrying WiFi enable...');
+      await _bluetoothService.enableWifi();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isEnablingWifi = false;
+        });
+        _showErrorDialog('Failed to retry WiFi enable: $e');
+      }
+    }
   }
 
   @override
@@ -1471,9 +1556,11 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
-            'Wi Fi Scan in Progress',
-            style: TextStyle(fontSize: 16, color: Colors.grey),
+          Text(
+            _isEnablingWifi
+                ? 'Enabling WiFi on device ${_bluetoothService.connectedDevice?.platformName ?? 'Unknown Device'}'
+                : 'Wi Fi Scan in Progress',
+            style: const TextStyle(fontSize: 16, color: Colors.grey),
           ),
           const SizedBox(height: 32),
           _buildLoadingIndicator(),
@@ -1567,9 +1654,7 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              network.ssid.isNotEmpty
-                  ? '${network.ssid} (${network.frequency})'
-                  : 'Hidden Network',
+              network.ssid.isNotEmpty ? 'network.ssid' : 'Hidden Network',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -1791,8 +1876,5 @@ class WiFiNetwork {
   final String ssid;
   final String frequency;
 
-  WiFiNetwork({
-    required this.ssid,
-    this.frequency = '2.4 GHz',
-  });
+  WiFiNetwork({required this.ssid, this.frequency = ''});
 }

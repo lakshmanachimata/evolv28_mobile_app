@@ -47,7 +47,8 @@ class BluetoothService extends ChangeNotifier {
   ble.BluetoothCharacteristic? _writeCharacteristic;
   ble.BluetoothCharacteristic? _notifyCharacteristic;
   StreamSubscription<List<int>>? _notificationSubscription;
-  StreamSubscription<ble.BluetoothConnectionState>? _connectionStateSubscription;
+  StreamSubscription<ble.BluetoothConnectionState>?
+  _connectionStateSubscription;
   List<String> _fifthCommandResponses = [];
   bool _isWaitingForFifthCommand = false;
   Completer<String?>? _playerStatusCompleter;
@@ -63,7 +64,7 @@ class BluetoothService extends ChangeNotifier {
 
   // Callback for when no devices are found
   VoidCallback? _onNoDevicesFound;
-  
+
   // Callback for device disconnection
   Function(String deviceName)? _onDeviceDisconnected;
 
@@ -73,9 +74,11 @@ class BluetoothService extends ChangeNotifier {
   Function(int)? _onDownloadProgress;
   Function(bool)? _onDownloadComplete;
   Function(String)? _onWifiError;
+  Function(String)? _onWifiEnableResponse;
 
   // WiFi list storage
   List<String> _wifiList = [];
+  bool _wifiScanCompleted = false; // Flag to prevent multiple callbacks
 
   // Nordic UART Service UUIDs
   static const String nordicUartServiceUUID =
@@ -90,7 +93,7 @@ class BluetoothService extends ChangeNotifier {
   static const String ENABLE_WIFI = "#ESP32CON!";
   static const String WIFI_SCAN = "#020Cmd:39WIFI_SCAN!";
   static const String WIFI_CONNECT = "#023Cmd:37WIFI_CONNECT!";
-  
+
   // Response codes
   static const String WIFI_CONNECT_SUCCESS = "#ESP,47,01!";
   static const String WIFI_CONNECT_FAIL = "#ESP,47,06!";
@@ -250,6 +253,11 @@ class BluetoothService extends ChangeNotifier {
     _onWifiError = callback;
   }
 
+  /// Set callback for WiFi enable response
+  void setOnWifiEnableResponseCallback(Function(String) callback) {
+    _onWifiEnableResponse = callback;
+  }
+
   Future<void> startScanning() async {
     if (_connectionState == BluetoothConnectionState.scanning) return;
 
@@ -309,7 +317,7 @@ class BluetoothService extends ChangeNotifier {
         // Only stop scanning if we're not already connected or connecting
         if (_connectionState != BluetoothConnectionState.connected &&
             _connectionState != BluetoothConnectionState.connecting) {
-          _stopScanning();
+          _stopScanning(connectedDevice!);
         }
       });
     } catch (e) {
@@ -346,13 +354,17 @@ class BluetoothService extends ChangeNotifier {
         if (_userDevices.isNotEmpty) {
           final matchingDevices = _findMatchingUserDevices([device]);
           if (matchingDevices.isNotEmpty) {
-            print('🔗 Found matching user device during scan: ${device.platformName}');
+            print(
+              '🔗 Found matching user device during scan: ${device.platformName}',
+            );
             // Stop scanning immediately and connect to the device
-            _stopScanning();
-            
+
             // Auto-connect to the first matching device
             final deviceToConnect = matchingDevices.first;
-            print('🔗 Auto-connecting to registered device: ${deviceToConnect.platformName}');
+            _stopScanning(deviceToConnect);
+            print(
+              '🔗 Auto-connecting to registered device: ${deviceToConnect.platformName}',
+            );
 
             _connectionState = BluetoothConnectionState.connecting;
             _statusMessage = 'Connecting to ${deviceToConnect.platformName}...';
@@ -366,7 +378,8 @@ class BluetoothService extends ChangeNotifier {
             _loggingService.sendLogs(
               event: 'BLE Device Connect',
               status: 'success',
-              notes: 'auto-connected to registered device: ${deviceToConnect.platformName}',
+              notes:
+                  'auto-connected to registered device: ${deviceToConnect.platformName}',
             );
             return; // Exit early since we found and are connecting to a matching device
           }
@@ -377,11 +390,13 @@ class BluetoothService extends ChangeNotifier {
     }
   }
 
-  void _stopScanning() {
+  void _stopScanning(ble.BluetoothDevice? deviceFound) {
     // Double-check connection state before stopping scanning
     if (_connectionState == BluetoothConnectionState.connected ||
         _connectionState == BluetoothConnectionState.connecting) {
-      print('🛑 Skipping _stopScanning - device is already connected or connecting');
+      print(
+        '🛑 Skipping _stopScanning - device is already connected or connecting',
+      );
       return;
     }
 
@@ -392,7 +407,7 @@ class BluetoothService extends ChangeNotifier {
     _scanCountdown = 0;
 
     // Don't show "no devices found" if we're already connected or connecting
-    if (_scannedDevices.isEmpty && 
+    if (_scannedDevices.isEmpty &&
         _connectionState != BluetoothConnectionState.connected &&
         _connectionState != BluetoothConnectionState.connecting) {
       _connectionState = BluetoothConnectionState.disconnected;
@@ -428,8 +443,12 @@ class BluetoothService extends ChangeNotifier {
         _clearError();
         notifyListeners();
 
+        if (deviceFound != null &&
+            deviceFound.platformName == deviceToConnect.platformName) {
+        } else {
+          _connectToDevice(deviceToConnect);
+        }
         // Connect to the device
-        _connectToDevice(deviceToConnect);
 
         // Log auto-connection
         _loggingService.sendLogs(
@@ -603,14 +622,17 @@ class BluetoothService extends ChangeNotifier {
       _clearError();
       notifyListeners();
 
-      // Connect to device
-      await device.connect(timeout: const Duration(seconds: 10));
-
+      if (_connectedDevice != null && _connectedDevice!.isConnected) {
+      } else {
+        await device.connect(timeout: const Duration(seconds: 10));
+      }
       _connectedDevice = device;
       _connectionState = BluetoothConnectionState.connected;
       _statusMessage = '${device.platformName} is connected';
       print('✅ Device connected: ${device.platformName}');
-      print('🔍 BluetoothService: Connection state changed to connected, isScanning: $isScanning');
+      print(
+        '🔍 BluetoothService: Connection state changed to connected, isScanning: $isScanning',
+      );
 
       // Immediately stop all scanning-related timers and subscriptions
       // to prevent "no devices found" message after connection
@@ -670,7 +692,9 @@ class BluetoothService extends ChangeNotifier {
       _connectionState = BluetoothConnectionState.connected;
       _statusMessage = '${device.platformName} is connected';
       print('✅ Unknown device connected: ${device.platformName}');
-      print('🔍 BluetoothService: Unknown device connection state changed to connected, isScanning: $isScanning');
+      print(
+        '🔍 BluetoothService: Unknown device connection state changed to connected, isScanning: $isScanning',
+      );
 
       // Immediately stop all scanning-related timers and subscriptions
       // to prevent "no devices found" message after connection
@@ -717,43 +741,45 @@ class BluetoothService extends ChangeNotifier {
   /// Start monitoring device disconnection
   void _startDisconnectionMonitoring(ble.BluetoothDevice device) {
     print('🔍 Starting disconnection monitoring for: ${device.platformName}');
-    
+
     // Cancel any existing connection state subscription
     _connectionStateSubscription?.cancel();
-    
+
     // Listen to device connection state changes
     _connectionStateSubscription = device.connectionState.listen((state) {
-      print('🔍 Device ${device.platformName} connection state changed: $state');
-      
+      print(
+        '🔍 Device ${device.platformName} connection state changed: $state',
+      );
+
       if (state == ble.BluetoothConnectionState.disconnected) {
         print('❌ Device ${device.platformName} disconnected!');
-        
+
         // Update internal state
         _connectedDevice = null;
         _connectionState = BluetoothConnectionState.disconnected;
         _statusMessage = 'Connect';
         _currentPlayingFile = null;
         _clearError();
-        
+
         // Cancel subscriptions
         _notificationSubscription?.cancel();
         _connectionStateSubscription?.cancel();
-        
+
         // Clear command state
         _fifthCommandResponses.clear();
         _isWaitingForFifthCommand = false;
         _playerStatusCompleter?.complete(null);
         _stopCommandCompleter?.complete(false);
         _responseCompleter?.complete('');
-        
+
         // Notify listeners
         notifyListeners();
-        
+
         // Call disconnection callback if set
         if (_onDeviceDisconnected != null) {
           _onDeviceDisconnected!(device.platformName);
         }
-        
+
         // Log disconnection
         _loggingService.sendLogs(
           event: 'BLE Device Disconnect',
@@ -866,12 +892,12 @@ class BluetoothService extends ChangeNotifier {
 
       // Command sequence completed
       _isExecutingCommands = false;
-      
+
       // Process player status from the last command response
       if (playerStatusResponse != null) {
         _processPlayerStatusFromResponse(playerStatusResponse);
       }
-      
+
       notifyListeners();
     } catch (e) {
       _isExecutingCommands = false;
@@ -926,7 +952,9 @@ class BluetoothService extends ChangeNotifier {
       // Store the last command response (5#SPL!) for player status
       if (i == commands.length - 1) {
         lastCommandResponse = response;
-        print('🎵 BluetoothService: Stored last command response for player status: $response');
+        print(
+          '🎵 BluetoothService: Stored last command response for player status: $response',
+        );
       }
 
       // Log BLE command interaction
@@ -959,34 +987,46 @@ class BluetoothService extends ChangeNotifier {
 
   /// Process player status from the last command response (5#SPL!)
   void _processPlayerStatusFromResponse(String response) {
-    print('🎵 BluetoothService: Processing player status from command sequence response: $response');
-    
+    print(
+      '🎵 BluetoothService: Processing player status from command sequence response: $response',
+    );
+
     if (response.contains('#SPL,')) {
       // Check if response contains STOP status
       if (response.contains('STOP')) {
-        print('🎵 BluetoothService: No program currently playing (from command sequence)');
+        print(
+          '🎵 BluetoothService: No program currently playing (from command sequence)',
+        );
         _currentPlayingFile = null;
       } else {
         // Extract filename that contains .bcu from the entire response string
         final RegExp bcuFileRegex = RegExp(r'([A-Za-z0-9_]+\.bcu)');
         final Match? match = bcuFileRegex.firstMatch(response);
-        
+
         if (match != null) {
           final filename = match.group(1);
           if (filename != null && filename.isNotEmpty) {
-            print('🎵 BluetoothService: Program is playing: $filename (from command sequence)');
+            print(
+              '🎵 BluetoothService: Program is playing: $filename (from command sequence)',
+            );
             _currentPlayingFile = filename;
           } else {
-            print('🎵 BluetoothService: Playing status but no .bcu filename found (from command sequence)');
+            print(
+              '🎵 BluetoothService: Playing status but no .bcu filename found (from command sequence)',
+            );
             _currentPlayingFile = null;
           }
         } else {
-          print('🎵 BluetoothService: Playing status but no .bcu filename found in response (from command sequence)');
+          print(
+            '🎵 BluetoothService: Playing status but no .bcu filename found in response (from command sequence)',
+          );
           _currentPlayingFile = null;
         }
       }
     } else {
-      print('🎵 BluetoothService: Response does not contain player status (from command sequence)');
+      print(
+        '🎵 BluetoothService: Response does not contain player status (from command sequence)',
+      );
       _currentPlayingFile = null;
     }
   }
@@ -1097,9 +1137,11 @@ class BluetoothService extends ChangeNotifier {
     print('As string: "$stringValue"');
     print('Length: ${value.length}');
     print('=============================');
-    
+
     // Debug: Log all responses for WiFi debugging
-    if (stringValue.contains("#ESP,") || stringValue.contains("WIFI") || stringValue.contains("wifi")) {
+    if (stringValue.contains("#ESP,") ||
+        stringValue.contains("WIFI") ||
+        stringValue.contains("wifi")) {
       print('📶 Potential WiFi response: $stringValue');
     }
 
@@ -1149,16 +1191,36 @@ class BluetoothService extends ChangeNotifier {
     }
 
     // Handle WiFi scan results
-    if (stringValue.contains("#ESP,49,") && !stringValue.contains("#ESP,49,01!")) {
+    if (stringValue.contains("#ESP,49,") &&
+        !stringValue.contains("#ESP,49,01!")) {
       // WiFi scan results
       String ssid = stringValue.split(',')[2].replaceAll('!', '').trim();
-      _wifiList.add(ssid);
-      print('📶 WiFi scan result: $ssid');
+      // Filter out invalid SSIDs (like command codes) and avoid duplicates
+      if (ssid.isNotEmpty &&
+          !ssid.startsWith('0') &&
+          ssid.length > 2 &&
+          !_wifiList.contains(ssid)) {
+        _wifiList.add(ssid);
+        print('📶 WiFi scan result: $ssid');
+      }
     } else if (stringValue.contains("#ESP,49,01!")) {
-      // WiFi scan complete
-      print('📶 WiFi scan complete, found ${_wifiList.length} networks');
-      _onWifiListReceived?.call(_wifiList);
-      _wifiList.clear();
+      // WiFi scan complete - only process once
+      if (!_wifiScanCompleted) {
+        _wifiScanCompleted = true;
+        print('📶 WiFi scan complete, found ${_wifiList.length} networks');
+        // Create a copy of the list before clearing
+        List<String> finalList = List<String>.from(_wifiList);
+        _onWifiListReceived?.call(finalList);
+        _wifiList.clear();
+      }
+    } else if (stringValue.contains("#ACK!")) {
+      // WiFi enable success response
+      print('📶 WiFi enable success: $stringValue');
+      _onWifiEnableResponse?.call('SUCCESS');
+    } else if (stringValue.contains("#NACK!")) {
+      // WiFi enable failure response
+      print('📶 WiFi enable failure: $stringValue');
+      _onWifiEnableResponse?.call('FAILURE');
     } else if (stringValue.contains(WIFI_CONNECT_SUCCESS)) {
       print('📶 WiFi connected successfully');
       _onWifiConnected?.call(true);
@@ -1692,10 +1754,11 @@ class BluetoothService extends ChangeNotifier {
 
   Future<void> scanWifi() async {
     _wifiList.clear(); // Clear previous results
+    _wifiScanCompleted = false; // Reset scan completion flag
     print('📶 BluetoothService: Starting WiFi scan with command: $WIFI_SCAN');
     await writeCommand(WIFI_SCAN);
     print('📶 BluetoothService: WiFi scan command sent');
-    
+
     // Add a temporary debug to see if device responds at all
     print('📶 BluetoothService: Waiting for any device responses...');
   }
@@ -1721,17 +1784,17 @@ class BluetoothService extends ChangeNotifier {
     String basicCommand = "#Cmd:30,$fileSize,$url!";
     int commandLength = basicCommand.length;
     int totalLength = commandLength + commandLength.toString().length;
-    
+
     String finalCommand;
     if (totalLength.toString().length > 2) {
       int finalCommandLength = commandLength + totalLength.toString().length;
       finalCommand = "#$finalCommandLength#Cmd:30,$fileSize,$url!";
     } else {
-      finalCommand = totalLength >= 99 
-        ? "#${totalLength + 1}#Cmd:30,$fileSize,$url!"
-        : "#0${totalLength + 1}#Cmd:30,$fileSize,$url!";
+      finalCommand = totalLength >= 99
+          ? "#${totalLength + 1}#Cmd:30,$fileSize,$url!"
+          : "#0${totalLength + 1}#Cmd:30,$fileSize,$url!";
     }
-    
+
     await writeCommand(finalCommand);
   }
 
@@ -1739,17 +1802,17 @@ class BluetoothService extends ChangeNotifier {
     String basicCommand = "#Cmd:35,$fileSize,$url!";
     int commandLength = basicCommand.length;
     int totalLength = commandLength + commandLength.toString().length;
-    
+
     String finalCommand;
     if (totalLength.toString().length > 2) {
       int finalCommandLength = commandLength + totalLength.toString().length;
       finalCommand = "#$finalCommandLength#Cmd:35,$fileSize,$url!";
     } else {
-      finalCommand = totalLength >= 99 
-        ? "#${totalLength + 1}#Cmd:35,$fileSize,$url!"
-        : "#0${totalLength + 1}#Cmd:35,$fileSize,$url!";
+      finalCommand = totalLength >= 99
+          ? "#${totalLength + 1}#Cmd:35,$fileSize,$url!"
+          : "#0${totalLength + 1}#Cmd:35,$fileSize,$url!";
     }
-    
+
     await writeCommand(finalCommand);
   }
 

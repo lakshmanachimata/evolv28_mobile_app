@@ -115,6 +115,7 @@ class DashboardViewModel extends ChangeNotifier {
   Set<String> _selectedDeviceIds = {}; // Track multiple selected devices
   bool _isConnecting = false; // Track connection state
   bool _connectionSuccessful = false; // Track successful connection
+  bool _programsLoaded = false; // Track when programs are successfully loaded
   bool _showTroubleshootingScreen = false; // Track troubleshooting screen state
 
   // Device mapping error state
@@ -202,6 +203,7 @@ class DashboardViewModel extends ChangeNotifier {
   Set<String> get selectedDeviceIds => _selectedDeviceIds;
   bool get isConnecting => _isConnecting;
   bool get connectionSuccessful => _connectionSuccessful;
+  bool get programsLoaded => _programsLoaded;
   bool get hasSelectedDevices => _selectedDeviceIds.isNotEmpty;
   bool get showTroubleshootingScreen => _showTroubleshootingScreen;
 
@@ -323,6 +325,8 @@ class DashboardViewModel extends ChangeNotifier {
         clearNavigationState();
         await loadMusicDataLocal();
         filteredPrograms = await _getFilteredProgramsLocal();
+        _programsLoaded = true; // Mark programs as loaded
+        _clearNoDevicesFoundCallback(); // Clear the no devices found callback
         // Set up minimal initialization (listeners only)
         await _setupMinimalInitialization();
         return;
@@ -858,6 +862,8 @@ class DashboardViewModel extends ChangeNotifier {
       print(
         '🎵 Dashboard: Created union with ${filteredPrograms.length} filtered programs',
       );
+      _programsLoaded = true; // Mark programs as loaded
+      _clearNoDevicesFoundCallback(); // Clear the no devices found callback
       return filteredPrograms;
     } catch (e) {
       print('🎵 Dashboard: Error creating filtered programs: $e');
@@ -2471,11 +2477,34 @@ class DashboardViewModel extends ChangeNotifier {
     _selectedDeviceIds.clear();
     _isConnecting = false;
     _connectionSuccessful = false;
+    _programsLoaded = false; // Reset programs loaded state
     _showTroubleshootingScreen = false; // Reset troubleshooting screen state
+    _restoreNoDevicesFoundCallback(); // Restore the callback for future scans
     // Record close time for debouncing
     _lastBottomSheetCloseTime = DateTime.now();
     print('🎵 Dashboard: Unknown device dialog closed');
     notifyListeners();
+  }
+
+  // Clear the no devices found callback to prevent showing bottom sheet after programs are loaded
+  void _clearNoDevicesFoundCallback() {
+    print('🎵 Dashboard: Clearing no devices found callback - programs loaded successfully');
+    _bluetoothService.setOnNoDevicesFoundCallback(() {
+      // Empty callback - do nothing when no devices found
+      print('🎵 Dashboard: No devices found callback disabled - programs already loaded');
+    });
+  }
+
+  // Restore the no devices found callback when connection is lost
+  void _restoreNoDevicesFoundCallback() {
+    print('🎵 Dashboard: Restoring no devices found callback - connection lost');
+    _bluetoothService.setOnNoDevicesFoundCallback(() {
+      print('🎵 Dashboard: No devices found during scanning');
+      _unknownDevices = []; // Empty list to trigger no device found UI
+      _showUnknownDeviceDialog = true;
+      _unknownDeviceBottomSheetShown = false; // Reset flag for new dialog
+      notifyListeners();
+    });
   }
 
   // Flag to prevent showing unknown device dialog after OTP dialog is closed
@@ -2530,6 +2559,8 @@ class DashboardViewModel extends ChangeNotifier {
     try {
       _isConnecting = true;
       _connectionSuccessful = false;
+      _programsLoaded = false; // Reset programs loaded state
+      _restoreNoDevicesFoundCallback(); // Restore the callback for new connection attempt
       notifyListeners();
 
       print(
@@ -2628,6 +2659,8 @@ class DashboardViewModel extends ChangeNotifier {
     } catch (e) {
       _isConnecting = false;
       _connectionSuccessful = false;
+      _programsLoaded = false; // Reset programs loaded state
+      _restoreNoDevicesFoundCallback(); // Restore the callback for retry
       print('🎵 Dashboard: Error connecting to devices: $e');
       notifyListeners();
     }
