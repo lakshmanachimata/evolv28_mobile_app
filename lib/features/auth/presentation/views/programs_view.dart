@@ -2486,6 +2486,21 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
           '📶 Programs View: Download URL: $downloadUrl, Size: $programSize',
         );
 
+        // Set up download complete callback (moved from _startFileDownload)
+        _bluetoothService.setOnDownloadCompleteCallback((success) {
+          if (success) {
+            print(
+              '📶 Programs View: File download completed successfully for: ${widget.program.title}',
+            );
+            // TODO: Show success message and update program list
+          } else {
+            print(
+              '📶 Programs View: File download failed for: ${widget.program.title}',
+            );
+            // TODO: Show error message
+          }
+        });
+
         // Send download command
         await _bluetoothService.downloadSingleFile(downloadUrl, programSize);
 
@@ -2494,69 +2509,23 @@ class _WifiScanBottomSheetState extends State<_WifiScanBottomSheet> {
 
         print('📶 Programs View: Download URL sent successfully');
 
-        // Close the bottom sheet and start file download process
+        // Close the bottom sheet and start download status polling
         Navigator.pop(context);
-        _startFileDownload();
+        
+        // Start polling for download status every 5 seconds (moved from _startFileDownload)
+        widget.onStartDownloadPolling?.call();
       } else {
         print(
           '📶 Programs View: No download URL or program size available for this program',
         );
         Navigator.pop(context);
-        _startFileDownload();
-      }
-    } catch (e) {
-      print('📶 Programs View: Error setting download URL: $e');
-      _handleWifiConnectionFailure('Error setting download URL: $e');
-    }
-  }
-
-  Future<void> _startFileDownload() async {
-    try {
-      print(
-        '📶 Programs View: Starting file download for program: ${widget.program.title}',
-      );
-
-      // Note: Download progress callbacks are handled by the main programs view
-
-      // Set up download complete callback (legacy)
-      _bluetoothService.setOnDownloadCompleteCallback((success) {
-        if (success) {
-          print(
-            '📶 Programs View: File download completed successfully for: ${widget.program.title}',
-          );
-          // TODO: Show success message and update program list
-        } else {
-          print(
-            '📶 Programs View: File download failed for: ${widget.program.title}',
-          );
-          // TODO: Show error message
-        }
-      });
-
-      // Get file information from program data
-      String fileUrl = widget.program.downloadUrl ?? '';
-      String? programSize = widget.program.programSize;
-
-      // Start download with program-specific information
-      if (fileUrl.isNotEmpty && programSize != null && programSize.isNotEmpty) {
-        print(
-          '📶 Programs View: Starting download for URL: $fileUrl, Size: $programSize',
-        );
-        await _bluetoothService.downloadSingleFile(fileUrl, programSize);
-
-        // Start polling for download status every 5 seconds
-        widget.onStartDownloadPolling?.call();
-      } else {
-        print(
-          '📶 Programs View: No download URL or program size available for program: ${widget.program.title}',
-        );
         _showErrorDialog(
           'No download URL or program size available for this program',
         );
       }
     } catch (e) {
-      print('📶 Programs View: Error starting file download: $e');
-      _showErrorDialog('Error starting file download: $e');
+      print('📶 Programs View: Error setting download URL: $e');
+      _handleWifiConnectionFailure('Error setting download URL: $e');
     }
   }
 

@@ -60,6 +60,10 @@ class BluetoothService extends ChangeNotifier {
   String? _pendingCommandForLogging;
   DateTime? _pendingCommandTimestamp;
 
+  // Download command tracking to prevent duplicates
+  bool _isDownloadCommandSent = false;
+  String? _lastDownloadCommand;
+
   // User devices for validation
   List<dynamic> _userDevices = [];
 
