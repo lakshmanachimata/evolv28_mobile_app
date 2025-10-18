@@ -1913,8 +1913,10 @@ class BluetoothService extends ChangeNotifier {
         response: response,
         reqTime: _pendingCommandTimestamp!.millisecondsSinceEpoch,
       );
-      print('📶 BluetoothService: Logged command with response: $_pendingCommandForLogging -> $response');
-      
+      print(
+        '📶 BluetoothService: Logged command with response: $_pendingCommandForLogging -> $response',
+      );
+
       // Clear pending command
       _pendingCommandForLogging = null;
       _pendingCommandTimestamp = null;
@@ -1930,7 +1932,7 @@ class BluetoothService extends ChangeNotifier {
     print('📶 BluetoothService: Enabling WiFi with command: $ENABLE_WIFI');
     await writeCommand(ENABLE_WIFI);
     print('📶 BluetoothService: Enable WiFi command sent');
-    
+
     // Log command and wait for response
     _logCommandAndWaitForResponse(ENABLE_WIFI);
   }
@@ -1944,31 +1946,33 @@ class BluetoothService extends ChangeNotifier {
 
     // Add a temporary debug to see if device responds at all
     print('📶 BluetoothService: Waiting for any device responses...');
-    
+
     // Log command and wait for response
     _logCommandAndWaitForResponse(WIFI_SCAN);
   }
 
   Future<void> sendSSID(String ssid) async {
     String basicCommand = "Cmd:31$ssid!";
-    String commandLength = (basicCommand.length + 3).toString().padLeft(3, '0');
+    int commandLength =
+        basicCommand.length + 2 + basicCommand.length.toString().length;
     String command = "#0$commandLength$basicCommand";
     print('📶 BluetoothService: Sending SSID: $ssid with command: $command');
     await writeCommand(command);
-    
+
     // Log command and wait for response
     _logCommandAndWaitForResponse(command);
   }
 
   Future<void> sendPassword(String password) async {
     String basicCommand = "Cmd:32$password!";
-    String commandLength = (basicCommand.length + 3).toString().padLeft(3, '0');
-    String command = "#0$commandLength$basicCommand";
-    print('📶 BluetoothService: Sending password with command: $command');
-    await writeCommand(command);
-    
+    int commandLength =
+        basicCommand.length + 2 + basicCommand.length.toString().length;
+    String finalCommand = "#0$commandLength$basicCommand";
+    print('📶 BluetoothService: Sending password with command: $finalCommand');
+    await writeCommand(finalCommand);
+
     // Log command and wait for response
-    _logCommandAndWaitForResponse(command);
+    _logCommandAndWaitForResponse(finalCommand);
   }
 
   Future<void> connectWifi() async {
@@ -1976,7 +1980,6 @@ class BluetoothService extends ChangeNotifier {
       '📶 BluetoothService: Connecting to WiFi with command: $WIFI_CONNECT',
     );
     await writeCommand(WIFI_CONNECT);
-    
     // Log command and wait for response
     _logCommandAndWaitForResponse(WIFI_CONNECT);
   }
@@ -1986,7 +1989,7 @@ class BluetoothService extends ChangeNotifier {
       '📶 BluetoothService: Checking WiFi status with command: $WIFI_STATUS',
     );
     await writeCommand(WIFI_STATUS);
-    
+
     // Log command and wait for response
     _logCommandAndWaitForResponse(WIFI_STATUS);
   }
@@ -1997,7 +2000,7 @@ class BluetoothService extends ChangeNotifier {
       '📶 BluetoothService: Checking download status with command: $DOWNLOAD_STATUS_COMMAND',
     );
     await writeCommand(DOWNLOAD_STATUS_COMMAND);
-    
+
     // Log command and wait for response
     _logCommandAndWaitForResponse(DOWNLOAD_STATUS_COMMAND);
   }
@@ -2027,7 +2030,7 @@ class BluetoothService extends ChangeNotifier {
 
     print('📶 BluetoothService: Download command: $finalCommand');
     await writeCommand(finalCommand);
-    
+
     // Log command and wait for response
     _logCommandAndWaitForResponse(finalCommand);
   }
@@ -2040,7 +2043,7 @@ class BluetoothService extends ChangeNotifier {
     String finalCommand;
     if (totalLength.toString().length > 2) {
       int finalCommandLength = commandLength + totalLength.toString().length;
-      finalCommand = "#$finalCommandLengthCmd:35,$fileSize,$url!";
+      finalCommand = "#$finalCommandLength:35,$fileSize,$url!";
     } else {
       finalCommand = totalLength >= 99
           ? "#${totalLength + 1}Cmd:35,$fileSize,$url!"
