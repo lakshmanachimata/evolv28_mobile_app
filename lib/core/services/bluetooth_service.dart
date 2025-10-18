@@ -1950,9 +1950,9 @@ class BluetoothService extends ChangeNotifier {
   }
 
   Future<void> sendSSID(String ssid) async {
-    String basicCommand = "#Cmd:31$ssid!";
+    String basicCommand = "Cmd:31$ssid!";
     String commandLength = (basicCommand.length + 3).toString().padLeft(3, '0');
-    String command = "#$commandLength$basicCommand";
+    String command = "#0$commandLength$basicCommand";
     print('📶 BluetoothService: Sending SSID: $ssid with command: $command');
     await writeCommand(command);
     
@@ -1961,9 +1961,9 @@ class BluetoothService extends ChangeNotifier {
   }
 
   Future<void> sendPassword(String password) async {
-    String basicCommand = "#Cmd:32$password!";
+    String basicCommand = "Cmd:32$password!";
     String commandLength = (basicCommand.length + 3).toString().padLeft(3, '0');
-    String command = "#$commandLength$basicCommand";
+    String command = "#0$commandLength$basicCommand";
     print('📶 BluetoothService: Sending password with command: $command');
     await writeCommand(command);
     
@@ -2033,18 +2033,18 @@ class BluetoothService extends ChangeNotifier {
   }
 
   Future<void> downloadBulkFiles(String url, int fileSize) async {
-    String basicCommand = "#Cmd:35,$fileSize,$url!";
+    String basicCommand = "Cmd:35,$fileSize,$url!";
     int commandLength = basicCommand.length;
     int totalLength = commandLength + commandLength.toString().length;
 
     String finalCommand;
     if (totalLength.toString().length > 2) {
       int finalCommandLength = commandLength + totalLength.toString().length;
-      finalCommand = "#$finalCommandLength#Cmd:35,$fileSize,$url!";
+      finalCommand = "#$finalCommandLengthCmd:35,$fileSize,$url!";
     } else {
       finalCommand = totalLength >= 99
-          ? "#${totalLength + 1}#Cmd:35,$fileSize,$url!"
-          : "#0${totalLength + 1}#Cmd:35,$fileSize,$url!";
+          ? "#${totalLength + 1}Cmd:35,$fileSize,$url!"
+          : "#0${totalLength + 1}Cmd:35,$fileSize,$url!";
     }
 
     await writeCommand(finalCommand);
